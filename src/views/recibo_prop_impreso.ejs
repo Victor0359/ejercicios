@@ -128,50 +128,57 @@
       </div>
       <div class="form-row mt-6">
        <div class="form-row mt-4 flex gap-4">
-  <button
-    id="btnImprimirUno"
-    type="button"
-    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-  >
-    Imprimir este recibo
-  </button>
+  <script>
+  // Obtener el número de recibo del campo oculto o de entrada
+  const numreciboInput = document.querySelector("[name='numrecibo']");
+  const numrecibo = numreciboInput ? numreciboInput.value : null; // Asegurarse de que existe
 
-  <button
-    id="btnImprimirTodos"
-    type="button"
-    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-  >
-    Imprimir todos los de hoy
-  </button>
-
-  <button
-    type="button"
-    onclick="location.href='/recibo_propietario'"
-    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
-  >
-    Volver
-  </button>
-</div>
-
-      </div>
-      <div
-        id="messageBox"
-        class="mt-4 p-3 rounded-md text-center hidden"
-        role="alert"
-      ></div>
-    </form>
-<script>
-  const numrecibo = document.querySelector("[name='numrecibo']").value;
-
+  // Botón para imprimir (descargar) un recibo individual
   document.getElementById("btnImprimirUno").addEventListener("click", async () => {
-    await fetch(`/generar_pdf/${numrecibo}`);
-    window.location.href = "/recibo_propietario";
+    if (numrecibo) {
+      // Abre la URL en una nueva pestaña para forzar la descarga
+      // Asegúrate de que tu ruta en el backend (/generar_pdf/:numrecibo)
+      // responda con res.download()
+      window.open(`/generar_pdf/${numrecibo}`, '_blank');
+      // Opcional: Puedes redirigir después de un breve retraso si no quieres una nueva pestaña
+      // setTimeout(() => {
+      //   window.location.href = "/recibo_propietario";
+      // }, 500);
+    } else {
+      // Mostrar un mensaje si no hay número de recibo
+      const messageBox = document.getElementById("messageBox");
+      messageBox.textContent = "Error: No se encontró el número de recibo para descargar.";
+      messageBox.className = "mt-4 p-3 rounded-md text-center bg-red-100 text-red-700";
+      messageBox.style.display = "block";
+    }
   });
 
+  // Botón para imprimir (descargar) todos los recibos del día
   document.getElementById("btnImprimirTodos").addEventListener("click", async () => {
-    await fetch(`/generar_pdfs_dia`);
-    window.location.href = "/recibo_propietario";
+    // Abre la URL en una nueva pestaña para forzar la descarga
+    // Asegúrate de que tu ruta en el backend (/generar_pdfs_dia)
+    // responda con res.download()
+    window.open(`/generar_pdfs_dia`, '_blank');
+    // Opcional: Puedes redirigir después de un breve retraso si no quieres una nueva pestaña
+    // setTimeout(() => {
+    //   window.location.href = "/recibo_propietario";
+    // }, 500);
   });
+
+  // Si quieres que el usuario vea un mensaje de "procesando" o "descarga iniciada"
+  // puedes usar la messageBox.
+  function showMessage(message, type = "info") {
+    const messageBox = document.getElementById("messageBox");
+    messageBox.textContent = message;
+    messageBox.className = `mt-4 p-3 rounded-md text-center ${
+      type === "success" ? "bg-green-100 text-green-700" :
+      type === "error" ? "bg-red-100 text-red-700" :
+      "bg-blue-100 text-blue-700"
+    }`;
+    messageBox.style.display = "block";
+    // Opcional: ocultar el mensaje después de un tiempo
+    // setTimeout(() => { messageBox.style.display = "hidden"; }, 5000);
+  }
 </script>
 
 <link rel="stylesheet" href="/css/recibo_imprimir.css" />
