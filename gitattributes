@@ -1,0 +1,2 @@
+text=auto eol=if
+.js text eol=if*.ejs text eol=if*css text eol=if  
