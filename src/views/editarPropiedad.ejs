@@ -1,0 +1,40 @@
+<body>
+    <div class="container mt-5">
+        <h1>Editar propiedad</h1>
+        <form action="/propiedades/modificar" method="POST" onsubmit="return confirmarModificacion();">
+            <input type="hidden" name="id_propiedades" value="<%= propiedad.id_propiedades %>">
+            <div class="mb-3">
+
+                <div class="mb-3">
+                    <label for="direccion" class="form-label">Direccion</label>
+                    <input type="text" class="form-control" id="direccion" name="direccion"
+                        value="<%= propiedad.direccion %>" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="localidad" class="form-label">Localidad</label>
+                    <input type="text" class="form-control" id="localidad" name="localidad"
+                        value="<%= propiedad.localidad %>" required>
+                </div>
+                <div class="mb-3">
+                    <label for="propietario" class="form-label">Propietario</label>
+                    <input type="text" class="form-control" id="propietario" name="propietario"
+                        value="<%= propiedad.propietario %>">
+                </div>
+                <div class="mb-3">
+                    <label for="impuesto" class="form-label">Impuestos</label>
+                    <input type="text" class="form-control" id="impuesto" name="impuesto"
+                        value="<%= propiedad.impuestos %>">
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <a href="/propiedades" class="btn btn-secondary">Cancelar</a
+        </form>
+    </div>
+        <script>
+            function confirmarModificacion() {
+                return confirm("¿Está seguro que desea modificar esta propiedad?");
+            }
+        </script>
+
+        <link rel="stylesheet" href="/propiedades.css">
+</body>

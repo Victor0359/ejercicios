@@ -1,0 +1,78 @@
+<body>
+    <div class="container mt-5">
+        <form action="/contratos/modificar" method="POST" class="row" onsubmit="return confirmarModificacion();">
+            <div class="mt-5 mb-3" <h1><b>Editar Contrato</b></h1>
+                <div class="row mt-3 mb-3">
+
+                    <div class="col md-3 mb-3">
+                        <input type="hidden" name="id_contratos" value="<%= contrato.id_contratos %>">
+
+                        <div class="col md-3 mb-3">
+                            <label for="id_propietarios" class="form-label">Propietario</label>
+                            <input type="text" class="form-control" id="id_propietarios" name="id_propietarios"
+                                value="<%= contrato.id_propietarios %>" required>
+                        </div>
+                    </div>
+                    <div class=" col md-3 mb-3">
+                        <label for="id_inquilinos" class="form-label">Inquilinos</label>
+                        <input type="text" class="form-control" id="id_inquilinos" name="id_inquilinos"
+                            value="<%= contrato.id_inquilinos %>" required>
+                    </div>
+                    <div class="col md-3 mb-3">
+                        <label for="id_propiedades" class="form-label">Propiedades</label>
+                        <input type="text" class="form-control" id="id_propiedades" name="id_propiedades"
+                            value="<%= contrato.id_propiedades %>">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col md-3 mb-3">
+                        <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                        <input type="text" class="form-control" id="fecha_inicio" name="fecha_inicio"
+                            value="<%= contrato.fecha_inicio %>">
+                    </div>
+                    <!-- <div class="col md-3 mb-3">
+                        <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                        <input type="text" class="form-control" id="fecha_fin" name="fecha_fin"
+                            value="<%= contrato.fecha_fin %>">
+                    </div> -->
+                    <div class="col md-3 mb-3">
+                        <label for="duracion_cont" class="form-label">Duración Contrato</label>
+                        <input type="text" class="form-control" id="duracion_cont" name="duracion_cont"
+                            value="<%= contrato.duracion_cont %>">
+                    </div>
+
+                    <div class="col md-3 mb-3">
+                        <label for="precio_inicial" class="form-label">Precio Inicial</label>
+                        <input type="text" class="form-control" id="precio_inicial" name="precio_inicial"
+                            value="<%= contrato.precio_inicial %>">
+                    </div>
+
+                    <div class="col md-3 mb-3">
+                        <label for="precio_actual" class="form-label">Precio_actual</label>
+                        <input type="text" class="form-control" id="precio_actual" name="precio_actual"
+                            value="<%= contrato.precio_actual %>">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+
+
+                    <div class="col md-3 mb-3">
+                        <label for="honorarios" class="form-label">Honorarios</label>
+                        <input type="text" class="form-control" id="honorarios" name="honorarios"
+                            value="<%= contrato.honorarios %>">
+                    </div>
+                    <div class="col md-3 mb-3 mt-4 pt-2">
+                        <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
+                        <a href="/contratos" class="btn btn-secondary mt-3 w-75">Cancelar</a>
+                    </div>
+                </div>
+        </form>
+    </div>
+    <script>
+        function confirmarModificacion() {
+            return confirm("¿Está seguro que desea modificar este registro?");
+        }
+    </script>
+    <!-- <link rel="stylesheet" href="css/inquilinos.css"> -->
+</body>

@@ -1,0 +1,180 @@
+<body>
+
+    <div class="container mt-5">
+
+        <form class=class="row g-3 mt-5" action="/propietarios/insertar" method="POST"
+            onsubmit="return confirmaInsertar()">
+            <% if (typeof mensaje !=="undefined" && mensaje) { %>
+                <div class="alert alert-danger">
+                    <%= mensaje %>
+                </div>
+                <% } %>
+
+                    <div class="mt-5">
+                        <h1> <b> PROPIETARIOS</b></h1>
+                    </div>
+
+                    <div class="row mb-3 mt-5">
+
+                        <div class="col-md-4 mb-3">
+                            <label for="nombre" class="form-label"><b> Nombre</b></label>
+                            <input type="text" class="form-control" id="nombre" name="nombre"
+                                placeholder="Nombre del propietario" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="apellido" class="form-label"><b>Apellido</b></label>
+                            <input type="text" class="form-control" id="apellido" name="apellido"
+                                placeholder="Nombre del propietario" required>
+
+                        </div>
+                        <div class="col-md-4 mb-3"">
+                <label for=" dni" class="form-label"><b>DNI</b></label>
+                            <input type="text" class="form-control" id="dni" name="dni"
+                                placeholder="Dni del propietario" required> 
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="cuil" class="form-label"><b>Cuil</b></label>
+                            <input type="text" class="form-control" id="cuil" name="cuil"
+                                placeholder="Cuil del propietario">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="direccion" class="form-label"><b>Direccion</b></label>
+                            <input type="text" class="form-control" id="direccion" name="direccion"
+                                placeholder="Direccion del propietario">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="telefono" class="form-label"><b>Telefono</b></label>
+                            <input type="text" class="form-control" id="telefono" name="telefono"
+                                placeholder="Telefono del propietario">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="celular" class="form-label"><b>Celular</b></label>
+                            <input type="text" class="form-control" id="celular" name="celular"
+                                placeholder="Celular del propietario">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="correo_elec" class="form-label"><b>Correo Electrónico</b></label>
+                            <input type="email" class="form-control" id="correo_elec" name="correo_elec"
+                                placeholder="Correo del propietario">
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3 p-3 mt-1">
+                        <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                    </div>
+        </form>
+
+        <div class="container mt-3">
+            <div class="">
+                <hr style="border-color: blue;border-width: 3px;border-style: solid;">
+            </div>
+            <form class="row mt-3" action="/propietarios/buscar" method="POST">
+
+                <div class="col-md-4 mb-3">
+                    <input type="text" class="form-control bg-success p-2 text-dark bg-opacity-10;" id="prop"
+                        name="prop" placeholder="Buscar por apellido">
+                </div>
+                <div class="col-md-4 mb-3 ">
+                    <button type="submit" class="btn btn-warning w-100">Buscar</button>
+                </div>
+            </form>
+
+            <div class="mt-5">
+
+                <h1>PROPIETARIOS</h1>
+            </div>
+            <div class="container mt-5">
+
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-striped table-bordered border-primary">
+
+                            <thead>
+                                <tr>
+                                    <th class="text-primary" scope="col">ID</th>
+                                    <th class="text-primary" scope="col">Nombre</th>
+                                    <th class="text-primary" scope="col">Apellido</th>
+                                    <th class="text-primary" scope="col">DNI</th>
+                                    <th class="text-primary" scope="col">Cuil</th>
+                                    <th class="text-primary" scope="col">Direccion</th>
+                                    <th class="text-primary" scope="col">Telefono</th>
+                                    <th class="text-primary" scope="col">Celular</th>
+                                    <th class="text-primary" scope="col">Correo Electronico</th>
+                                    <th class="text-primary" scope="col">Editar</th>
+                                    <th class="text-primary" scope="col">Eliminar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% propietarios.forEach(function(propietario) { %>
+                                    <tr>
+                                        <td>
+                                            <%= propietario.id_propietarios %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.nombre %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.apellido %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.dni %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.cuil %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.direccion %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.telefono %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.celular %>
+                                        </td>
+                                        <td>
+                                            <%= propietario.correo_elec %>
+                                        </td>
+                                        <td>
+                                            <a href="/propietarios/editar/<%= propietario.id_propietarios %>"
+                                                class="btn btn-warning">Editar</a>
+                                        </td>
+                                        <td>
+                                            <form action="/propietarios/eliminar" method="POST" style="display:inline;">
+                                                <input type="hidden" name="id_propietarios"
+                                                    value="<%= propietario.id_propietarios %>">
+                                                <button type="submit" class="btn btn-danger"
+                                                    onclick="return confirm('¿Seguro que deseas eliminar este propietario?')">Eliminar</button>
+                                            </form>
+
+                                        </td>
+
+                                    </tr>
+                                    <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <link rel="stylesheet" href="/propietarios.css">
+                <script>
+                    function confirmaInsertar() {
+                        if (confirm("¿Desea guardar este propietario?")) {
+                            return true; // Envía el formulario
+                        } else {
+                            // Limpia todos los campos del formulario de inserción
+                            const form = document.querySelector('form[action="/propietario/insertar"]');
+                            if (form) {
+                                form.reset();
+                            }
+                            return false; // No envía el formulario
+                        }
+                    }
+                </script>
+</body>
+
+</html>

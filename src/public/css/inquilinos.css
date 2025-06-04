@@ -1,0 +1,12 @@
+body {background: rgb(236, 245, 232);
+      color: rgb(15, 15, 15);
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      text-align: center;
+      padding: 20px;
+}
+h1{
+      color: rgb(0, 102, 0);
+      font-size: 2em;
+      margin-bottom: 20px;
+}

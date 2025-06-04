@@ -1,0 +1,94 @@
+<div class="container mt-5">
+
+
+  <form action="/recibo_alquiler/buscar" method="POST" class="form-inline mb-3">
+
+    <div class="mt-5">
+      <h1><b>Buscar Recibos Inquilinos</b></h1>
+    </div>
+    <div class="row mt-5 mb-3">
+      <div class="col-md-6 mb-5 mt-4">
+        <label for="id_propiedades">
+          <h2><b>Propiedades</b></h2>
+        </label>
+        <select class="form-select" id="id_propiedades" name="id_propiedades" required>
+          <option value="">Seleccione una propiedad</option>
+          <% if (propiedades && propiedades.length> 0) { %>
+            <% propiedades.forEach(function(inquilino) { %>
+              <option value="<%= inquilino.id_propiedades %>">
+                <%= inquilino.direccion %>
+              </option>
+              <% }); %>
+                <% } %>
+        </select>
+      </div>
+      
+
+        <button type="submit" class="btn btn-success ">Buscar</button>
+
+      
+
+    </div>
+  </form>
+
+  <% if (recibos && recibos.length> 0) { %>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>N° Recibo</th>
+          <th>Fecha</th>
+          <th>Inquilino</th>
+          <th>Propietario</th>
+          <th>Monto</th>
+          <th>Meses Transcurridos</th>
+          <th>abl</th>
+          <th>aysa</th>
+          <th>Expensas</th>
+          <th>seguro</th>
+          <th>Total</th>
+          <!-- Agrega más columnas si lo necesitas -->
+        </tr>
+      </thead>
+      <tbody>
+        <% recibos.forEach(function(r) { %>
+          <tr>
+            <td>
+              <%= r.num_recibo %>
+            </td>
+            <td>
+              <%= r.fecha_actual %>
+            </td>
+            <td>
+              <%= r.apellido_inquilino %>
+            </td>
+            <td>
+              <%= r.apellido_propietario %>
+            </td>
+            <td>
+              <%= r.monto_mensual %>
+            </td>
+            <td>
+              <%= r.meses_transcurridos %>
+            </td>
+            <td>
+              <%= r.abl %>
+            </td>
+            <td>
+              <%= r.aysa %>
+            </td>
+            <td>
+              <%= r.expensas %>
+            </td>
+            <td>
+              <%= r.seguro %>
+            </td>
+            <td>
+              <%= r.total %>
+            </td>
+          </tr>
+          <% }) %>
+      </tbody>
+    </table>
+    <% } else if (typeof recibos !=="undefined" ) { %>
+      <div class="alert alert-info">No hay recibos para esta propiedad.</div>
+      <% } %>

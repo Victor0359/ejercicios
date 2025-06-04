@@ -1,0 +1,234 @@
+<div class="container mt-5">
+
+  
+
+  <form action="/recibo_inquilino/insertar" method="POST" 
+  <h1 class="mb-5 "><b> RECIBO INQUILINO</b></h1>
+  
+  
+  <% if (typeof mensaje !=="undefined" ) { %>
+    <div class="alert alert-warning">
+      <%= mensaje %>
+    </div>
+    <% } %>
+
+      <div class="row mb-3 mt-5">
+        <div class="col-md-4 mb-3">
+          <label for="numero_recibo" class="form-label"><b>Numero recibo</b></label>
+          <input type="text" class="auto-size form-control" id="numero_recibo" name="numero_recibo"
+            value="<%= numero_recibo %>" readonly />
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="fecha_actual" class="form-label"><b>Fecha actual</b></label>
+          <input type="text" class="auto-size form-control" id="fecha_actual" name="fecha_actual"
+            value="<%= fecha_actual %>" readonly />
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="id_propiedades" class="form-label "><b> Propiedad</b></label>
+          <select class="form-select" id="id_propiedades" name="id_propiedades" required>
+            <option value="">Seleccione una propiedad</option>
+            <% if (propiedades && propiedades.length> 0) { %>
+              <% propiedades.forEach(function(prop) { if (prop.direccion && prop.direccion.trim() !=="" ) { %>
+                <option value="<%= prop.id_propiedades %>">
+                  <%= prop.direccion %>
+                </option>
+                <% } }); %>
+                  <% } %>
+          </select>
+        </div>
+      </div>
+
+      <div class="row"">
+
+        <div class="col-md-4 mb-3">
+          <label for="apellidoInquilino" class="form-label"> <b> Inquilino</b></label>
+          <input type="text" class="form-control auto-size" id="apellidoInquilino" name="apellidoInquilino"
+            value="<%= apellidoInquilino %>" readonly>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="apellidoPropietario" class="form-label"> <b> Propietario</b></label>
+          <input type="text" class=" form-control auto-size" id="apellidoPropietario" name="apellidoPropietario"
+            value="<%= apellidoPropietario %>" readonly>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="meses_transcurridos" class="form-label "><b>Cuota</b></label>
+          <input type="hidden" class="form-control auto-size" id="fecha_inicio" name="fecha_inicio"
+            value="<%= fecha_inicio %>" readonly>
+          <input type="text" id="meses_transcurridos" class="form-control auto-size" name="meses_transcurridos"
+            readonly>
+        </div>
+
+      </div>
+
+      <div class="row">
+
+              <div class="col-md-4 mb-3">
+          <label for="monto_mensual" class="form-label"><b>Monto mensual</b></label>
+          <input type="text" class="form-control" id="monto_mensual" name="monto_mensual" value="<%= monto_mensual %>"
+            readonly>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label for="abl" class="form-label"><b>ABL</b></label>
+          <input type="text" class="form-control" id="abl" name="abl" value="<%= abl %>" readonly>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="exp_comunes" class="form-label"><b>Expensas comunes</b></label>
+          <input type="text" class="form-control" id="exp_comunes" name="exp_comunes" value="<%= exp_comunes %>"
+            readonly>
+        </div>
+      </div>
+      <div class="row">
+
+        <div class="col-md-4 mb-3">
+          <label for="aysa" class="form-label"><b>AYSA</b></label>
+          <input type="text" class="form-control" id="aysa" name="aysa" value="<%= aysa %>" readonly>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="seguro" class="form-label"><b>SEGURO</b></label>
+          <input type="text" class="form-control" id="seguro" name="seguro" value="<%= seguro %>" readonly>
+        </div>
+
+
+        <div class="col-md-4 mb-3">
+          <label for="total" class="form-label "><b>TOTAL</b></label>
+          <input type="text" class="form-control " id="total" name="total" readonly>
+        </div>
+      </div>
+      <div class=" mt-5 mr-2 no-print">
+        <button type="submit" class="btn btn-primary" id="btn-generar-recibo">Generar Recibo</button>
+        <a href="/recibo_inquilino" class="btn btn-secondary">Cancelar</a>
+
+
+        <a href="/recibo_alquiler/buscar" class="btn btn-secondary mr-2">Buscar Recibo</a>
+
+        <button type="button" class="btn btn-info ml-3" onclick="window.print()">Imprimir</button>
+      </div>
+</form>
+
+  <div class=" mt-3">
+    <p>Nota: Este recibo es un comprobante de pago y debe ser guardado por el inquilino.</p>
+  </div>
+
+  <!-- <div class="no-print mt-3">
+    <p>Para imprimir, haga clic en el botón "Imprimir" o use la función de impresión de su navegador.</p>
+  </div> -->
+  
+</div>
+
+<style>
+  @media print {
+    @page {
+      size: 210mm 149mm landscape;
+      margin: 10mm;
+    }
+
+    html, body {
+      width: 210mm;
+      height: 149mm;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      /* Centrar vertical y horizontalmente */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    form {
+      /* Escalar el formulario al 70% y centrar */
+      transform: scale(0.7);
+      transform-origin: center center;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .row {
+      justify-content: center !important;
+      display: flex !important;
+    }
+
+    .no-print, .no-print * {
+      display: none !important;
+    }
+  }
+</style>
+<script>
+  function mesesEntreFechas(fecha_inicio) {
+    if (!fecha_inicio) return '';
+    const inicio = new Date(fecha_inicio);
+    const hoy = new Date();
+    let meses = (hoy.getFullYear() - inicio.getFullYear()) * 12;
+    meses += hoy.getMonth() - inicio.getMonth();
+    if (hoy.getDate() < inicio.getDate()) {
+      meses--;
+    }
+    return meses >= 0 ? meses : 0;
+  }
+
+  document.getElementById('id_propiedades').addEventListener('change', function () {
+    const id = this.value;
+    if (!id) return;
+    fetch(`/api/datos_propiedad?id_propiedades=${id}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('apellidoInquilino').value = data.apellidoInquilino || '';
+        document.getElementById('apellidoPropietario').value = data.apellidoPropietario || '';
+        document.getElementById('fecha_inicio').value = data.fecha_inicio || '';
+        document.getElementById('meses_transcurridos').value = mesesEntreFechas(data.fecha_inicio || '');
+        document.getElementById('monto_mensual').value = data.monto_mensual || '';
+        document.getElementById('exp_comunes').value = data.exp_comunes || '';
+        document.getElementById('abl').value = data.abl || '';
+        document.getElementById('aysa').value = data.aysa || '';
+        document.getElementById('seguro').value = data.seguro || '';
+        document.getElementById('total').value = data.total || '';
+      });
+  });
+</script>
+<script>
+  function mesesEntreFechas(fecha_inicio) {
+    const inicio = new Date(fecha_inicio);
+    const hoy = new Date();
+    let meses = (hoy.getFullYear() - inicio.getFullYear()) * 12;
+    meses += hoy.getMonth() - inicio.getMonth();
+    if (hoy.getDate() < inicio.getDate()) {
+      meses--;
+    }
+    return meses >= 0 ? meses : 0;
+  }
+
+  window.addEventListener('DOMContentLoaded', function () {
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    document.getElementById('meses_transcurridos').value = mesesEntreFechas(fechaInicio);
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector('form[action="/recibo_inquilino/insertar"]');
+    const btn = document.getElementById("btn-generar-recibo");
+    if (form && btn) {
+      btn.addEventListener("click", function (e) {
+        const confirmar = confirm("¿Desea insertar el recibo?");
+        if (!confirmar) {
+          e.preventDefault();
+        }
+      });
+    }
+  });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,17 @@
+body {background: rgb(223, 209, 212);
+      color: black;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      text-align: center;
+      padding: 20px;
+}
+label{
+    color:blue;
+}
+h1{ text-align: center;
+    color: black;
+    font-size: 2em;
+    margin-bottom: 20px;
+    text-decoration: underline;
+
+}

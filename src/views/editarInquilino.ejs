@@ -1,0 +1,71 @@
+<body>
+
+    <div class="contenedor mt-5">
+        <action=" /inquilinos/modificar" method="POST" onsubmit="return confirmarModificacion();">
+            <h2>Editar Inquilino</h2>
+            <input type="hidden" name="id_inquilinos" value="<%= inquilino.id_inquilinos %>">
+
+            <div class="row mt-5 mb-3">
+                <div class="col md-4 mb-3">
+                    <label for="nombre" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" value="<%= inquilino.nombre%>"
+                        required>
+                </div>
+                <div class="col md-4 mb-3">
+                    <label for="apellido" class="form-label">Apellido</label>
+                    <input type="text" class="form-control" id="apellido" name="apellido"
+                        value="<%= inquilino.apellido %>" required>
+                </div>
+                <div class="col md-4 mb-3">
+                    <label for="dni" class="form-label">Dni</label>
+                    <input type="text" class="form-control" id="dni" name="dni" value="<%= inquilino.dni %>">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col md-4 mb-3">
+                    <label for="cuit" class="form-label">Cuil</label>
+                    <input type="text" class="form-control" id="cuit" name="cuit" value="<%= inquilino.cuil %>">
+                </div>
+
+                <div class="col md-4 mb-3">
+                    <label for="direccion" class="form-label">Dirección</label>
+                    <input type="text" class="form-control" id="direccion" name="direccion"
+                        value="<%= inquilino.direccion %>">
+                </div>
+
+                <div class="col md-4 mb-3">
+                    <label for="telefono" class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="telefono" name="telefono"
+                        value="<%= inquilino.telefono %>">
+                </div>
+            </div>
+            <div class="row mb-3">
+            <div class="col md-4 mb-3">
+                <label for="celular" class="form-label">Celular</label>
+                <input type="text" class="form-control" id="celular" name="celular" value="<%= inquilino.celular %>">
+            </div>
+
+            <div class="col md-4 mb-3">
+                <label for="correo_elec" class="form-label">Email</label>
+                <input type="email" class="form-control" id="correo_elec" name="correo_elec"
+                    value="<%= inquilino.correo_elec %>">
+            </div>
+            <div class="col md-4 mt-4 p-2">
+            <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
+            </div>
+            <div class="row">
+            <div class="col md-6 "></div>
+                <a href="/inquilinos" class="btn btn-secondary mt-5 w-30">Cancelar</a>
+            </div>
+            </div>
+            </div>
+
+    </form>
+</div>
+            <script>
+                function confirmarModificacion() {
+                    return confirm("¿Está seguro que desea modificar este registro?");
+                }
+            </script>
+            <link rel="stylesheet" href="/css/inquilinos.css">
+</body>
