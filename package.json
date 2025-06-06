@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon src/app.js"
-  },
-  "keywords": [],
+    "dev": "nodemon src/app.js",
+    "build": "babel src -d lib",
+    "test": "jest"  },
+   "keywords": [],
   "author": "Victor Hugo",
   "license": "ISC",
   "description": "Prueba de Node.js con MariaDB",
@@ -21,7 +22,9 @@
     "mariadb": "^3.4.2"
   },
   "devDependencies": {
+   "jest": "^29.0.0",
     "morgan": "^1.10.0",
     "nodemon": "^3.1.10"
   }
+  
 }
