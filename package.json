@@ -6,8 +6,9 @@
     "dev": "nodemon src/app.js",
     "build": "babel src -d lib",
     "test": "jest",
-     "name": "my-package"
-    
+     "name": "my-package",
+     
+  "start": "node index.js"
  
   
   },
