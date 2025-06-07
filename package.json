@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "build": "babel src -d lib",
-    "test": "jest"
+    "test": "jest",
+     "name": "my-package"
+    
+ 
+  
   },
   "keywords": [],
   "author": "Victor Hugo",
