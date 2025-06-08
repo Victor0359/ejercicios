@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/app.js",
-    "build": "babel src -d lib",
+    "dev": "nodemon src/index.js",
+    "build-project": "node build-project.js",
     "test": "jest",
     "name": "my-package",
-    "start": "node index.js"
+    "start":"nodemon src/index.js"
   },
   "keywords": [],
   "author": "Victor Hugo",
@@ -28,6 +28,10 @@
   "devDependencies": {
     "jest": "^29.7.0",
     "morgan": "^1.10.0",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "package-2": "^0.4.2"
   }
+  
 }
+
+

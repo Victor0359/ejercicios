@@ -12,7 +12,7 @@ const contratos = require("./contratos");
 const recibo_contrato = require("./recibo_contrato");
 
 const app = express();
-app.set("port", 3001);
+app.set("port", 8080);
 app.listen(app.get("port"));
 console.log(`El servidor corre por el puerto ${app.get("port")}`);
 
