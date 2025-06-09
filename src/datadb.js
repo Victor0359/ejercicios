@@ -1,4 +1,3 @@
-//import mariadb from mariadb;
 const pg= require('pg');
 
 
