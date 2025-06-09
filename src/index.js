@@ -12,10 +12,10 @@ const contratos = require("./contratos");
 const recibo_contrato = require("./recibo_contrato");
 
 const app = express();
-app.set("port", 5432);
-app.listen(app.get("port"));
-console.log(`El servidor corre por el puerto ${app.get("port")}`);
-
+const port =process.env.PORT || 4000 
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
