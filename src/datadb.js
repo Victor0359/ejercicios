@@ -1,12 +1,12 @@
 //import mariadb from mariadb;
-const mariadb= require('mariadb');
+const pg= require('pg');
 
 
-const pool = mariadb.createPool({
-    host: 'localhost', // IP de la base de datos
-    user: 'root', // Usuario de la base de datos           
-    password: 'victor9530', // Contraseña de la base de datos
-    database: 'alquileres',
+const pool = pg.createPool({
+    host: 'dpg-d10a6r2li9vc73dkq9t0-a.oregon-postgres.render.com', // IP de la base de datos
+    user: 'alquileres_1kec_user', // Usuario de la base de datos           
+    password: 'TAuI9t1Gw4sXuiTGj3UHQDM6lx7RDkeP', // Contraseña de la base de datos
+    database: 'alquilers_1Kec',
     charset: 'utf8mb4', // Nombre de la base de datos
     connectionLimit: 5,
     port: 3306, // Puerto de la base de datos
