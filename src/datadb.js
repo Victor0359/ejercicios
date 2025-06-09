@@ -9,7 +9,7 @@ const pool = pg.createPool({
     database: 'alquilers_1Kec',
     charset: 'utf8mb4', // Nombre de la base de datos
     connectionLimit: 5,
-    port: 3306, // Puerto de la base de datos
+    port:5432, // Puerto de la base de datos
 
 });
 
