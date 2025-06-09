@@ -12,7 +12,7 @@
   "keywords": [],
   "author": "Victor Hugo",
   "license": "ISC",
-   "dependencies": {
+  "dependencies": {
     "20": "^3.1.9",
     "@popperjs/core": "2.11",
     "bcryptjs": "^3.0.2",
