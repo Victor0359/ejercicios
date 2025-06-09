@@ -12,8 +12,7 @@
   "keywords": [],
   "author": "Victor Hugo",
   "license": "ISC",
-  "description": "Prueba de Node.js con MariaDB",
-  "dependencies": {
+   "dependencies": {
     "20": "^3.1.9",
     "@popperjs/core": "2.11",
     "bcryptjs": "^3.0.2",
