@@ -1,14 +1,12 @@
 const { Pool } = require('pg');
+const dontenv = require('dotenv');
 
 
-const pool = new Pool({
-    host: 'TAuI9t1Gw4sXuiTGj3UHQDM6lx7RDkeP@dpg-d10a6r2li9vc73dkq9t0-a.oregon-postgres.render.com',
-    user: 'alquileres_1kec_user',
-    password: 'TAuI9t1Gw4sXuiTGj3UHQDM6lx7RDkeP',
-    database: 'alquilers_1Kec',
-    port: 5432,
-    ssl: { rejectUnauthorized: false }
-});
+const pool = new Pool({ connectionString: process.env.DATABASE_URL}, 
+   
+    ssl= { rejectUnauthorized: false }
+);
+
 
 async function conectar() {
    try {
