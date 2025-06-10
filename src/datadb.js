@@ -14,7 +14,7 @@ const pool = new Pool ({
 
 async function conectar() {
    try {
-    const conn = await pool.getConnection();
+    const conn = await pool.connect();
     await conn.query("SET NAMES utf8mb4"); // <-- Fuerza el charset en cada conexión
     console.log("Conexión exitosa!");
     return conn;
