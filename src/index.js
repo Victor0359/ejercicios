@@ -12,7 +12,7 @@ const contratos = require("./contratos");
 const recibo_contrato = require("./recibo_contrato");
 
 const app = express();
-const port =process.env.PORT || 4000 
+const port = 3000
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
