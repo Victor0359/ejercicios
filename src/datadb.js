@@ -1,29 +1,20 @@
 const { Pool } = require('pg');
+require('dotenv').config();
 
-// Conexión para Render.com (PostgreSQL)
+// Configuración optimizada para Render
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Obligatorio en Render
+  connectionString: `postgres://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASSWORD)}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`,
+  ssl: { 
+    rejectUnauthorized: false 
   }
 });
 
-// Función de prueba de conexión
-async function testConnection() {
-  const client = await pool.connect();
-  try {
-    const res = await client.query('SELECT NOW()');
-    console.log('✅ Conexión exitosa. Hora DB:', res.rows[0].now);
-    return true;
-  } finally {
-    client.release(); // Liberar el cliente
-  }
-}
-
-// Ejecutar prueba al iniciar
-testConnection().catch(err => {
-  console.error('❌ Error DE CONEXIÓN REAL:', err);
-  process.exit(1); // Mata el proceso si falla (opcional)
-});
+// Test de conexión automático (opcional)
+pool.connect()
+  .then(client => {
+    console.log('✅ Conexión exitosa a PostgreSQL');
+    client.release();
+  })
+  .catch(err => console.error('❌ Error de conexión:', err));
 
 module.exports = pool;
