@@ -1,45 +1,29 @@
 const { Pool } = require('pg');
-require('dotenv').config(); // Corregido typo y añadido config()
 
+// Conexión para Render.com (PostgreSQL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { // Corregida sintaxis del SSL
-    rejectUnauthorized: false
+  ssl: {
+    rejectUnauthorized: false // Obligatorio en Render
   }
 });
 
-// Verificación de conexión mejorada
+// Función de prueba de conexión
 async function testConnection() {
-  let client;
+  const client = await pool.connect();
   try {
-    client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
-    console.log("✅ Conexión exitosa. Hora actual de la DB:", result.rows[0].now);
+    const res = await client.query('SELECT NOW()');
+    console.log('✅ Conexión exitosa. Hora DB:', res.rows[0].now);
     return true;
-  } catch (err) {
-    console.error("❌ Error de conexión:", err);
-    return false;
   } finally {
-    if (client) client.release();
+    client.release(); // Liberar el cliente
   }
 }
 
-// Función de conexión para usar en la app
-async function conectar() {
-  try {
-    const client = await pool.connect();
-    await client.query("SET timezone = 'UTC';"); // Mejor que SET NAMES para PostgreSQL
-    return client;
-  } catch (err) {
-    console.error("Error al obtener cliente:", err);
-    throw err;
-  }
-}
+// Ejecutar prueba al iniciar
+testConnection().catch(err => {
+  console.error('❌ Error DE CONEXIÓN REAL:', err);
+  process.exit(1); // Mata el proceso si falla (opcional)
+});
 
-// Testear la conexión al iniciar
-testConnection();
-
-module.exports = { conectar, pool }; // Exportamos pool por si necesitas queries directas
-
-
-
+module.exports = pool;
