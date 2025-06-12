@@ -15,14 +15,6 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get('/', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.send(`<h1>Conexión exitosa</h1><p>Hora del servidor: ${result.rows[0].now}</p>`);
-  } catch (err) {
-    res.status(500).send(`<h1>Error</h1><pre>${err.stack}</pre>`);
-  }
-});
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
