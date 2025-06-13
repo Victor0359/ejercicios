@@ -3,7 +3,7 @@ const database = require("./datadb");
 async function obtenerInquilinosPorDni(dni) {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     return await conn.query("SELECT * FROM inquilinos WHERE dni = ?", [dni]);
   } catch (err) {
     console.error("Error al buscar inquilinos por DNI:", err);
@@ -15,7 +15,7 @@ async function obtenerInquilinosPorDni(dni) {
 async function obtenerInquilinos(filtro) {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     if (filtro) {
       return await conn.query("SELECT * FROM inquilinos WHERE apellido LIKE ?", [`%${filtro}%`]);
     } else {
@@ -30,7 +30,7 @@ async function obtenerInquilinos(filtro) {
 async function obtenerInquilinosOrdenados() {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     const resultado = await conn.query("SELECT * FROM inquilinos order by apellido asc");
     
     return resultado;
@@ -45,7 +45,7 @@ async function obtenerInquilinosOrdenados() {
 async function agregarInquilino(datos) {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     const sql = "INSERT INTO inquilinos (nombre, apellido, dni, cuit, direccion, telefono, celular, correo_elec) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"; 
     const resultado= await conn.query (sql,[datos.nombre,
         datos.apellido,
@@ -67,7 +67,7 @@ async function agregarInquilino(datos) {
 async function eliminarInquilino({ id_inquilinos }) {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     const sql = "DELETE FROM inquilinos WHERE id_inquilinos = ?";
     const resultado = await conn.query(sql, [id_inquilinos]);
     return resultado;
@@ -81,7 +81,7 @@ async function eliminarInquilino({ id_inquilinos }) {
 async function modificarInquilino(datos) {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     const sql = 'UPDATE inquilinos SET nombre = ?,apellido = ?,dni = ?,cuit = ?,direccion = ?,telefono = ?,celular = ?,correo_elec = ? WHERE id_inquilinos = ?'; 
     const resultado= await conn.query (sql,[datos.nombre,
         datos.apellido,
@@ -103,7 +103,7 @@ async function modificarInquilino(datos) {
 async function obtenerInquilinoPorId(id) {
   let conn;
   try {
-    conn = await database.conectar();
+    conn = await database.connect();
     const resultado = await conn.query("SELECT * FROM inquilinos WHERE id_inquilinos = ?", [id]);
     return resultado[0];
   } catch (err) {
