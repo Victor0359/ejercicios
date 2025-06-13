@@ -24,6 +24,7 @@ app.listen(PORT, () => {
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
+app.use(express.json());
 app.use(express.static (path.join(__dirname, 'public')));
 app.use(expressEjsLayouts);
 app.set("layout", "layout");
@@ -186,24 +187,25 @@ app.get("/propietarios", async (req, res) => {
 
 
  
-app.get("/propietarios/editar/:id", async (req, res) => {
-  const id = req.params.id;
-   
+app.put('/propietarios/editar/:id', async (req, res) => {
+  console.log("🚀 Entrando a la ruta /propietarios/editar con ID:", req.params.id, "y datos:", req.body);
 
-  try { 
-    const propietario = await propietarios.obtenerPropietariosPorId(id);
-    if (propietario) {
-      // Si tu función devuelve un array, usa propietario[0]
-      res.render("editarPropietario", { propietario: Array.isArray(propietario) ? propietario[0] : propietario });
-    } else {
-      res.status(404).send("Propietario no encontrado");
-    }
+  const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
+  const { id } = req.params;
+
+  try {
+    const resultado = await database.query(
+      "UPDATE propietarios SET nombre = $1, apellido = $2, dni = $3, cuil = $4, direccion = $5, telefono = $6, celular = $7, correo_elec = $8 WHERE id_propietarios = $9 RETURNING *",
+      [nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec, id]
+    );
+
+    console.log("✅ Propietario actualizado:", resultado.rows);
+    res.json(resultado.rows.length > 0 ? resultado.rows[0] : { error: "Propietario no encontrado" });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al buscar el propietario");
+    console.error("❌ Error al editar propietario:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-
 app.post('/propietarios/porId', async (req, res) => {
   console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
   
@@ -247,22 +249,20 @@ if (resultado && resultado.affectedRows > 0) {
   res.status(500).send("Error al modificar propietario");
 }
 });
-app.post("/propietarios/eliminar", async (req, res) => {
-const {id_propietarios} = req.body;
-try{
-const resultado = await propietarios.eliminarPropietarios({id_propietarios});
+app.delete('/propietarios/eliminar/:id', async (req, res) => {
+  console.log("🚀 Entrando a la ruta /propietarios/eliminar con ID:", req.params.id);
 
-if (resultado && resultado.affectedRows > 0) {
-  res.redirect("/propietarios");
-  
-} else {
-  res.status(404).json({ message: "Propietario no eliminado" });
-}
+  const { id } = req.params;
 
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al eliminar propietario");
-}
+  try {
+    const resultado = await database.query("DELETE FROM propietarios WHERE id_propietarios = $1 RETURNING *", [id]);
+
+    console.log("✅ Propietario eliminado:", resultado.rows);
+    res.json(resultado.rows.length > 0 ? { mensaje: "Propietario eliminado correctamente" } : { error: "Propietario no encontrado" });
+  } catch (err) {
+    console.error("❌ Error al eliminar propietario:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
 });
 app.post("/propietarios/insertar", async (req, res) => {
   const {nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec} = req.body;
