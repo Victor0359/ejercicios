@@ -75,6 +75,7 @@ app.post ("/inquilinos", async (req, res) => {
 app.post("/inquilinos/porId", async (req, res) => {
 const inquilino = req.body.id_inquilinos;
 const resultado = await inquilinos.obtenerInquilinoPorId(inquilino);
+console.log ("Inquilino buscado por ID:", inquilino);
 console.log(resultado);
 if (resultado) {
   res.status(200).json(resultado);    
@@ -99,6 +100,7 @@ app.get("/inquilinos/editar/:id", async (req, res) => {
 });
 app.post("/inquilinos/modificar", async (req, res) => {
 const {nombre,apellido,dni,cuit,direccion,telefono,celular,correo_elec,id_inquilinos} = req.body;
+console.log (req.body);
 try{
 const resultado = await inquilinos.modificarInquilino({nombre,apellido,dni,cuit,direccion,telefono,celular,correo_elec,id_inquilinos});
 
