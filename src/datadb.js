@@ -9,9 +9,9 @@ pool.query('SELECT 1')
   .then(() => console.log('✅ Conexión exitosa'))
   .catch(err => console.error('❌ Error:', err));
 
-  pool.query('SELECT * FROM propietarios LIMIT 1')
-  .then(res => console.log("✅ Datos obtenidos:", res.rows))
-  .catch(err => console.error("❌ Error en consulta:", err));
+  // pool.query('SELECT * FROM propietarios LIMIT 1')
+  // .then(res => console.log("✅ Datos obtenidos:", res.rows))
+  // .catch(err => console.error("❌ Error en consulta:", err));
 
 
 //Configuración optimizada para Render

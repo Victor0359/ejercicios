@@ -14,7 +14,7 @@ require("dotenv").config();
 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ||10000;
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
@@ -183,8 +183,13 @@ app.get("/propietarios", async (req, res) => {
     res.status(500).send("Error al cargar propietarios");
   }
 });
+
+
+ 
 app.get("/propietarios/editar/:id", async (req, res) => {
   const id = req.params.id;
+   
+
   try { 
     const propietario = await propietarios.obtenerPropietariosPorId(id);
     if (propietario) {
@@ -198,17 +203,32 @@ app.get("/propietarios/editar/:id", async (req, res) => {
     res.status(500).send("Error al buscar el propietario");
   }
 });
-app.post("/propietarios/porId", async (req, res) => {
-const propietario = req.body.id_propietarios;
-const resultado = await propietarios.obtenerPropietariosPorId(propietario);
 
-console.log(resultado);
-if (resultado) {
-  res.status(200).json(resultado);    
-}else {
-  res.status(404).json({ message: "Propietario no encontrado" }); 
-}
+app.post('/propietarios/porId', async (req, res) => {
+  console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
+  
+  const { id } = req.body;
+  if (!id) {
+    return res.status(400).json({ error: "ID no proporcionado" });
+  }
+
+  try {
+    const resultado = await database.query(
+      "SELECT * FROM propietarios WHERE id_propietarios = $1", [id]
+    );
+    console.log("✅ Resultado de la consulta:", resultado.rows);
+
+    if (resultado.rows.length > 0) {
+      res.json(resultado.rows[0]);
+    } else {
+      res.status(404).json({ error: "Propietario no encontrado" });
+    }
+  } catch (err) {
+    console.error("❌ Error al obtener propietario por ID:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
 });
+
 app.post("/propietarios/modificar", async (req, res) => {
 const {nombre,apellido,dni,cuil,direccion,telefono,celular,correo_elec,id_propietarios} = req.body;
 try{
@@ -272,6 +292,7 @@ app.post("/propietarios/insertar", async (req, res) => {
 });
 app.post('/propietarios/buscar', async (req, res) => {
   const prop = req.body.prop; // o el campo que corresponda
+  console.log("Datos recibidos para buscar propietarios:", prop);
  try{
   const resultado = await propietarios.obtenerPropietarios(prop);
  
