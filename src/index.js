@@ -176,6 +176,7 @@ app.post("/inquilinos/insertar", async (req, res) => {
 app.get("/propietarios", async (req, res) => {
   try {
     const prop = await propietarios.obtenerPropietarios(); // <--- sin 
+    console.log("Propietarios obtenidos:", prop);
     res.render("propietarios", { propietarios: prop });
   } catch (err) {
     console.error(err);
