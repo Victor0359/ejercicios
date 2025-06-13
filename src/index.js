@@ -36,6 +36,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 //nodem
 app.use(morgan("dev"));
+
+app.post('/api-test', async (req, res) => {
+  try {
+    const result = await testAPIIsWriting();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message,
+      hint: "Verifica COMMIT y SSL"
+    });
+  }
+});
 // ------------------  inquilinos ----------------------
 
 app.get("/inquilinos", async (req, res) => {
