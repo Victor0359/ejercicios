@@ -8,7 +8,8 @@ async function obtenerPropietarios(datos) {
   try {
     if (datos && datos.trim() !== "") {
       const resultado = await database.query(
-        "SELECT * FROM propietarios WHERE apellido LIKE $1 ORDER BY apellido ASC", [`%${datos}%`]
+        "SELECT * FROM propietarios WHERE apellido ILIKE '%' || $1 || '%'",
+        [datos]
       );
       return resultado.rows; // Devuelve los registros correctamente
     }
