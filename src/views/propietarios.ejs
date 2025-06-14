@@ -9,7 +9,7 @@
                     <%= mensaje %>
                 </div>
                 <% } %>
-                    <% if (eliminado) { %>
+                    <% if (typeof eliminado !=="undefined" && eliminado) { %>
                         <div class="alert alert-success">
                             Propietario eliminado correctamente.
                         </div>
