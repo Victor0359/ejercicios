@@ -11,6 +11,8 @@ const impuestos = require("./impuestos");
 const contratos = require("./contratos");
 const recibo_contrato = require("./recibo_contrato");
 require("dotenv").config();
+const cors = require('cors');
+app.use(cors());
 
 
 const app = express();
@@ -187,7 +189,7 @@ app.get("/propietarios", async (req, res) => {
 
 
  
-app.put('/propietarios/editar/:id', async (req, res) => {
+app.post('/propietarios/editar/:id', async (req, res) => {
   // console.log("🚀 Entrando a la ruta /propietarios/editar con ID:", req.params.id, "y datos:", req.body);
 
   const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
