@@ -12,7 +12,6 @@ const contratos = require("./contratos");
 const recibo_contrato = require("./recibo_contrato");
 require("dotenv").config();
 const cors = require('cors');
-app.use(cors());
 
 
 const app = express();
@@ -23,6 +22,7 @@ app.listen(PORT, () => {
 });
 
 
+
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
@@ -30,6 +30,7 @@ app.use(express.json());
 app.use(express.static (path.join(__dirname, 'public')));
 app.use(expressEjsLayouts);
 app.set("layout", "layout");
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.render("inicio");
