@@ -9,6 +9,12 @@
                     <%= mensaje %>
                 </div>
                 <% } %>
+                 <% if (req.query.eliminado) { %>
+                                                <div class="alert alert-success">
+                                                    Propietario eliminado correctamente.
+                                                </div>
+                                                <% } %>
+
 
                     <div class="mt-5">
                         <h1> <b> PROPIETARIOS</b></h1>
@@ -149,12 +155,7 @@
                                                 <button type="submit" class="btn btn-danger"
                                                     onclick="return confirm('¿Seguro que deseas eliminar este propietario?')">Eliminar</button>
                                             </form>
-                                            <% if (req.query.eliminado) { %>
-                                                <div class="alert alert-success">
-                                                    Propietario eliminado correctamente.
-                                                </div>
-                                                <% } %>
-
+                                           
 
                                         </td>
 
