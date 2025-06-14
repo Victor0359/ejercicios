@@ -252,20 +252,24 @@ if (resultado && resultado.affectedRows > 0) {
 }
 });
 app.post('/propietarios/eliminar/:id', async (req, res) => {
-  // console.log("🚀 Entrando a la ruta /propietarios/eliminar con ID:", req.params.id);
+    console.log("📌 Recibiendo solicitud en /propietarios/eliminar con ID:", req.params.id);
 
-  const { id } = req.params;
-  console.log("Recibiendo ID:", req.params);
-  try {
-    const resultado = await propietarios.eliminarPropietarios({ id });
+    const { id } = req.params;
+    if (!id) {
+        return res.status(400).json({ error: "Falta el ID en la solicitud" });
+    }
 
-    console.log("✅ Propietario eliminado:", resultado.rows);
-    res.json(resultado.rows.length > 0 ? { mensaje: "Propietario eliminado correctamente" } : { error: "Propietario no encontrado" });
-  } catch (err) {
-    console.error("❌ Error al eliminar propietario:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
+    try {
+        const resultado = await propietarios.eliminarPropietarios({ id });
+        res.json(resultado.rows.length > 0 ? 
+            { mensaje: "Propietario eliminado correctamente" } : 
+            { error: "Propietario no encontrado" });
+    } catch (err) {
+        console.error("❌ Error al eliminar propietario:", err);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
 });
+
 app.post("/propietarios/insertar", async (req, res) => {
   const {nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec} = req.body;
   try {
