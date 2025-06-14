@@ -267,9 +267,11 @@ if (!Array.isArray(resultado) || resultado.length === 0) {
     return res.status(404).json({ mensaje: "Propietario no encontrado" });
 }
 
-res.json({ mensaje: "Propietario eliminado correctamente" });
+res.redirect('/propietarios?eliminado=1');
 
-res.json({ mensaje: "Propietario eliminado correctamente" });
+res.render('propietarios', { propietarios: resultado.rows });
+
+
     } catch (err) {
         console.error("❌ Error al eliminar propietario:", err);
         res.status(500).json({ error: "Error interno del servidor" });

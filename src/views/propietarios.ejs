@@ -149,6 +149,11 @@
                                                 <button type="submit" class="btn btn-danger"
                                                     onclick="return confirm('¿Seguro que deseas eliminar este propietario?')">Eliminar</button>
                                             </form>
+                                            <% if (req.query.eliminado) { %>
+                                                <div class="alert alert-success">
+                                                    Propietario eliminado correctamente.
+                                                </div>
+                                                <% } %>
 
 
                                         </td>
