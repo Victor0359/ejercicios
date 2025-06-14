@@ -160,10 +160,11 @@
                                     </tr>
 
                                     <% }); %>
-                                        <tr>
-                                            <td colspan="5">No hay propietarios para mostrar.</td>
-                                        </tr>
-                                        <% } %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="5">No hay propietarios para mostrar.</td>
+                                            </tr>
+                                            <% } %>
                             </tbody>
                         </table>
                     </div>
