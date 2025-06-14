@@ -114,59 +114,56 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% propietarios.forEach(function(propietario) { %>
-                                    <tr>
-                                        <td>
-                                            <%= propietario.id_propietarios %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.nombre %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.apellido %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.dni %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.cuil %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.direccion %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.telefono %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.celular %>
-                                        </td>
-                                        <td>
-                                            <%= propietario.correo_elec %>
-                                        </td>
-                                        <td>
-                                            <a href="/propietarios/editar/<%= propietario.id_propietarios %>"
-                                                class="btn btn-warning">Editar</a>
-                                        </td>
-                                        <td>
-                                            <form action="/propietarios/eliminar/<%= propietario.id_propietarios %>"
-                                                method="POST" style="display:inline;">
-                                                <button type="submit" class="btn btn-danger"
-                                                    onclick="return confirm('¿Seguro que deseas eliminar este propietario?')">Eliminar</button>
-                                            </form>
+                                <% if (propietarios && propietarios.length> 0) { %>
+                                    <% propietarios.forEach(function(propietario) { %>
+                                        <tr>
+                                            <td>
+                                                <%= propietario.id_propietarios %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.nombre %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.apellido %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.dni %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.cuil %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.direccion %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.telefono %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.celular %>
+                                            </td>
+                                            <td>
+                                                <%= propietario.correo_elec %>
+                                            </td>
+                                            <td>
+                                                <a href="/propietarios/editar/<%= propietario.id_propietarios %>"
+                                                    class="btn btn-warning">Editar</a>
+                                            </td>
+                                            <td>
+                                                <form action="/propietarios/eliminar/<%= propietario.id_propietarios %>"
+                                                    method="POST" style="display:inline;">
+                                                    <button type="submit" class="btn btn-danger"
+                                                        onclick="return confirm('¿Seguro que deseas eliminar este propietario?')">Eliminar</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <% }); %>
+                                            <% } else { %>
+                                                <tr>
+                                                    <td colspan="11" class="text-center">No hay propietarios para
+                                                        mostrar.</td>
+                                                </tr>
+                                                <% } %>
 
-
-                                        </td>
-
-                                    </tr>
-
-                                    <% }); %>
-                                        <% } else { %>
-                                            <tr>
-                                                
-                                                <td colspan="10">No hay propietarios para mostrar.</td>
-                                            
-                                           </tr>
-                                            <% } %> 
                             </tbody>
                         </table>
                     </div>
