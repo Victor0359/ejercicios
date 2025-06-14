@@ -310,6 +310,10 @@ app.post('/propietarios/buscar', async (req, res) => {
   console.log("Datos recibidos para buscar propietarios:", prop);
  try{
   const resultado = await propietarios.obtenerPropietarios(prop);
+  const eliminado = req.query.eliminado === '1';
+    res.render('propietarios', {
+        propietarios: resultado.rows,
+        eliminado});
   
   res.render('propietarios', { propietarios: resultado });
   } catch (err) {
