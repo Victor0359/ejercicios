@@ -261,17 +261,21 @@ app.post('/propietarios/eliminar/:id', async (req, res) => {
 
     try {
         console.log("🔍 Eliminando propietario con ID:", id);
-        const resultado = await propietarios.eliminarPropietarios({ id });
+     const resultado = await propietarios.eliminarPropietarios({ id });
 
-        console.log("🔎 Resultado de la eliminación:", resultado);
-        res.json(resultado.rows.length > 0 ? 
-            { mensaje: "Propietario eliminado correctamente" } : 
-            { error: "Propietario no encontrado" });
+if (!Array.isArray(resultado) || resultado.length === 0) {
+    return res.status(404).json({ mensaje: "Propietario no encontrado" });
+}
+
+res.json({ mensaje: "Propietario eliminado correctamente" });
+
+res.json({ mensaje: "Propietario eliminado correctamente" });
     } catch (err) {
         console.error("❌ Error al eliminar propietario:", err);
         res.status(500).json({ error: "Error interno del servidor" });
-    }
-});
+    }   
+    
+  });
 
 
 app.post("/propietarios/insertar", async (req, res) => {
@@ -401,7 +405,7 @@ if (resultado && resultado.affectedRows > 0) {
 }
 });
 app.post("/propiedades/insertar", async (req, res) => {
-const {direccion, localidad, propietario,impuesto} = req.body;
+const {direccion, localidad, propietario,impuesto} = req.body;  
 try{
 const resultado = await propiedades.agregarPropiedades({direccion, localidad, propietario,impuesto});
 
@@ -413,7 +417,7 @@ if (resultado && resultado.affectedRows > 0) {
   res.status(404).json({ message: "Propiedad no insertada" });
 }
 
-}catch (err) {
+}catch (err) {  
   console.error( err);
   res.status(500).send("Error al insertar propiedad");
 }
@@ -931,3 +935,4 @@ app.get("/inicio", (req, res) => {
 app.get("/login", (req, res) => {
   res.render("login");
 });
+    

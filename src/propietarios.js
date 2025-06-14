@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 
+
 async function obtenerPropietarios(datos) {
   try {
     if (datos && datos.trim() !== "") {
@@ -42,17 +43,48 @@ async function agregarPropietarios(datos) {
 }
 
 
-async function eliminarPropietarios({ id_propietarios }) {
-  try {
+
+
+
+// async function eliminarPropietarios(id) {
+  
+//   try {
+
+//     const sql = "DELETE FROM propietarios WHERE id_propietarios = $1";
+//     const resultado = await database.query(sql, [id]);
     
-    const sql = "DELETE FROM propietarios WHERE id_propietarios = $1";
-    const resultado = await database.query(sql, [id_propietarios]);
-    return resultado.rows;
-  } catch (err) {
-    console.error("Error al eliminar propietario:", err);
-    return null;
-  } 
+//     if (resultado.rowCount > 0) {
+//       console.log("✅ Propietario eliminado correctamente.");
+//       res.status(200).json({ message: "Propietario eliminado correctamente." });
+//     } else {
+//       console.log("❌ No se encontró el propietario con el ID proporcionado.");
+//       res.status(404).json({ message: "No se encontró el propietario con el ID proporcionado." });
+//     }
+//   } catch (err) {
+//     console.error("❌ Error al eliminar propietario:", err);
+//     res.status(500).json({ error: "Error al eliminar propietario." });
+//   }
+// };
+
+async function eliminarPropietarios({ id }) {
+    try {
+        const sql = "DELETE FROM propietarios WHERE id_propietarios = $1 RETURNING *";
+        const resultado = await database.query(sql, [id]);
+
+        console.log("🔍 SQL DELETE resultado:", resultado);
+
+        // Nos aseguramos de retornar un array vacío si no hay coincidencia
+        return resultado?.rows || [];
+    } catch (err) {
+        console.error("❌ Error en eliminarPropietarios:", err);
+        throw err;
+    }
 }
+
+
+
+
+
 async function modificarPropietarios(datos) {
     try {
    
@@ -72,6 +104,7 @@ async function modificarPropietarios(datos) {
     return null;
   } 
 }
+
 async function obtenerPropietariosPorId(id_propietarios) {
     try {
     const resultado = await database.query("SELECT * FROM propietarios WHERE id_propietarios = $1", [id_propietarios]);
@@ -97,5 +130,6 @@ module.exports = {
   eliminarPropietarios,
   modificarPropietarios,
   obtenerPropietariosPorId,
-  obtenerPropietariosPorDni
+  obtenerPropietariosPorDni,
+  router
 };

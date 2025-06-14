@@ -30,7 +30,7 @@
                         <div class="col-md-4 mb-3"">
                 <label for=" dni" class="form-label"><b>DNI</b></label>
                             <input type="text" class="form-control" id="dni" name="dni"
-                                placeholder="Dni del propietario" required> 
+                                placeholder="Dni del propietario" required>
 
                         </div>
                     </div>
@@ -144,12 +144,12 @@
                                                 class="btn btn-warning">Editar</a>
                                         </td>
                                         <td>
-                                            <form action="/propietarios/eliminar" method="POST" style="display:inline;">
-                                                <input type="hidden" name="id_propietarios"
-                                                    value="<%= propietario.id_propietarios %>">
+                                            <form action="/propietarios/eliminar/<%= propietario.id_propietarios %>"
+                                                method="POST" style="display:inline;">
                                                 <button type="submit" class="btn btn-danger"
                                                     onclick="return confirm('¿Seguro que deseas eliminar este propietario?')">Eliminar</button>
                                             </form>
+
 
                                         </td>
 
