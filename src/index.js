@@ -260,7 +260,10 @@ app.post('/propietarios/eliminar/:id', async (req, res) => {
     }
 
     try {
+        console.log("🔍 Eliminando propietario con ID:", id);
         const resultado = await propietarios.eliminarPropietarios({ id });
+
+        console.log("🔎 Resultado de la eliminación:", resultado);
         res.json(resultado.rows.length > 0 ? 
             { mensaje: "Propietario eliminado correctamente" } : 
             { error: "Propietario no encontrado" });
@@ -269,6 +272,7 @@ app.post('/propietarios/eliminar/:id', async (req, res) => {
         res.status(500).json({ error: "Error interno del servidor" });
     }
 });
+
 
 app.post("/propietarios/insertar", async (req, res) => {
   const {nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec} = req.body;
