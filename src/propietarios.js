@@ -1,4 +1,7 @@
 const database = require("./datadb");
+const express = require("express");
+const router = express.Router();
+
 
 async function obtenerPropietarios(datos) {
   try {
@@ -53,7 +56,7 @@ async function eliminarPropietarios({ id_propietarios }) {
 async function modificarPropietarios(datos) {
     try {
    
-    const sql = 'UPDATE propietarios SET nombre = $1,apellido = $2,dni = $3,cuil = $4,direccion = $5,telefono = $6,celular = $7,correo_elec = $8 WHERE id_propietarios = $9'; 
+    const sql = "UPDATE propietarios SET nombre = $1,apellido = $2,dni = $3,cuil = $4,direccion = $5,telefono = $6,celular = $7,correo_elec = $8 WHERE id_propietarios = $9"; 
     const resultado= await database.query (sql,[datos.nombre,
         datos.apellido,
         datos.dni,
@@ -70,9 +73,7 @@ async function modificarPropietarios(datos) {
   } 
 }
 async function obtenerPropietariosPorId(id_propietarios) {
-  
-  try {
-   
+    try {
     const resultado = await database.query("SELECT * FROM propietarios WHERE id_propietarios = $1", [id_propietarios]);
     return resultado[0];
   } catch (err) {
@@ -81,11 +82,10 @@ async function obtenerPropietariosPorId(id_propietarios) {
   }
 }
 async function obtenerPropietariosPorDni(dni) {
- 
-  try {
-   
-    return await database.query("SELECT * FROM propietarios WHERE dni = $1", [dni]);
-  } catch (err) {
+   try {
+ const resultado= await database.query("SELECT * FROM propietarios WHERE dni = $1", [dni]);
+ return resultado[0]; // Devuelve los registros encontrados
+} catch (err) {
     console.error("Error al buscar propietario por DNI:", err);
     return [];
   } 

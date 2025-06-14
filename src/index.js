@@ -188,24 +188,23 @@ app.get("/propietarios", async (req, res) => {
 
  
 app.put('/propietarios/editar/:id', async (req, res) => {
-  console.log("🚀 Entrando a la ruta /propietarios/editar con ID:", req.params.id, "y datos:", req.body);
+  // console.log("🚀 Entrando a la ruta /propietarios/editar con ID:", req.params.id, "y datos:", req.body);
 
   const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
-  const { id } = req.params;
+  const { id_propietarios } = req.params;
 
   try {
-    const resultado = await database.query(
-      "UPDATE propietarios SET nombre = $1, apellido = $2, dni = $3, cuil = $4, direccion = $5, telefono = $6, celular = $7, correo_elec = $8 WHERE id_propietarios = $9 RETURNING *",
-      [nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec, id]
-    );
+    const resultado = await propietarios.modificarPropietarios({nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
+    if (!resultado || resultado.affectedRows === 0) { 
 
     console.log("✅ Propietario actualizado:", resultado.rows);
-    res.json(resultado.rows.length > 0 ? resultado.rows[0] : { error: "Propietario no encontrado" });
+    res.json(resultado.rows.length > 0 ? resultado.rows[0] : { error: "Propietario no encontrado" });}
   } catch (err) {
     console.error("❌ Error al editar propietario:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
+
 app.post('/propietarios/porId', async (req, res) => {
   console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
   
@@ -249,13 +248,13 @@ if (resultado && resultado.affectedRows > 0) {
   res.status(500).send("Error al modificar propietario");
 }
 });
-app.delete('/propietarios/eliminar/:id', async (req, res) => {
-  console.log("🚀 Entrando a la ruta /propietarios/eliminar con ID:", req.params.id);
+app.post('/propietarios/eliminar/:id', async (req, res) => {
+  // console.log("🚀 Entrando a la ruta /propietarios/eliminar con ID:", req.params.id);
 
   const { id } = req.params;
-
+  console.log("Recibiendo ID:", req.params);
   try {
-    const resultado = await database.query("DELETE FROM propietarios WHERE id_propietarios = $1 RETURNING *", [id]);
+    const resultado = await propietarios.eliminarPropietarios({ id });
 
     console.log("✅ Propietario eliminado:", resultado.rows);
     res.json(resultado.rows.length > 0 ? { mensaje: "Propietario eliminado correctamente" } : { error: "Propietario no encontrado" });
@@ -277,8 +276,7 @@ app.post("/propietarios/insertar", async (req, res) => {
         mensaje: "Ya existe un propietario con ese DNI."
       });
     }
-
-    // Si no existe, inserta normalmente
+  // Si no existe, inserta normalmente
     const resultado = await propietarios.agregarPropietarios({nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec});
     if (resultado && resultado.affectedRows > 0) {
       res.redirect("/propietarios");
@@ -295,8 +293,7 @@ app.post('/propietarios/buscar', async (req, res) => {
   console.log("Datos recibidos para buscar propietarios:", prop);
  try{
   const resultado = await propietarios.obtenerPropietarios(prop);
- 
- 
+  
   res.render('propietarios', { propietarios: resultado });
   } catch (err) {
     console.error(err);
