@@ -306,22 +306,21 @@ app.post("/propietarios/insertar", async (req, res) => {
   }
 });
 app.post('/propietarios/buscar', async (req, res) => {
-  const prop = req.body.prop; // o el campo que corresponda
+  const prop = req.body.prop;
   console.log("Datos recibidos para buscar propietarios:", prop);
- try{
-  const resultado = await propietarios.obtenerPropietarios(prop);
-  const eliminado = req.query.eliminado === '1';
+  try {
+    const resultado = await propietarios.obtenerPropietarios(prop);
+    const eliminado = req.query.eliminado === '1';
     res.render('propietarios', {
-      propietarios: resultado.rows, // 👈 ¡esto es clave!
+      propietarios: resultado.rows,
       eliminado
     });
-  
-  res.render('propietarios', { propietarios: resultado });
   } catch (err) {
     console.error(err);
-    res.render('propietarios',{propietarios:[]});;
+    res.render('propietarios', { propietarios: [] });
   }
 });
+
 // ------------------  propiedades ----------------------
 
 app.post("/propiedades", async (req, res) => {
