@@ -43,30 +43,6 @@ async function agregarPropietarios(datos) {
   }
 }
 
-
-
-
-
-// async function eliminarPropietarios(id) {
-  
-//   try {
-
-//     const sql = "DELETE FROM propietarios WHERE id_propietarios = $1";
-//     const resultado = await database.query(sql, [id]);
-    
-//     if (resultado.rowCount > 0) {
-//       console.log("✅ Propietario eliminado correctamente.");
-//       res.status(200).json({ message: "Propietario eliminado correctamente." });
-//     } else {
-//       console.log("❌ No se encontró el propietario con el ID proporcionado.");
-//       res.status(404).json({ message: "No se encontró el propietario con el ID proporcionado." });
-//     }
-//   } catch (err) {
-//     console.error("❌ Error al eliminar propietario:", err);
-//     res.status(500).json({ error: "Error al eliminar propietario." });
-//   }
-// };
-
 async function eliminarPropietarios({ id }) {
     try {
         const sql = "DELETE FROM propietarios WHERE id_propietarios = $1 RETURNING *";
@@ -99,7 +75,7 @@ async function modificarPropietarios(datos) {
         datos.celular,
         datos.correo_elec,
         datos.id_propietarios]);
-    return resultado.rows;
+    return resultado?.rows || []; // Aseguramos que se retorne un array, incluso si está vacío
   } catch (err) {
     console.error("Error al modificar propietario:", err);
     return null;

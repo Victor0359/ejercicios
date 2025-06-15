@@ -234,7 +234,10 @@ app.post('/propietarios/porId', async (req, res) => {
 });
 
 app.post("/propietarios/modificar", async (req, res) => {
-const {nombre,apellido,dni,cuil,direccion,telefono,celular,correo_elec,id_propietarios} = req.body;
+
+ console.log("📌 Recibiendo solicitud en /propietarios/modificar:", req.params.id_propietarios);
+ 
+ const {nombre,apellido,dni,cuil,direccion,telefono,celular,correo_elec,id_propietarios} = req.body;
 try{
 const resultado = await propietarios.modificarPropietarios({nombre,apellido,dni,cuil,direccion,telefono,celular,correo_elec,id_propietarios});
 
