@@ -12,29 +12,30 @@ const contratos = require("./contratos");
 const recibo_contrato = require("./recibo_contrato");
 require("dotenv").config();
 const cors = require('cors');
-
+const helmet = require('helmet');
 
 const app = express();
+
+
 const PORT = process.env.PORT ||10000;
 
+app.set("views", path.join(__dirname, "views"));
+
+
+app.set("view engine", "ejs");
+app.use(express.static(path.join(__dirname, "..", "public")));
+
 app.listen(PORT, () => {
+
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
 
-
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "ejs");
-
 app.use(express.json());
-app.use(express.static (path.join(__dirname, 'public')));
+
 app.use(expressEjsLayouts);
 app.set("layout", "layout");
 app.use(cors());
-
-app.get("/", (req, res) => {
-  res.render("inicio");
-});
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -52,6 +53,20 @@ app.post('/api-test', async (req, res) => {
     });
   }
 });
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "'unsafe-inline'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "https://translate.google.com", "https://cdn.jsdelivr.net", "'unsafe-inline'"],
+    },
+  })
+);
+app.get('/', (req, res) => {
+    res.render("inicio");
+});
+
 // ------------------  inquilinos ----------------------
 
 app.get("/inquilinos", async (req, res) => {
@@ -179,34 +194,52 @@ app.post("/inquilinos/insertar", async (req, res) => {
 
 app.get("/propietarios", async (req, res) => {
   try {
-    const prop = await propietarios.obtenerPropietarios(); // <--- sin 
-    console.log("Propietarios obtenidos:", prop);
-    res.render("propietarios", { propietarios: prop });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al cargar propietarios");
+    const lista = await propietarios.obtenerPropietarios();
+    res.render("propietarios", {
+      propietarios: lista,
+      insertado: req.query.insertado === "1",
+      eliminado: req.query.eliminado === "1",
+      mensaje: req.query.mensaje || null
+    });
+  } catch (error) {
+    console.error("❌ Error al cargar propietarios:", error);
+    res.status(500).send("Error interno al cargar propietarios");
   }
 });
 
 
  
 app.post('/propietarios/editar/:id', async (req, res) => {
-  // console.log("🚀 Entrando a la ruta /propietarios/editar con ID:", req.params.id, "y datos:", req.body);
-
-  const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
-  const { id_propietarios } = req.params;
+  const { id } = req.params;
+  const {
+    nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec
+  } = req.body;
 
   try {
-    const resultado = await propietarios.modificarPropietarios({nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
-    if (!resultado || resultado.affectedRows === 0) { 
+    const resultado = await propietarios.modificarPropietarios({
+      id_propietarios: id, // importante: usar el ID de los params
+      nombre,
+      apellido,
+      dni,
+      cuil,
+      direccion,
+      telefono,
+      celular,
+      correo_elec
+    });
 
-    console.log("✅ Propietario actualizado:", resultado.rows);
-    res.json(resultado.rows.length > 0 ? resultado.rows[0] : { error: "Propietario no encontrado" });}
+    if (resultado && resultado.rowCount > 0) {
+      res.redirect(`/propietarios/editar/${id}?mensaje=modificado`);
+    } else {
+      res.redirect(`/propietarios/editar/${id}?mensaje=error`);
+    }
   } catch (err) {
-    console.error("❌ Error al editar propietario:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error('❌ Error al modificar propietario:', err);
+    res.status(500).send('💥 Error interno del servidor');
   }
 });
+
+
 
 app.post('/propietarios/porId', async (req, res) => {
   console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
@@ -233,27 +266,44 @@ app.post('/propietarios/porId', async (req, res) => {
   }
 });
 
-app.post("/propietarios/modificar", async (req, res) => {
+app.post('/propietarios/modificar', async (req, res) => {
+  const {
+    id_propietarios,
+    nombre,
+    apellido,
+    dni,
+    cuil,
+    direccion,
+    telefono,
+    celular,
+    correo_elec
+  } = req.body;
 
- console.log("📌 Recibiendo solicitud en /propietarios/modificar:", req.params.id_propietarios);
- 
- const {nombre,apellido,dni,cuil,direccion,telefono,celular,correo_elec,id_propietarios} = req.body;
-try{
-const resultado = await propietarios.modificarPropietarios({nombre,apellido,dni,cuil,direccion,telefono,celular,correo_elec,id_propietarios});
+  try {
+    const resultado = await propietarios.modificarPropietarios({
+      id_propietarios,
+      nombre,
+      apellido,
+      dni,
+      cuil,
+      direccion,
+      telefono,
+      celular,
+      correo_elec
+    });
 
-if (resultado && resultado.affectedRows > 0) {
-  
-   res.redirect("/propietarios");
-  
-} else {
-  res.status(404).json({ message: "Propietario no modificado" });
-}
-
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al modificar propietario");
-}
+    if (resultado && resultado.rowCount > 0) {
+      res.redirect('/propietarios? mensaje=modificado');
+    } else {
+      res.status(404).send('⚠️ Propietario no modificado');
+    }
+  } catch (err) {
+    console.error('❌ Error al modificar propietario:', err);
+    res.status(500).send('💥 Error interno del servidor');
+  }
 });
+
+
 app.post('/propietarios/eliminar/:id', async (req, res) => {
     console.log("📌 Recibiendo solicitud en /propietarios/eliminar con ID:", req.params.id);
 
@@ -271,9 +321,7 @@ if (!Array.isArray(resultado) || resultado.length === 0) {
 }
 
 res.redirect('/propietarios?eliminado=1');
-
-res.render('propietarios', { propietarios: resultado.rows });
-
+return;
 
     } catch (err) {
         console.error("❌ Error al eliminar propietario:", err);
@@ -284,30 +332,56 @@ res.render('propietarios', { propietarios: resultado.rows });
 
 
 app.post("/propietarios/insertar", async (req, res) => {
-  const {nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec} = req.body;
+  const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
+
   try {
-    // Verifica si ya existe un propietario con ese DNI
     const existentes = await propietarios.obtenerPropietariosPorDni(dni);
+
     if (existentes && existentes.length > 0) {
-      // Ya existe, muestra mensaje de alerta en el frontend
       const lista = await propietarios.obtenerPropietarios();
-      return res.render("propietarios", { 
+      return res.render("propietarios", {
         propietarios: lista,
         mensaje: "Ya existe un propietario con ese DNI."
       });
     }
-  // Si no existe, inserta normalmente
-    const resultado = await propietarios.agregarPropietarios({nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec});
-    if (resultado && resultado.affectedRows > 0) {
-      res.redirect("/propietarios");
+
+    const resultado = await propietarios.agregarPropietarios({ nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
+
+    if (resultado && resultado.rowCount> 0) {
+      console.log("Resultado del INSERT:", resultado); //Inserción exitosa
+      return res.redirect("/propietarios?insertado=1");
     } else {
-      res.status(404).send("Propietario no insertado");
+      // Fallo sin excepción
+      const lista = await propietarios.obtenerPropietarios();
+      return res.render("propietarios", {
+        propietarios: lista,
+        mensaje: "No se pudo insertar el propietario. Intente nuevamente."
+      });
     }
+
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error al insertar propietario");
+    const lista = await propietarios.obtenerPropietarios();
+    return res.render("propietarios", {
+      propietarios: lista,
+      mensaje: "Ocurrió un error en el servidor al insertar el propietario."
+    });
   }
 });
+
+app.get('/propietarios/editar/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const propietario = await propietarios.obtenerPorId(id);
+    res.render('editarPropietario', { propietario, mensaje: null });
+  } catch (err) {
+    console.error("❌ Error al cargar el formulario de edición:", err);
+    res.status(500).send("Error al cargar el formulario");
+  }
+});
+
+
+
 app.post('/propietarios/buscar', async (req, res) => {
   const prop = req.body.prop;
   console.log("Datos recibidos para buscar propietarios:", prop);

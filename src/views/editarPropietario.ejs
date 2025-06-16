@@ -1,8 +1,9 @@
 <div class="container mt-5 mb-3">
-    <form action="/propietarios/modificar" method="POST" onsubmit="return confirmarModificacion();">
-        <h2>Editar Propietarios</h2>
+    <form action="/propietarios/editar/<%= propietario.id_propietarios %>" method="POST">
 
-        <input type="hidden" name="id_propietarios" value="<%= propietario.id_propietarios %>">
+        <h1 class="text-center mb-5">Modificar Propietario</h1>
+        <p class="text-center">Complete los campos que desea modificar y haga click en "Guardar Cambios"</p>
+  <input type="hidden" name="id_propietarios" value="<%= propietario.id_propietarios %>">
         <div class="row mt-5 mb-3">
             <div class="col md-4 mb-3">
                 <label for="nombre" class="form-label">Nombre</label>
@@ -56,6 +57,12 @@
                 <a href="/propietarios" class="btn btn-secondary w-30 mt-5">Cancelar</a>
             
         </div>
+        <% if (mensaje === 'modificado') { %>
+  <div class="alert alert-success">Propietario modificado correctamente ✅</div>
+<% } else if (mensaje === 'error') { %>
+  <div class="alert alert-danger">No se pudo modificar el propietario ❌</div>
+<% } %>
+
     </form>
 </div>
 <script>

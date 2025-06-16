@@ -1,8 +1,25 @@
-body {background: rgb(238, 233, 234);
-      color: black;
-      font-family: Arial, sans-serif;
-      font-size: 16px;
-      text-align: center;
-      padding: 20px;
+/* Estilos para la sección de propiedades */
+.propiedad-card {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background-color: #f9f9f9;
+  transition: box-shadow 0.3s;
 }
 
+.propiedad-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.propiedad-imagen {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.propiedad-descripcion {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: #333;
+}

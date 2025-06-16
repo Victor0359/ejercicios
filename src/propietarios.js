@@ -36,7 +36,7 @@ async function agregarPropietarios(datos) {
     ]);
     
     console.log("✅ Propietario agregado correctamente.");
-    return resultado.rows;
+    return resultado;
   } catch (err) {
     console.error("❌ Error al insertar propietario:", err);
     return null;
@@ -85,7 +85,7 @@ async function modificarPropietarios(datos) {
 async function obtenerPropietariosPorId(id_propietarios) {
     try {
     const resultado = await database.query("SELECT * FROM propietarios WHERE id_propietarios = $1", [id_propietarios]);
-    return resultado[0];
+    return resultado.rows[0];
   } catch (err) {
     console.error("Error al obtener el propietario por ID:", err);
     return null;
@@ -100,13 +100,27 @@ async function obtenerPropietariosPorDni(dni) {
     return [];
   } 
 }
+async function obtenerTodosLosPropietarios() {
+  try {
+    const resultado = await database.query("SELECT * FROM propietarios ORDER BY id_propietarios");
+    return resultado.rows; // Devuelve todos los registros encontrados
+    
+
+  } catch (err) {
+    console.error("❌ Error al obtener todos los propietarios:", err);
+    return [];
+  }
+}
+
 
 module.exports = {
    obtenerPropietarios,
   agregarPropietarios,
   eliminarPropietarios,
   modificarPropietarios,
-  obtenerPropietariosPorId,
+  obtenerPorId: obtenerPropietariosPorId,
+  obtenerTodosLosPropietarios,
   obtenerPropietariosPorDni,
+  
   router
 };
