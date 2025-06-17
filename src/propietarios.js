@@ -63,24 +63,49 @@ async function eliminarPropietarios({ id }) {
 
 
 async function modificarPropietarios(datos) {
-    try {
-   
-    const sql = "UPDATE propietarios SET nombre = $1,apellido = $2,dni = $3,cuil = $4,direccion = $5,telefono = $6,celular = $7,correo_elec = $8 WHERE id_propietarios = $9"; 
-    const resultado= await database.query (sql,[datos.nombre,
-        datos.apellido,
-        datos.dni,
-        datos.cuil,
-        datos.direccion,
-        datos.telefono,
-        datos.celular,
-        datos.correo_elec,
-        datos.id_propietarios]);
-    return resultado?.rows || []; // Aseguramos que se retorne un array, incluso si está vacío
+  try {
+    // Asegurar que el ID sea tipo número
+    const id = Number(datos.id_propietarios);
+
+    const sql = `
+      UPDATE propietarios
+      SET nombre = $1,
+          apellido = $2,
+          dni = $3,
+          cuil = $4,
+          direccion = $5,
+          telefono = $6,
+          celular = $7,
+          correo_elec = $8
+      WHERE id_propietarios = $9
+    `;
+
+    const valores = [
+      datos.nombre,
+      datos.apellido,
+      datos.dni,
+      datos.cuil,
+      datos.direccion,
+      datos.telefono,
+      datos.celular,
+      datos.correo_elec,
+      id
+    ];
+
+    const resultado = await database.query(sql, valores);
+
+    console.log(`✅ Propietario ID ${id} — Filas afectadas:`, resultado.rowCount);
+
+    return {
+      rowCount: resultado.rowCount,
+      rows: resultado.rows
+    };
   } catch (err) {
-    console.error("Error al modificar propietario:", err);
-    return null;
-  } 
+    console.error("❌ Error al modificar propietario:", err);
+    throw err; // Lo dejamos rebotar para que el route lo capture y maneje
+  }
 }
+
 
 async function obtenerPropietariosPorId(id_propietarios) {
     try {

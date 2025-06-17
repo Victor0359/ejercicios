@@ -1,72 +1,72 @@
 <div class="container mt-5 mb-3">
-    <form action="/propietarios/editar/<%= propietario.id_propietarios %>" method="POST">
+    <form id="formEditar" action="/propietarios/editar/<%= propietario.id_propietarios %>" method="POST">
+
 
         <h1 class="text-center mb-5">Modificar Propietario</h1>
-        <p class="text-center">Complete los campos que desea modificar y haga click en "Guardar Cambios"</p>
-  <input type="hidden" name="id_propietarios" value="<%= propietario.id_propietarios %>">
-        <div class="row mt-5 mb-3">
-            <div class="col md-4 mb-3">
-                <label for="nombre" class="form-label">Nombre</label>
-                <input type="text" class="form-control" id="nombre" name="nombre" value="<%= propietario.nombre%>"
-                    required>
-            </div>
-            <div class="col md-4 mb-3">
-                <label for="apellido" class="form-label">Apellido</label>
-                <input type="text" class="form-control" id="apellido" name="apellido"
-                    value="<%= propietario.apellido %>" required>
-            </div>
-            <div class=" col md-4 mb-3">
-                <label for="dni" class="form-label">Dni</label>
-                <input type="text" class="form-control" id="dni" name="dni" value="<%= propietario.dni %>">
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class=" col md-4 mb-3">
-                <label for="cuil" class="form-label">Cuil</label>
-                <input type="text" class="form-control" id="cuil" name="cuil" value="<%= propietario.cuil %>">
-            </div>
 
-            <div class="col md-4 mb-3">
-                <label for="direccion" class="form-label">Dirección</label>
-                <input type="text" class="form-control" id="direccion" name="direccion"
-                    value="<%= propietario.direccion %>">
-            </div>
+        <% if (mensaje==='modificado' ) { %>
+            <div class="alert alert-success">Propietario modificado correctamente ✅</div>
+            <% } else if (mensaje==='error' ) { %>
+                <div class="alert alert-danger">No se pudo modificar el propietario ❌</div>
+                <% } %>
+                    <p class="text-center">Complete los campos que desea modificar y haga click en "Guardar Cambios"</p>
+                    <input type="hidden" name="id_propietarios" value="<%= propietario.id_propietarios %>">
+                    <div class="row mt-5 mb-3">
+                        <div class="col md-4 mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre"
+                                value="<%= propietario.nombre%>" required>
+                        </div>
+                        <div class="col md-4 mb-3">
+                            <label for="apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="apellido" name="apellido"
+                                value="<%= propietario.apellido %>" required>
+                        </div>
+                        <div class=" col md-4 mb-3">
+                            <label for="dni" class="form-label">Dni</label>
+                            <input type="text" class="form-control" id="dni" name="dni" value="<%= propietario.dni %>">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class=" col md-4 mb-3">
+                            <label for="cuil" class="form-label">Cuil</label>
+                            <input type="text" class="form-control" id="cuil" name="cuil"
+                                value="<%= propietario.cuil %>">
+                        </div>
 
-            <div class=" col md-4 mb-3">
-                <label for="telefono" class="form-label">Teléfono</label>
-                <input type="text" class="form-control" id="telefono" name="telefono"
-                    value="<%= propietario.telefono %>">
+                        <div class="col md-4 mb-3">
+                            <label for="direccion" class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="direccion" name="direccion"
+                                value="<%= propietario.direccion %>">
+                        </div>
 
-            </div>
-        </div>
-        <div class="row mb-3">
+                        <div class=" col md-4 mb-3">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="telefono" name="telefono"
+                                value="<%= propietario.telefono %>">
 
-            <div class="col md-4 mb-3">
-                <label for="celular" class="form-label">Celular</label>
-                <input type="text" class="form-control" id="celular" name="celular" value="<%= propietario.celular %>">
-            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
 
-            <div class="col md-4 mb-3">
-                <label for="correo_elec" class="form-label">Email</label>
-                <input type="email" class="form-control" id="correo_elec" name="correo_elec"
-                    value="<%= propietario.correo_elec %>">
-            </div>
-            <div class="col md-4 m-4 p-2">
-                <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
-            </div>
-                <a href="/propietarios" class="btn btn-secondary w-30 mt-5">Cancelar</a>
-            
-        </div>
-        <% if (mensaje === 'modificado') { %>
-  <div class="alert alert-success">Propietario modificado correctamente ✅</div>
-<% } else if (mensaje === 'error') { %>
-  <div class="alert alert-danger">No se pudo modificar el propietario ❌</div>
-<% } %>
+                        <div class="col md-4 mb-3">
+                            <label for="celular" class="form-label">Celular</label>
+                            <input type="text" class="form-control" id="celular" name="celular"
+                                value="<%= propietario.celular %>">
+                        </div>
 
+                        <div class="col md-4 mb-3">
+                            <label for="correo_elec" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="correo_elec" name="correo_elec"
+                                value="<%= propietario.correo_elec %>">
+                        </div>
+                        <div class="col md-4 m-4 p-2">
+                            <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
+                        </div>
+                    </div>
     </form>
-</div>
-<script>
-    function confirmarModificacion() {
-        return confirm("¿Está seguro que desea modificar este propietario?");
-    }
-</script>
+    <script>
+       src="/confirmar.js" 
+    </script>
+
+    </body>

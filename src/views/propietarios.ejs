@@ -2,84 +2,106 @@
 
     <div class="container mt-5">
 
-        <form class="row g-3 mt-5" action="/propietarios/insertar" method="POST" onsubmit="return confirmaInsertar()">
-            <% if (typeof mensaje !=='undefined' && mensaje==='modificado' ) { %>
-                <div class="alert alert-success">✅ Propietario modificado correctamente</div>
-                <% } %>
+        <form class="row g-3 mt-5" action="/propietarios/insertar" method="POST">
+            <% let mensajeLimpio=mensaje?.trim(); %>
 
-                    <% if (typeof mensaje !=='undefined' && mensaje) { %>
+                <% if (mensajeLimpio==='modificado' ) { %>
+                    <div class="alert alert-success">✅ Propietario modificado correctamente</div>
+                    <% } else if (mensajeLimpio && mensajeLimpio !=='modificado' ) { %>
                         <div class="alert alert-danger">
-                            <%= mensaje %>
+                            <%= mensajeLimpio %>
                         </div>
                         <% } %>
 
-                            <% if (typeof eliminado !=='undefined' && eliminado) { %>
-                                <div class="alert alert-success">Propietario eliminado correctamente.</div>
+
+
+
+
+                            <% if (typeof mensaje !=='undefined' && mensaje) { %>
+                                <div class="alert alert-danger">
+                                    <%= mensaje %>
+                                </div>
                                 <% } %>
 
-                                    <% if (typeof insertado !=='undefined' && insertado) { %>
-                                        <div class="alert alert-success">Propietario guardado exitosamente.</div>
+                                    <% if (typeof eliminado !=='undefined' && eliminado) { %>
+                                        <div class="alert alert-success">Propietario eliminado correctamente.
+                                        </div>
                                         <% } %>
 
-
-                                            <div class="mt-5">
-                                                <h1> <b> PROPIETARIOS</b></h1>
-                                            </div>
-
-                                            <div class="row mb-3 mt-5">
-
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="nombre" class="form-label"><b> Nombre</b></label>
-                                                    <input type="text" class="form-control" id="nombre" name="nombre"
-                                                        placeholder="Nombre del propietario" required>
+                                            <% if (typeof insertado !=='undefined' && insertado) { %>
+                                                <div class="alert alert-success">Propietario guardado
+                                                    exitosamente.
                                                 </div>
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="apellido" class="form-label"><b>Apellido</b></label>
-                                                    <input type="text" class="form-control" id="apellido"
-                                                        name="apellido" placeholder="Nombre del propietario" required>
+                                                <% } %>
 
-                                                </div>
-                                                <div class="col-md-4 mb-3"">
+
+                                                    <div class="mt-5">
+                                                        <h1> <b> PROPIETARIOS</b></h1>
+                                                    </div>
+
+                                                    <div class="row mb-3 mt-5">
+
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="nombre" class="form-label"><b>
+                                                                    Nombre</b></label>
+                                                            <input type="text" class="form-control" id="nombre"
+                                                                name="nombre" placeholder="Nombre del propietario"
+                                                                required>
+                                                        </div>
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="apellido"
+                                                                class="form-label"><b>Apellido</b></label>
+                                                            <input type="text" class="form-control" id="apellido"
+                                                                name="apellido" placeholder="Nombre del propietario"
+                                                                required>
+
+                                                        </div>
+                                                        <div class="col-md-4 mb-3"">
                                             <label for=" dni" class="form-label"><b>DNI</b></label>
-                                                    <input type="text" class="form-control" id="dni" name="dni"
-                                                        placeholder="Dni del propietario" required>
+                                                            <input type="text" class="form-control" id="dni" name="dni"
+                                                                placeholder="Dni del propietario" required>
 
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="cuil" class="form-label"><b>Cuil</b></label>
-                                                    <input type="text" class="form-control" id="cuil" name="cuil"
-                                                        placeholder="Cuil del propietario">
-                                                </div>
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="direccion" class="form-label"><b>Direccion</b></label>
-                                                    <input type="text" class="form-control" id="direccion"
-                                                        name="direccion" placeholder="Direccion del propietario">
-                                                </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="cuil" class="form-label"><b>Cuil</b></label>
+                                                            <input type="text" class="form-control" id="cuil"
+                                                                name="cuil" placeholder="Cuil del propietario">
+                                                        </div>
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="direccion"
+                                                                class="form-label"><b>Direccion</b></label>
+                                                            <input type="text" class="form-control" id="direccion"
+                                                                name="direccion"
+                                                                placeholder="Direccion del propietario">
+                                                        </div>
 
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="telefono" class="form-label"><b>Telefono</b></label>
-                                                    <input type="text" class="form-control" id="telefono"
-                                                        name="telefono" placeholder="Telefono del propietario">
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="celular" class="form-label"><b>Celular</b></label>
-                                                    <input type="text" class="form-control" id="celular" name="celular"
-                                                        placeholder="Celular del propietario">
-                                                </div>
-                                                <div class="col-md-4 mb-3">
-                                                    <label for="correo_elec" class="form-label"><b>Correo
-                                                            Electrónico</b></label>
-                                                    <input type="email" class="form-control" id="correo_elec"
-                                                        name="correo_elec" placeholder="Correo del propietario">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4 mb-3 p-3 mt-1">
-                                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
-                                            </div>
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="telefono"
+                                                                class="form-label"><b>Telefono</b></label>
+                                                            <input type="text" class="form-control" id="telefono"
+                                                                name="telefono" placeholder="Telefono del propietario">
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="celular"
+                                                                class="form-label"><b>Celular</b></label>
+                                                            <input type="text" class="form-control" id="celular"
+                                                                name="celular" placeholder="Celular del propietario">
+                                                        </div>
+                                                        <div class="col-md-4 mb-3">
+                                                            <label for="correo_elec" class="form-label"><b>Correo
+                                                                    Electrónico</b></label>
+                                                            <input type="email" class="form-control" id="correo_elec"
+                                                                name="correo_elec" placeholder="Correo del propietario">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 mb-3 p-3 mt-1">
+                                                        <button type="submit"
+                                                            class="btn btn-primary w-100">Guardar</button>
+                                                    </div>
         </form>
 
         <div class="container mt-3">
@@ -154,12 +176,12 @@
                                                 <%= propietario.correo_elec %>
                                             </td>
                                             <td>
-                                                <form action="/propietarios/editar/<%= propietario.id_propietarios %>" method="POST" onsubmit="return confirmarModificacion()">
+                                                <a href="/propietarios/editar/<%= propietario.id_propietarios %>"
+                                                    class="btn btn-warning">Editar</a>
 
 
                                             </td>
                                             <td>
-
                                                 <button type="button" class="btn btn-danger" data-bs-toggle="modal"
                                                     data-bs-target="#modalEliminar-<%= propietario.id_propietarios %>">
                                                     Eliminar
@@ -175,7 +197,8 @@
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title"
                                                                     id="labelEliminar-<%= propietario.id_propietarios %>">
-                                                                    Confirmar eliminación</h5>
+                                                                    Confirmar eliminación
+                                                                </h5>
                                                                 <button type="button" class="btn-close"
                                                                     data-bs-dismiss="modal"
                                                                     aria-label="Cerrar"></button>
@@ -202,8 +225,6 @@
                                                 </div>
                                             </td>
 
-                                            </form>
-                                            </td>
                                         </tr>
                                         <% }); %>
                                             <% } else { %>
@@ -225,25 +246,27 @@
 
 
                 <script>
-                    function confirmaInsertar() {
-                        if (confirm("¿Desea guardar este propietario?")) {
-                            return true; // Envía el formulario
-                        } else {
-                            // Limpia todos los campos del formulario de inserción
-                            const form = document.querySelector('form[action="/propietario/insertar"]');
-                            if (form) {
-                                form.reset();
-                            }
-                            return false; // No envía el formulario
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const form = document.getElementById('formInsertar');
+                        if (form) {
+                            form.addEventListener('submit', (e) => {
+                                if (!confirm("¿Desea guardar este propietario?")) {
+                                    e.preventDefault();
+                                    form.reset();
+                                }
+                            });
                         }
-                    }
+                    });
                 </script>
+
                 <script>
                     setTimeout(() => {
-                        const alerta = document.querySelector('.alert');
-                        if (alerta) alerta.remove();
-                    }, 3000); // 3 segundos
+                        document.querySelectorAll('.alert-success, .alert-danger').forEach(a => a.remove());
+                    }, 3000);
                 </script>
+
+
+
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

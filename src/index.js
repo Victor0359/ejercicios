@@ -13,11 +13,14 @@ const recibo_contrato = require("./recibo_contrato");
 require("dotenv").config();
 const cors = require('cors');
 const helmet = require('helmet');
+const session = require('express-session');
+const flash = require('express-flash');
+
 
 const app = express();
 
 
-const PORT = process.env.PORT ||10000;
+const PORT = process.env.PORT ||3000;
 
 app.set("views", path.join(__dirname, "views"));
 
@@ -29,7 +32,12 @@ app.listen(PORT, () => {
 
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
-
+app.use(session({
+  secret: 'claveSecreta', // puede ser cualquier string largo
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(flash());
 
 app.use(express.json());
 
@@ -227,9 +235,11 @@ app.post('/propietarios/editar/:id', async (req, res) => {
       celular,
       correo_elec
     });
-
+   
     if (resultado && resultado.rowCount > 0) {
-      res.redirect(`/propietarios/editar/${id}?mensaje=modificado`);
+     
+      res.redirect('/propietarios?mensaje=modificado');
+
     } else {
       res.redirect(`/propietarios/editar/${id}?mensaje=error`);
     }
@@ -238,8 +248,6 @@ app.post('/propietarios/editar/:id', async (req, res) => {
     res.status(500).send('💥 Error interno del servidor');
   }
 });
-
-
 
 app.post('/propietarios/porId', async (req, res) => {
   console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
@@ -293,10 +301,13 @@ app.post('/propietarios/modificar', async (req, res) => {
     });
 
     if (resultado && resultado.rowCount > 0) {
-      res.redirect('/propietarios? mensaje=modificado');
-    } else {
-      res.status(404).send('⚠️ Propietario no modificado');
-    }
+  req.flash('success', '✅ Propietario modificado correctamente');
+  res.redirect('/propietarios');
+} else {
+  req.flash('error', 'No se pudo modificar el propietario');
+  res.redirect(`/propietarios/editar/${id}`);
+}
+
   } catch (err) {
     console.error('❌ Error al modificar propietario:', err);
     res.status(500).send('💥 Error interno del servidor');
@@ -371,14 +382,21 @@ app.post("/propietarios/insertar", async (req, res) => {
 
 app.get('/propietarios/editar/:id', async (req, res) => {
   const { id } = req.params;
+  const mensaje = req.query.mensaje || null;
+
   try {
     const propietario = await propietarios.obtenerPorId(id);
-    res.render('editarPropietario', { propietario, mensaje: null });
+    res.render('editarPropietario', { 
+      propietario, 
+     mensaje: req.query.mensaje || null,
+  insertado: req.query.insertado === "1",
+  eliminado: req.query.eliminado === "1" });
   } catch (err) {
     console.error("❌ Error al cargar el formulario de edición:", err);
     res.status(500).send("Error al cargar el formulario");
   }
 });
+
 
 
 
@@ -390,7 +408,9 @@ app.post('/propietarios/buscar', async (req, res) => {
     const eliminado = req.query.eliminado === '1';
     res.render('propietarios', {
       propietarios: propietariosEncontrados,
-      eliminado
+      eliminado,
+      mensaje: req.query.mensaje || null,
+      insertado: req.query.insertado === "1"
     });
   } catch (err) {
     console.error(err);
