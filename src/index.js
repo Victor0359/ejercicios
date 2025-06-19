@@ -20,7 +20,7 @@ const flash = require('express-flash');
 const app = express();
 
 
-const PORT = process.env.PORT ||3000;
+
 
 app.set("views", path.join(__dirname, "views"));
 
@@ -28,10 +28,12 @@ app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 3000;
 
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
+
 app.use(session({
   secret: 'claveSecreta', // puede ser cualquier string largo
   resave: false,
@@ -75,15 +77,28 @@ app.get('/', (req, res) => {
     res.render("inicio");
 });
 
+app.use((req, res, next) => {
+  res.locals.insertado = false;
+  res.locals.eliminado = false;
+  res.locals.mensaje = null;
+  res.locals.lista = [];
+  next();
+});
+
 // ------------------  inquilinos ----------------------
 
 app.get("/inquilinos", async (req, res) => {
   try {
     const lista = await inquilinos.obtenerInquilinos();
-    res.render("inquilinos", { inquilinos: lista });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al cargar inquilinos");
+    res.render("inquilinos", {
+      inquilinos: lista,
+      insertado: req.query.insertado === "1",
+      eliminado: req.query.eliminado === "1",
+      mensaje: req.query.mensaje || null
+    });
+  } catch (error) {
+    console.error("❌ Error al cargar inquilinos:", error);
+    res.status(500).send("Error interno al cargar inquilinos");
   }
 });
 app.post ("/inquilinos", async (req, res) => {
@@ -110,91 +125,224 @@ if (resultado) {
   res.status(404).json({ message: "Inquilino no encontrado" }); 
 }
 });
-app.get("/inquilinos/editar/:id", async (req, res) => {
-  const id = req.params.id;
-  try { 
-    const inquilino = await inquilinos.obtenerInquilinoPorId(id);
-    if (inquilino) {
-      // Si tu función devuelve un array, usa propietario[0]
-      res.render("editarInquilino", { inquilino: Array.isArray(inquilino) ? inquilino[0] : inquilino });
+app.post('/inquilinos/editar/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec
+  } = req.body;
+
+  try {
+    const resultado = await inquilinos.modificarInquilinos({
+      id_inquilinos: id, // importante: usar el ID de los params
+      nombre,
+      apellido,
+      dni,
+      cuil,
+      direccion,
+      telefono,
+      celular,
+      correo_elec
+    });
+   
+    if (resultado && resultado.rowCount > 0) {
+     
+      res.redirect('/inquilinos?mensaje=modificado');
+
     } else {
-      res.status(404).send("Inquilino no encontrado");
+      res.redirect(`/inquilinos/editar/${id}?mensaje=error`);
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al buscar el inquilino");
+    console.error('❌ Error al modificar inquilinos:', err);
+    res.status(500).send('💥 Error interno del servidor');
   }
 });
-app.post("/inquilinos/modificar", async (req, res) => {
-const {nombre,apellido,dni,cuit,direccion,telefono,celular,correo_elec,id_inquilinos} = req.body;
-console.log (req.body);
-try{
-const resultado = await inquilinos.modificarInquilino({nombre,apellido,dni,cuit,direccion,telefono,celular,correo_elec,id_inquilinos});
 
-if (resultado && resultado.affectedRows > 0) {
- res.redirect("/inquilinos");
-} else {
-  res.status(404).json({ message: "Inquilino no modificado" });
-}
+app.post('/inquilinos/modificar', async (req, res) => {
+  const {
+    id_inquilinos,
+    nombre,
+    apellido,
+    dni,
+    cuil,
+    direccion,
+    telefono,
+    celular,
+    correo_elec
+  } = req.body;
 
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al modificar inquilino");
-}
-});
-app.post("/inquilinos/eliminar", async (req, res) => {
-const {id_inquilinos} = req.body;
-try{
-const resultado = await inquilinos.eliminarInquilino({id_inquilinos});
-
-if (resultado && resultado.affectedRows > 0) {
- 
-    res.redirect("/inquilinos");
-  
-} else {
-  res.status(404).json({ message: "Inquilino no eliminado" });
-}
-
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al eliminar inquilino");
-}
-});
-app.post("/inquilinos/insertar", async (req, res) => {
-  const {nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec} = req.body;
   try {
-    // Verifica si ya existe un propietario con ese DNI
+    const resultado = await inquilinos.modificarInquilinos({
+      id_inquilinos,
+      nombre,
+      apellido,
+      dni,
+      cuil,
+      direccion,
+      telefono,
+      celular,
+      correo_elec
+    });
+
+    if (resultado && resultado.rowCount > 0) {
+  req.flash('success', '✅ Inquilino modificado correctamente');
+  res.redirect('/inquilinos');
+} else {
+  req.flash('error', 'No se pudo modificar el inquilino');
+  res.redirect(`/inquilinos/editar/${id}`);
+}
+
+  } catch (err) {
+    console.error('❌ Error al modificar inquilino:', err);
+    res.status(500).send('💥 Error interno del servidor');
+  }
+});
+
+app.post('/inquilinos/eliminar/:id', async (req, res) => {
+    console.log("📌 Recibiendo solicitud en /inquilinos/eliminar con ID:", req.params.id);
+
+    const { id } = req.params;
+    if (!id) {
+        return res.status(400).json({ error: "Falta el ID en la solicitud" });
+    }
+
+    try {
+        console.log("🔍 Eliminando inquilinos con ID:", id);
+     const resultado = await inquilinos.eliminarInquilinos({ id });
+
+if (!Array.isArray(resultado) || resultado.length === 0) {
+    return res.status(404).json({ mensaje: "Inquilino no encontrado" });
+}
+
+res.redirect('/inquilinos?eliminado=1');
+return;
+
+    } catch (err) {
+        console.error("❌ Error al eliminar inquilino:", err);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }   
+    
+  });
+
+  app.post("/inquilinos/insertar", async (req, res) => {
+  const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
+
+  try {
     const existentes = await inquilinos.obtenerInquilinosPorDni(dni);
+
     if (existentes && existentes.length > 0) {
-      // Ya existe, muestra mensaje de alerta en el frontend
       const lista = await inquilinos.obtenerInquilinos();
-      return res.render("inquilinos", { 
-        inquilinos: lista,
-        mensaje: "Ya existe un inquilino con ese DNI."
+      return res.render("inquilinos", {
+        
+        inquilinos:lista,
+  insertado: false,
+  eliminado: false,
+  mensaje: "Ya existe un inquilino con ese DNI."
       });
     }
 
-    // Si no existe, inserta normalmente
-    const resultado = await inquilinos.agregarInquilino({nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec});
-    if (resultado && resultado.affectedRows > 0) {
-      res.redirect("/inquilinos");
+    const resultado = await inquilinos.agregarInquilinos({ nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
+    console.log("🔎 Resultado de agregarInquilinos:", resultado);
+  
+    if (resultado && resultado.rowCount> 0) {
+      console.log("Resultado del INSERT:", resultado); //Inserción exitosa
+      return res.redirect("/inquilinos?insertado=1");
     } else {
-      res.status(404).send("Inquilino no insertado");
+      // Fallo sin excepción
+      const lista = await inquilinos.obtenerInquilinos();
+      return res.render("inquilinos", {
+        
+
+        inquilinos: lista,
+        insertado: false,
+        eliminado: false,
+  
+        mensaje: "No se pudo insertar el inquilino. Intente nuevamente."
+      });
     }
+
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error al insertar inquilino");
-  }
-});app.post('/inquilinos/buscar', async (req, res) => {
-  const datos = req.body.datos; // o el campo que corresponda
- try{
-  const resultado = await inquilinos.obtenerInquilinos(datos);
-  res.render('inquilinos', { inquilinos: resultado });
-  } catch (err) {
-    console.error(err);
-    res.render('inquilinos',{inquilinos:[]});;
+    const lista = await inquilinos.obtenerInquilinos();
+    return res.render("inquilinos", {
+      inquilinos: lista,
+     
+  insertado: false,
+  eliminado: false,
+  
+      mensaje: "Ocurrió un error en el servidor al insertar el inquilino."
+    });
   }
 });
+
+app.get('/inquilinos/editar/:id', async (req, res) => {
+  const { id } = req.params;
+  const mensaje = req.query.mensaje || null;
+
+  try {
+    const inquilino = await inquilinos.obtenerInquilinosPorId(id);
+    res.render('editarInquilino', { 
+      inquilino, 
+     mensaje: req.query.mensaje || null,
+  insertado: req.query.insertado === "1",
+  eliminado: req.query.eliminado === "1" });
+  } catch (err) {
+    console.error("❌ Error al cargar el formulario de edición:", err);
+    res.status(500).send("Error al cargar el formulario");
+  }
+});
+
+app.post('/inquilinos/buscar', async (req, res) => {
+  const prop = req.body.prop;
+  console.log("📥 Datos recibidos para buscar inquilinos:", prop);
+
+  try {
+    const inquilinosEncontrados = await inquilinos.obtenerInquilinos(prop);
+    const insertado = req.query.insertado === "1";
+    const eliminado = req.query.eliminado === "1";
+    let mensaje = req.query.mensaje || null;
+
+    // Si no se encontró nada, avisamos
+    if (!inquilinosEncontrados || inquilinosEncontrados.length === 0) {
+      mensaje = `🔎 No se encontraron resultados para: "${prop}"`;
+    }
+
+    res.render('inquilinos', {
+      inquilinos: inquilinosEncontrados || [],
+      insertado,
+      eliminado,
+      mensaje
+    });
+
+  } catch (err) {
+    console.error("❌ Error al buscar inquilinos:", err);
+    res.render('inquilinos', {
+      inquilinos: [],
+      insertado: false,
+      eliminado: false,
+      mensaje: "Error del servidor al buscar inquilinos."
+    });
+  }
+});
+
+// app.post('/inquilinos/buscar', async (req, res) => {
+//   const prop = req.body.prop;
+//   console.log("Datos recibidos para buscar inquilinos:", prop);
+//   try {
+//     const inquilinosEncontrados = await inquilinos.obtenerInquilinos(prop);
+//     const eliminado = req.query.eliminado === '1';
+//     res.render('inquilinos', {
+//   inquilinos: inquilinosEncontrados || [],
+//   insertado: req.query.insertado === "1",
+//   eliminado: req.query.eliminado === "1",
+//   mensaje: req.query.mensaje || null
+// });
+
+   
+//   } catch (err) {
+//     console.error(err);
+//     res.render('inquilinos', { inquilinos: [] });
+//   }
+// });
 
 
 // ------------------  propietarios ----------------------

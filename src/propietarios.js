@@ -1,6 +1,5 @@
 const database = require("./datadb");
 const express = require("express");
-const router = express.Router();
 
 
 
@@ -145,7 +144,6 @@ module.exports = {
   modificarPropietarios,
   obtenerPorId: obtenerPropietariosPorId,
   obtenerTodosLosPropietarios,
-  obtenerPropietariosPorDni,
-  
-  router
+  obtenerPropietariosPorDni, 
+ 
 };

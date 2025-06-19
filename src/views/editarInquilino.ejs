@@ -1,9 +1,9 @@
 <body>
 
     <div class="contenedor mt-5">
-        <action=" /inquilinos/modificar" method="POST" onsubmit="return confirmarModificacion();">
-            <h2>Editar Inquilino</h2>
-            <input type="hidden" name="id_inquilinos" value="<%= inquilino.id_inquilinos %>">
+           <form id="formEditar" action="/inquilinos/editar/<%= inquilino.id_inquilinos %>" method="POST">
+    <h2>Editar Inquilino</h2>
+    <input type="hidden" name="id_inquilinos" value="<%= inquilino.id_inquilinos %>">
 
             <div class="row mt-5 mb-3">
                 <div class="col md-4 mb-3">
@@ -23,8 +23,8 @@
             </div>
             <div class="row mb-3">
                 <div class="col md-4 mb-3">
-                    <label for="cuit" class="form-label">Cuil</label>
-                    <input type="text" class="form-control" id="cuit" name="cuit" value="<%= inquilino.cuil %>">
+                    <label for="cuil" class="form-label">Cuil</label>
+                    <input type="text" class="form-control" id="l" name="cuil" value="<%= inquilino.cuil %>">
                 </div>
 
                 <div class="col md-4 mb-3">
