@@ -57,7 +57,7 @@ app.post('/api-test', async (req, res) => {
     const result = await testAPIIsWriting();
     res.json(result);
   } catch (err) {
-    res.status(500).json({ 
+    res.status(500).json({
       error: err.message,
       hint: "Verifica COMMIT y SSL"
     });
@@ -74,7 +74,7 @@ app.use(
   })
 );
 app.get('/', (req, res) => {
-    res.render("inicio");
+  res.render("inicio");
 });
 
 app.use((req, res, next) => {
@@ -101,11 +101,11 @@ app.get("/inquilinos", async (req, res) => {
     res.status(500).send("Error interno al cargar inquilinos");
   }
 });
-app.post ("/inquilinos", async (req, res) => {
+app.post("/inquilinos", async (req, res) => {
   try {
-   
-    const datos= req.body;
-     const prop = await inquilinos.obtenerInquilinos(datos);
+
+    const datos = req.body;
+    const prop = await inquilinos.obtenerInquilinos(datos);
     console.log(prop);
     res.render("inquilinos", { inquilinos: prop }); // Puedes dejar el log si lo necesitas
   } catch (err) {
@@ -115,15 +115,15 @@ app.post ("/inquilinos", async (req, res) => {
 });
 
 app.post("/inquilinos/porId", async (req, res) => {
-const inquilino = req.body.id_inquilinos;
-const resultado = await inquilinos.obtenerInquilinoPorId(inquilino);
-console.log ("Inquilino buscado por ID:", inquilino);
-console.log(resultado);
-if (resultado) {
-  res.status(200).json(resultado);    
-}else {
-  res.status(404).json({ message: "Inquilino no encontrado" }); 
-}
+  const inquilino = req.body.id_inquilinos;
+  const resultado = await inquilinos.obtenerInquilinoPorId(inquilino);
+  console.log("Inquilino buscado por ID:", inquilino);
+  console.log(resultado);
+  if (resultado) {
+    res.status(200).json(resultado);
+  } else {
+    res.status(404).json({ message: "Inquilino no encontrado" });
+  }
 });
 app.post('/inquilinos/editar/:id', async (req, res) => {
   const { id } = req.params;
@@ -143,9 +143,9 @@ app.post('/inquilinos/editar/:id', async (req, res) => {
       celular,
       correo_elec
     });
-   
+
     if (resultado && resultado.rowCount > 0) {
-     
+
       res.redirect('/inquilinos?mensaje=modificado');
 
     } else {
@@ -184,12 +184,12 @@ app.post('/inquilinos/modificar', async (req, res) => {
     });
 
     if (resultado && resultado.rowCount > 0) {
-  req.flash('success', '✅ Inquilino modificado correctamente');
-  res.redirect('/inquilinos');
-} else {
-  req.flash('error', 'No se pudo modificar el inquilino');
-  res.redirect(`/inquilinos/editar/${id}`);
-}
+      req.flash('success', '✅ Inquilino modificado correctamente');
+      res.redirect('/inquilinos');
+    } else {
+      req.flash('error', 'No se pudo modificar el inquilino');
+      res.redirect(`/inquilinos/editar/${id}`);
+    }
 
   } catch (err) {
     console.error('❌ Error al modificar inquilino:', err);
@@ -198,32 +198,32 @@ app.post('/inquilinos/modificar', async (req, res) => {
 });
 
 app.post('/inquilinos/eliminar/:id', async (req, res) => {
-    console.log("📌 Recibiendo solicitud en /inquilinos/eliminar con ID:", req.params.id);
+  console.log("📌 Recibiendo solicitud en /inquilinos/eliminar con ID:", req.params.id);
 
-    const { id } = req.params;
-    if (!id) {
-        return res.status(400).json({ error: "Falta el ID en la solicitud" });
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ error: "Falta el ID en la solicitud" });
+  }
+
+  try {
+    console.log("🔍 Eliminando inquilinos con ID:", id);
+    const resultado = await inquilinos.eliminarInquilinos({ id });
+
+    if (!Array.isArray(resultado) || resultado.length === 0) {
+      return res.status(404).json({ mensaje: "Inquilino no encontrado" });
     }
 
-    try {
-        console.log("🔍 Eliminando inquilinos con ID:", id);
-     const resultado = await inquilinos.eliminarInquilinos({ id });
+    res.redirect('/inquilinos?eliminado=1');
+    return;
 
-if (!Array.isArray(resultado) || resultado.length === 0) {
-    return res.status(404).json({ mensaje: "Inquilino no encontrado" });
-}
+  } catch (err) {
+    console.error("❌ Error al eliminar inquilino:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
 
-res.redirect('/inquilinos?eliminado=1');
-return;
+});
 
-    } catch (err) {
-        console.error("❌ Error al eliminar inquilino:", err);
-        res.status(500).json({ error: "Error interno del servidor" });
-    }   
-    
-  });
-
-  app.post("/inquilinos/insertar", async (req, res) => {
+app.post("/inquilinos/insertar", async (req, res) => {
   const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
 
   try {
@@ -232,30 +232,30 @@ return;
     if (existentes && existentes.length > 0) {
       const lista = await inquilinos.obtenerInquilinos();
       return res.render("inquilinos", {
-        
-        inquilinos:lista,
-  insertado: false,
-  eliminado: false,
-  mensaje: "Ya existe un inquilino con ese DNI."
+
+        inquilinos: lista,
+        insertado: false,
+        eliminado: false,
+        mensaje: "Ya existe un inquilino con ese DNI."
       });
     }
 
     const resultado = await inquilinos.agregarInquilinos({ nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
     console.log("🔎 Resultado de agregarInquilinos:", resultado);
-  
-    if (resultado && resultado.rowCount> 0) {
+
+    if (resultado && resultado.rowCount > 0) {
       console.log("Resultado del INSERT:", resultado); //Inserción exitosa
       return res.redirect("/inquilinos?insertado=1");
     } else {
       // Fallo sin excepción
       const lista = await inquilinos.obtenerInquilinos();
       return res.render("inquilinos", {
-        
+
 
         inquilinos: lista,
         insertado: false,
         eliminado: false,
-  
+
         mensaje: "No se pudo insertar el inquilino. Intente nuevamente."
       });
     }
@@ -265,10 +265,10 @@ return;
     const lista = await inquilinos.obtenerInquilinos();
     return res.render("inquilinos", {
       inquilinos: lista,
-     
-  insertado: false,
-  eliminado: false,
-  
+
+      insertado: false,
+      eliminado: false,
+
       mensaje: "Ocurrió un error en el servidor al insertar el inquilino."
     });
   }
@@ -280,11 +280,12 @@ app.get('/inquilinos/editar/:id', async (req, res) => {
 
   try {
     const inquilino = await inquilinos.obtenerInquilinosPorId(id);
-    res.render('editarInquilino', { 
-      inquilino, 
-     mensaje: req.query.mensaje || null,
-  insertado: req.query.insertado === "1",
-  eliminado: req.query.eliminado === "1" });
+    res.render('editarInquilino', {
+      inquilino,
+      mensaje,
+      insertado: req.query.insertado === "1",
+      eliminado: req.query.eliminado === "1"
+    });
   } catch (err) {
     console.error("❌ Error al cargar el formulario de edición:", err);
     res.status(500).send("Error al cargar el formulario");
@@ -324,26 +325,6 @@ app.post('/inquilinos/buscar', async (req, res) => {
   }
 });
 
-// app.post('/inquilinos/buscar', async (req, res) => {
-//   const prop = req.body.prop;
-//   console.log("Datos recibidos para buscar inquilinos:", prop);
-//   try {
-//     const inquilinosEncontrados = await inquilinos.obtenerInquilinos(prop);
-//     const eliminado = req.query.eliminado === '1';
-//     res.render('inquilinos', {
-//   inquilinos: inquilinosEncontrados || [],
-//   insertado: req.query.insertado === "1",
-//   eliminado: req.query.eliminado === "1",
-//   mensaje: req.query.mensaje || null
-// });
-
-   
-//   } catch (err) {
-//     console.error(err);
-//     res.render('inquilinos', { inquilinos: [] });
-//   }
-// });
-
 
 // ------------------  propietarios ----------------------
 
@@ -364,7 +345,7 @@ app.get("/propietarios", async (req, res) => {
 });
 
 
- 
+
 app.post('/propietarios/editar/:id', async (req, res) => {
   const { id } = req.params;
   const {
@@ -383,9 +364,9 @@ app.post('/propietarios/editar/:id', async (req, res) => {
       celular,
       correo_elec
     });
-   
+
     if (resultado && resultado.rowCount > 0) {
-     
+
       res.redirect('/propietarios?mensaje=modificado');
 
     } else {
@@ -399,7 +380,7 @@ app.post('/propietarios/editar/:id', async (req, res) => {
 
 app.post('/propietarios/porId', async (req, res) => {
   console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
-  
+
   const { id } = req.body;
   if (!id) {
     return res.status(400).json({ error: "ID no proporcionado" });
@@ -449,12 +430,12 @@ app.post('/propietarios/modificar', async (req, res) => {
     });
 
     if (resultado && resultado.rowCount > 0) {
-  req.flash('success', '✅ Propietario modificado correctamente');
-  res.redirect('/propietarios');
-} else {
-  req.flash('error', 'No se pudo modificar el propietario');
-  res.redirect(`/propietarios/editar/${id}`);
-}
+      req.flash('success', '✅ Propietario modificado correctamente');
+      res.redirect('/propietarios');
+    } else {
+      req.flash('error', 'No se pudo modificar el propietario');
+      res.redirect(`/propietarios/editar/${id}`);
+    }
 
   } catch (err) {
     console.error('❌ Error al modificar propietario:', err);
@@ -464,30 +445,30 @@ app.post('/propietarios/modificar', async (req, res) => {
 
 
 app.post('/propietarios/eliminar/:id', async (req, res) => {
-    console.log("📌 Recibiendo solicitud en /propietarios/eliminar con ID:", req.params.id);
+  console.log("📌 Recibiendo solicitud en /propietarios/eliminar con ID:", req.params.id);
 
-    const { id } = req.params;
-    if (!id) {
-        return res.status(400).json({ error: "Falta el ID en la solicitud" });
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ error: "Falta el ID en la solicitud" });
+  }
+
+  try {
+    console.log("🔍 Eliminando propietario con ID:", id);
+    const resultado = await propietarios.eliminarPropietarios({ id });
+
+    if (!Array.isArray(resultado) || resultado.length === 0) {
+      return res.status(404).json({ mensaje: "Propietario no encontrado" });
     }
 
-    try {
-        console.log("🔍 Eliminando propietario con ID:", id);
-     const resultado = await propietarios.eliminarPropietarios({ id });
+    res.redirect('/propietarios?eliminado=1');
+    return;
 
-if (!Array.isArray(resultado) || resultado.length === 0) {
-    return res.status(404).json({ mensaje: "Propietario no encontrado" });
-}
+  } catch (err) {
+    console.error("❌ Error al eliminar propietario:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
 
-res.redirect('/propietarios?eliminado=1');
-return;
-
-    } catch (err) {
-        console.error("❌ Error al eliminar propietario:", err);
-        res.status(500).json({ error: "Error interno del servidor" });
-    }   
-    
-  });
+});
 
 
 app.post("/propietarios/insertar", async (req, res) => {
@@ -506,7 +487,7 @@ app.post("/propietarios/insertar", async (req, res) => {
 
     const resultado = await propietarios.agregarPropietarios({ nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
 
-    if (resultado && resultado.rowCount> 0) {
+    if (resultado && resultado.rowCount > 0) {
       console.log("Resultado del INSERT:", resultado); //Inserción exitosa
       return res.redirect("/propietarios?insertado=1");
     } else {
@@ -534,11 +515,12 @@ app.get('/propietarios/editar/:id', async (req, res) => {
 
   try {
     const propietario = await propietarios.obtenerPorId(id);
-    res.render('editarPropietario', { 
-      propietario, 
-     mensaje: req.query.mensaje || null,
-  insertado: req.query.insertado === "1",
-  eliminado: req.query.eliminado === "1" });
+    res.render('editarPropietario', {
+      propietario,
+      mensaje: req.query.mensaje || null,
+      insertado: req.query.insertado === "1",
+      eliminado: req.query.eliminado === "1"
+    });
   } catch (err) {
     console.error("❌ Error al cargar el formulario de edición:", err);
     res.status(500).send("Error al cargar el formulario");
@@ -569,150 +551,229 @@ app.post('/propietarios/buscar', async (req, res) => {
 
 // ------------------  propiedades ----------------------
 
-app.post("/propiedades", async (req, res) => {
-  try {
-    const {datos} = req.body;
-    // console.log("Datos recibidos:", datos);
-    const propiedadesLista = await propiedades.obtenerPropiedad(datos);
-   const propietarios = await propiedades.obtenerPropietarioSql();
-   console.log("propietarios para el dropdown", propietarios);
-    res.render("propiedades", { 
-      propiedades: propiedadesLista,
-      propietarios: propietarios });
-       // Puedes dejar el log si lo necesitas
-  
-    } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al cargar propiedades");
-  }
-});
 app.get("/propiedades", async (req, res) => {
   try {
+    const propietariosLista = await propiedades.obtenerPropietarioSql();
     const propiedadesLista = await propiedades.obtenerPropiedad();
+
+    const mensaje = req.query.mensaje;
+    const insertado = req.query.insertado;
+
+    res.render("propiedades", {
+      propiedades: propiedadesLista,
+      propietarios: propietariosLista,
+      mensaje,
+      insertado
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al cargar el formulario");
+  }
+});
+
+app.post("/propiedades", async (req, res) => {
+  try {
+    const { id_propietario } = req.body;
+    console.log("ID PROPIETARIO DEL FORMULARIO:", id_propietario);
+    const propiedadesLista = await propiedades.obtenerPropiedad(id_propietario);
     const propietarios = await propiedades.obtenerPropietarioSql();
-    res.render("propiedades", { 
+    console.log("propietarios para el dropdown", propietarios);
+    
+    res.render("propiedades", {
       propiedades: propiedadesLista,
       propietarios: propietarios
     });
+    // Puedes dejar el log si lo necesitas
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar propiedades");
   }
 });
 app.post("/propiedades/porId", async (req, res) => {
-const propiedad = req.body.id_propiedades;
-const resultado = await propiedades.obtenerPropiedadesPorId(propiedad);
-if (resultado) {
-  res.status(200).json(resultado);    
-}else {
-  res.status(404).json({ message: "Propiedad no encontrada" }); 
-}
+  const propiedad = req.body.id_propiedades;
+
+  if (!propiedad) {
+    return res.status(400).json({ message: "ID de propiedad no proporcionado" });
+  }
+  try {
+    const resultado = await propiedades.obtenerPropiedadesPorId(propiedad);
+    if (resultado) {
+      res.status(200).json(resultado);
+    } else {
+      res.status(404).json({ message: "Propiedad no encontrada" });
+    }
+  } catch (err) {
+    console.error("Error al buscar propiedad por ID:", err);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+app.post("/propiedades/modificar", async (req, res) => {
+  const { direccion, localidad, id_propietario, id_impuestos, id_propiedades } = req.body;
+  if (id_impuestos === '' || id_impuestos === undefined) {
+    id_impuestos = 0;
+  }
+
+  try {
+    const resultado = await propiedades.modificarPropiedades({ direccion, localidad, id_propietario, id_impuestos, id_propiedades });
+
+    res.redirect("/propiedades");
+
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al modificar propiedad");
+  }
 });
 app.get("/propiedades/editar/:id", async (req, res) => {
   const id = req.params.id;
   try {
     const propiedad = await propiedades.obtenerPropiedadesPorId(id);
-    if (propiedad) {
-      // Si tu función devuelve un array, usa propiedad[0]
-      res.render("editarPropiedad", { propiedad: Array.isArray(propiedad) ? propiedad[0] : propiedad });
+    propiedad[0];
+    if (!propiedad) {
+      return res.status(404).send("Propiedad no encontrada");
+    }
+
+    const listaPropietarios = await propiedades.obtenerPropietarioSql();
+    const listaImpuestos = await propiedades.obtenerImpuestosSql();
+
+    res.render("editarPropiedad", {
+      propiedad,
+      propietarios: listaPropietarios,
+      impuestos: listaImpuestos
+    });
+  } catch (err) {
+    console.error("❌ Error en GET /editar/:id:", err);
+    res.status(500).send("Error al buscar la propiedad");
+  }
+});
+
+app.post("/propiedades/eliminar", async (req, res) => {
+  const { id_propiedades } = req.body;
+  try {
+    const resultado = await propiedades.eliminarPropiedad({ id:id_propiedades });
+
+    if (resultado && resultado.rowCount) {
+      res.redirect("/propiedades");
     } else {
-      res.status(404)("Propiedad no encontrada");
+      res.status(404).json({ message: "Propiedad no eliminada" });
+    }
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al eliminar propiedad");
+  }
+});
+app.post("/propiedades/eliminar/:id", async (req, res) => {
+  const id_propiedades = req.params.id;
+  try {
+    const resultado = await propiedades.eliminarPropiedad({ id:id_propiedades});
+
+    if (resultado && resultado.rowCount) {
+      res.redirect("/propiedades");
+    } else {
+      res.status(404).json({ message: "Propiedad no eliminada" });
     }
   } catch (err) {
     console.error(err);
-    res.status(500)("Error al buscar la propiedad");
+    res.status(500).send("Error al eliminar propiedad");
   }
 });
-app.post("/propiedades/modificar", async (req, res) => {
-let {direccion,localidad,propietario,impuesto,id_propiedades} = req.body;
-if (impuesto === '' || impuesto === undefined) {
-    impuesto = 0;
-  }
 
-try{
-const resultado = await propiedades.modificarPropiedades({direccion,localidad,propietario,impuesto,id_propiedades});
-
-  res.redirect("/propiedades");
-
-
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al modificar propiedad");
-}
-});
-app.post("/propiedades/eliminar", async (req, res) => {
-const {id_propiedades} = req.body;
-try{
-const resultado = await propiedades.eliminarPropiedad({id_propiedades});
-
-if (resultado && resultado.affectedRows > 0) {
-  res.redirect("/propiedades");
-} else {
-  res.status(404).json({ message: "Propiedad no eliminada" });
-}
-
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al eliminar propiedad");
-}
-});
 app.post("/propiedades/insertar", async (req, res) => {
-const {direccion, localidad, propietario,impuesto} = req.body;  
-try{
-const resultado = await propiedades.agregarPropiedades({direccion, localidad, propietario,impuesto});
+  const { direccion, localidad, id_propietario, id_impuestos } = req.body;
+  try {
+    const resultado = await propiedades.agregarPropiedades({ direccion, localidad, id_propietario, id_impuestos });
 
-if (resultado && resultado.affectedRows > 0) {
-  res.redirect("/propiedades");
-  // Nota: res.redirect termina la respuesta, así que no deberías enviar también un JSON aquí.
-  // Si quieres enviar JSON, elimina el res.redirect y usa solo res.json.
-} else {
-  res.status(404).json({ message: "Propiedad no insertada" });
-}
+    if (resultado && resultado.rowCount > 0) {
+      res.redirect("/propiedades?insertado=1");
+      // Nota: res.redirect termina la respuesta, así que no deberías enviar también un JSON aquí.
+      // Si quieres enviar JSON, elimina el res.redirect y usa solo res.json.
+    } else {
+      res.redirect("/propiedades?insertado=1");
+    }
 
-}catch (err) {  
-  console.error( err);
-  res.status(500).send("Error al insertar propiedad");
-}
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al insertar propiedad");
+  }
 });
+app.get("/propiedades/insertar", async (req, res) => {
+  try {
+    const propietarios = await propiedades.obtenerPropietarioSql();
+    const propiedadesLista = await propiedades.obtenerPropiedad();
+    res.render("propiedades", {
+      propiedades: propiedadesLista,
+      propietarios: propietarios
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al cargar el formulario");
+  }
+});
+
+app.post('/propiedades/buscar', async (req, res) => {
+  const datos = req.body.datos;
+  console.log("Datos recibidos para buscar propietarios:", datos);
+  try {
+    const propiedadesEncontrados = await propiedades.obtenerPropiedad(datos);
+    const eliminado = req.query.eliminado === '1';
+    const propietarios = await propiedades.obtenerPropietarioSql();
+
+    res.render('propiedades', {
+  propiedades: propiedadesEncontrados,
+  propietarios: propietarios, // 👈 esto es lo que faltaba
+  eliminado,
+  mensaje: req.query.mensaje || null,
+  insertado: req.query.insertado === "1"
+});
+   
+  } catch (err) {
+    console.error(err);
+    res.render('propiedades', { propiedades: [] });
+  }
+});
+
 
 //----------------------- impúestos ----------------------
 
 app.get("/impuestos", async (req, res) => {
   try {
     const impuestosLista = await impuestos.obtenerImpuestos();
-   const propiedad = await impuestos.obtenerPropiedadSql();
-   
-   //console.log("propiedades para el dropdown", propiedades);
-   //console.log("impuestosLista", impuestosLista);
-    res.render("impuestos", { 
+    const propiedad = await impuestos.obtenerPropiedadSql();
+
+    //console.log("propiedades para el dropdown", propiedades);
+    //console.log("impuestosLista", impuestosLista);
+    res.render("impuestos", {
       impuestos: impuestosLista,
       propiedades: propiedad
     });
-       // Puedes dejar el log si lo necesitas
-  
-    } catch (err) {
+    // Puedes dejar el log si lo necesitas
+
+  } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar impuestos");
   }
 });
 app.post("/impuestos/insertar", async (req, res) => {
-const {id_propiedades,abl, aysa, exp_comunes,exp_extraordinarias,seguro,fecha} = req.body;
-try{
-const resultado = await impuestos.insertarImpuestos({id_propiedades,abl,aysa,exp_comunes,exp_extraordinarias,seguro,fecha});
-console.log(req.body);
+  const { id_propiedades, abl, aysa, exp_comunes, exp_extraordinarias, seguro, fecha } = req.body;
+  try {
+    const resultado = await impuestos.insertarImpuestos({ id_propiedades, abl, aysa, exp_comunes, exp_extraordinarias, seguro, fecha });
+    console.log(req.body);
 
-if (resultado && resultado.affectedRows > 0) {
-  res.redirect("/impuestos");
-  // Nota: res.redirect termina la respuesta, así que no deberías enviar también un JSON aquí.
-  // Si quieres enviar JSON, elimina el res.redirect y usa solo res.json.
-} else {
-  res.status(404).json({ message: "impuesto no insertada" });
-}
+    if (resultado && resultado.affectedRows > 0) {
+      res.redirect("/impuestos");
+      // Nota: res.redirect termina la respuesta, así que no deberías enviar también un JSON aquí.
+      // Si quieres enviar JSON, elimina el res.redirect y usa solo res.json.
+    } else {
+      res.status(404).json({ message: "impuesto no insertada" });
+    }
 
-}catch (err) {
-  console.error( err);
-  res.status(500).send("Error al insertar impuesto");
-}
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al insertar impuesto");
+  }
 });
 
 // ----------------------  contratos ----------------------
@@ -722,8 +783,8 @@ app.get("/contratos", async (req, res) => {
     const propietariosLista = await propietarios.obtenerPropietarios();
     const inquilinosLista = await inquilinos.obtenerInquilinosOrdenados();
     const propiedadesLista = await propiedades.obtenerPropiedadOrdenados();
- 
-    res.render("contratos", { contratos: contratosLista,  propietarios:propietariosLista, inquilinos: inquilinosLista, propiedades: propiedadesLista });
+
+    res.render("contratos", { contratos: contratosLista, propietarios: propietariosLista, inquilinos: inquilinosLista, propiedades: propiedadesLista });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar contratos");
@@ -774,8 +835,8 @@ function toMysqlDate(fecha) {
 }
 app.post("/contratos/modificar", async (req, res) => {
   try {
-let { id_contratos, id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, duracion_cont, precio_inicial, precio_actual, honorarios } = req.body;
-    
+    let { id_contratos, id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, duracion_cont, precio_inicial, precio_actual, honorarios } = req.body;
+
     console.log("req.body")// Aquí tu lógica para actualizar el contrato en la base de datos
     fecha_inicio = toMysqlDate(fecha_inicio);
 
@@ -837,14 +898,14 @@ app.post("/recibo_alquiler/buscar", async (req, res) => {
   try {
     const { id_propiedades } = req.body;
     const propiedadesLista = await propiedades.obtenerPropiedadOrdenados();
-       const recibos = await recibo_contrato.obtenerRecibosPorPropiedad(id_propiedades);
+    const recibos = await recibo_contrato.obtenerRecibosPorPropiedad(id_propiedades);
     const inquilinosLista = await inquilinos.obtenerInquilinosOrdenados();
-    
+
     console.log(req.bopdy);
 
-    res.render("buscar_recibo_alquiler", { propiedades: propiedadesLista,  inquilinos: inquilinosLista,recibos: recibos });
-      
-     
+    res.render("buscar_recibo_alquiler", { propiedades: propiedadesLista, inquilinos: inquilinosLista, recibos: recibos });
+
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al buscar recibos");
@@ -857,10 +918,10 @@ app.get('/api/datos_propiedad', async (req, res) => {
     const contrato = await recibo_contrato.obtenerContratos_Id(id_propiedades);
     const impuestosLista = await recibo_contrato.obtenerImpuestos(id_propiedades);
     const ultimoRecibo = await recibo_contrato.obtenernumeroRecibo();
-    
+
 
     // Prepara los valores, aunque estén vacíos
-    
+
     const apellidoInquilino = contrato[0]?.apellidoInquilino || "";
     const apellidoPropietario = contrato[0]?.apellidoPropietario || "";
     const fecha_inicio = contrato[0]?.fecha_inicio || "";
@@ -905,19 +966,19 @@ app.get('/api/datos_propiedad', async (req, res) => {
 app.get("/recibo_inquilino", async (req, res) => {
   try {
     const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados(); // <-- trae todas las propiedades
-  
+
     const numero = await recibo_contrato.obtenernumeroRecibo();
-const numero_recibo = (numero[0]?.numero_recibo|| 0) + 1;
+    const numero_recibo = (numero[0]?.numero_recibo || 0) + 1;
 
     const meses = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-];
-const hoy = new Date();
-const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
-    res.render("recibo_inquilino", { 
+      "enero", "febrero", "marzo", "abril", "mayo", "junio",
+      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ];
+    const hoy = new Date();
+    const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+    res.render("recibo_inquilino", {
       propiedades: listaDePropiedades,
-     numero_recibo: numero_recibo,
+      numero_recibo: numero_recibo,
       id_propiedad_seleccionada: null,
       apellidoInquilino: "",
       apellidoPropietario: "",
@@ -934,52 +995,52 @@ const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.
     res.status(500).send("Error al cargar recibo de inquilino");
   }
 });
- app.post("/recibo_inquilino", async (req, res) => {
+app.post("/recibo_inquilino", async (req, res) => {
   try {
     const id_propiedades = req.body.id_propiedades;
-   
+
     const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados(); // <-- trae todas las propiedades
     const contrato = await recibo_contrato.obtenerContratos_Id(id_propiedades);
-    const impuestosLista= await recibo_contrato.obtenerImpuestos(id_propiedades);
-      const numero= await recibo_contrato.obtenernumeroRecibo();
-    const numero_recibo= (numero[0]?.numero_recibo|| 0) + 1;
+    const impuestosLista = await recibo_contrato.obtenerImpuestos(id_propiedades);
+    const numero = await recibo_contrato.obtenernumeroRecibo();
+    const numero_recibo = (numero[0]?.numero_recibo || 0) + 1;
 
     const apellidoInquilino = Array.isArray(contrato) && contrato.length > 0
-  ? (contrato[0].apellidoInquilino)
-  : "";
-   const apellidoPropietario = Array.isArray(contrato) && contrato.length > 0
-  ? (contrato[0].apellidoPropietario)
-  : "";
-  const fecha_inicial = Array.isArray(contrato) && contrato.length > 0
-  ? (contrato[0].fecha_inicio)
-  : "";
-  const monto_mensuales = Array.isArray(contrato) && contrato.length > 0
-  ? (contrato[0].precio_actual)
-  : "";
-  const exp_comunes = Array.isArray(impuestosLista) && impuestosLista.length > 0
-  ? (impuestosLista[0].exp_comunes)
-  : "";
-  const abl = Array.isArray(impuestosLista) && impuestosLista.length > 0
-  ? (impuestosLista[0].abl)
-  : "";
-  const aysa = Array.isArray(impuestosLista) && impuestosLista.length > 0
-  ? (impuestosLista[0].aysa)
-  : "";
-  const seguro = Array.isArray(impuestosLista) && impuestosLista.length > 0
-  ? (impuestosLista[0].seguro)
-  : "";
+      ? (contrato[0].apellidoInquilino)
+      : "";
+    const apellidoPropietario = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].apellidoPropietario)
+      : "";
+    const fecha_inicial = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].fecha_inicio)
+      : "";
+    const monto_mensuales = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].precio_actual)
+      : "";
+    const exp_comunes = Array.isArray(impuestosLista) && impuestosLista.length > 0
+      ? (impuestosLista[0].exp_comunes)
+      : "";
+    const abl = Array.isArray(impuestosLista) && impuestosLista.length > 0
+      ? (impuestosLista[0].abl)
+      : "";
+    const aysa = Array.isArray(impuestosLista) && impuestosLista.length > 0
+      ? (impuestosLista[0].aysa)
+      : "";
+    const seguro = Array.isArray(impuestosLista) && impuestosLista.length > 0
+      ? (impuestosLista[0].seguro)
+      : "";
 
-  const meses = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-];
-const hoy = new Date();
-const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+    const meses = [
+      "enero", "febrero", "marzo", "abril", "mayo", "junio",
+      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ];
+    const hoy = new Date();
+    const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
 
-     
-    res.render("recibo_inquilino", { 
+
+    res.render("recibo_inquilino", {
       propiedades: listaDePropiedades,
-      numero_recibo:numero_recibo,
+      numero_recibo: numero_recibo,
       id_propiedad_seleccionada: id_propiedades,
       apellidoInquilino,
       apellidoPropietario,
@@ -1187,4 +1248,3 @@ app.get("/inicio", (req, res) => {
 app.get("/login", (req, res) => {
   res.render("login");
 });
-    

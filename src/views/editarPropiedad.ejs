@@ -17,24 +17,33 @@
                         value="<%= propiedad.localidad %>" required>
                 </div>
                 <div class="mb-3">
-                    <label for="propietario" class="form-label">Propietario</label>
-                    <input type="text" class="form-control" id="propietario" name="propietario"
-                        value="<%= propiedad.propietario %>">
+                    <label for="id_propietario" class="form-label">Propietario</label>
+                    <select name="id_propietario" id="id_propietario" class="form-select" required>
+                        <option value="">Seleccione un propietario</option>
+                        <% propietarios.forEach(p=> { %>
+                            <option value="<%= p.id_propietarios %>" <%=p.id_propietarios===propiedad.id_propietario
+                                ? 'selected' : '' %>>
+                                <%= p.apellido %>, <%= p.nombre %>
+                            </option>
+                            <% }) %>
+                    </select>
                 </div>
+
                 <div class="mb-3">
-                    <label for="impuesto" class="form-label">Impuestos</label>
-                    <input type="text" class="form-control" id="impuesto" name="impuesto"
-                        value="<%= propiedad.impuestos %>">
+                    <label for="id_impuestos" class="form-label">Impuestos</label>
+                    <input type="text" class="form-control" id="id_impuestos" name="id_impuestos"
+                        value="<%= propiedad.id_impuestos %>">
                 </div>
                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 <a href="/propiedades" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
-        <script>
-            function confirmarModificacion() {
-                return confirm("¿Está seguro que desea modificar esta propiedad?");
-            }
-        </script>
+    <script>
+        function confirmarModificacion() {
+            return confirm("¿Está seguro que desea modificar esta propiedad?");
+        }
+    </script>
 
-       
+
+
 </body>

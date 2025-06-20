@@ -1,78 +1,116 @@
 <body>
+
   <div class="container mt-5">
     <form class="row g-3 mt-2" action="/propiedades/insertar" method="POST">
 
-      <div class="mt 5">
-        <h1><b>PROPIEDADES</b></h1>
-      </div>
+      <% let mensajeLimpio=mensaje?.trim(); %>
 
-      <div class="row mb-3 mt-5">
-        <!-- <div class="col-md-6 mb-3">
-          <label for="id_propiedades" class="form-label">ID Propiedad</label>
-          <input type="text" class="form-control" id="id_propiedades" name="id_propiedades"
-            placeholder="ID de la propiedad" required>
-        </div> -->
-        <div class="col-md-3">
-          <label for="direccion" class="form-label">direccion</label>
-          <input type="text" class="form-control" id="direccion" name="direccion"
-            placeholder="Direccion de la propiedad">
-        </div>
-        <div class="col-md-3 mb-3">
-          <label for="localidad" class="form-label">Localidad</label>
-          <class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
-              data-bs-toggle="dropdown" aria-expanded="false">
-              Seleccionar localidad
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-              <li><a class="dropdown-item" href="#" onclick="seleccionarLocalidad('Adrogué')">Adrogué</a></li>
-              <li><a class="dropdown-item" href="#" onclick="seleccionarLocalidad('Burzaco')">Burzaco</a></li>
-              <li><a class="dropdown-item" href="#" onclick="seleccionarLocalidad('Longchamps')">Longchamps</a></li>
-            </ul>
+        <% if (mensajeLimpio==='modificado' ) { %>
+          <div class="alert alert-success">✅ Propiedad modificada correctamente</div>
+          <% } else if (mensajeLimpio && mensajeLimpio !=='modificado' ) { %>
+            <div class="alert alert-danger">
+              <%= mensajeLimpio %>
+            </div>
+            <% } %>
+              
 
-            <input type="hidden" id="localidad" name="localidad">
-            <script>
-              function seleccionarLocalidad(valor) {
-                document.getElementById('localidad').value = valor;
-                document.getElementById('dropdownMenuButton').textContent = valor;
-              } 
-            </script>
-        </div>
+                  <% if (insertado==='1' ) { %>
+                    <div class="alert alert-success">
+                      ✅ Propiedad insertada correctamente.
+                    </div>
+
+                    <% } %>
+                      <% if (propietarios.length===0 && !eliminado) { %>
+                        <div class="alert alert-warning">⚠️ No hay propietarios cargados en el sistema.</div>
+                        <% } %>
 
 
-        <div class="col-md-3 mb-3">
-          <label for="propietario" class="form-label">Propietario</label>
-          <select class="form-select" id="propietario" name="propietario" required>
-            <option value="">Seleccione un propietario</option>
-            <% if (propietarios && propietarios.length> 0) { %>
-              <% propietarios.forEach(function(prop) { %>
-                <option value="<%= prop.id_propietarios %>">
-                  <%= prop.apellido %>, <%= prop.nombre %>
-                </option>
-                <% }); %>
-                  <% } %>
-          </select>
-        </div>
-        <div class="col-md-3 mb-3">
+                          <% if (eliminado) { %>
+                            <div class="alert alert-warning">
+                              🗑️ Propiedad eliminada correctamente.
+                            </div>
+                            <% } %>
 
-          <label for="impuesto" class="form-label">Impuestos</label>
-          <input type="text" class="form-control" id="impuesto" name="impuesto" placeholder="impuestos">
-        </div>
+                              <% if (mensaje) { %>
+                                <div class="alert alert-info">
+                                  <%= mensaje %>
+                                </div>
+                                <% } %>
 
 
 
-      </div>
 
-      <div class="col-md-3 mb-3">
-        <button type="submit" class="btn btn-success w-100">Guardar</button>
-      </div>
-    </form>
+                                  <div class="mt 5">
+                                    <h1><b>PROPIEDADES</b></h1>
+                                  </div>
+
+                                  <div class="row mb-3 mt-5">
+
+                                    <div class="col-md-3">
+                                      <label for="direccion" class="form-label">direccion</label>
+                                      <input type="text" class="form-control" id="direccion" name="direccion"
+                                        placeholder="Direccion de la propiedad">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                      <label for="localidad" class="form-label">Localidad</label>
+                                      <select class="form-select" id="localidad" name="localidad" required>
+                                        <option value="">Seleccione una localidad</option>
+                                        <option value="Adrogué">Adrogué</option>
+                                        <option value="Burzaco">Burzaco</option>
+                                        <option value="Longchamps">Longchamps</option>
+                                        <option value="Rafael Calzada">Rafael Calzada</option>
+                                        <option value="José Marmol">José Marmol</option>
+                                        <option value="Claypole">Claypole</option>
+                                        <option value="Temperley">Temperley</option>
+                                        <option value="Lomas de Zamora">Lomas de Zamora</option>
+                                        <option value="Banfield">Banfield</option>
+                                        <option value="Llavallol">Llavallol</option>
+                                        <option value="Lanus">Lanus</option>
+                                        <option value="Glew">Glew</option>
+                                        <option value="Canning">Canning</option>
+                                      </select>
+                                    </div>
+
+                                  </div>
+
+                                  <div class="col-md-3 mb-3">
+                                    <label for="propietario" class="form-label">Propietario</label>
+                                    <select class="form-select" id="propietario" name="id_propietario" required>
+                                      <option value="">Seleccione un propietario</option>
+                                      <% if (propietarios && propietarios.length> 0) { %>
+                                        <% propietarios.forEach(function(prop) { %>
+                                          <option value="<%= prop.id_propietarios %>">
+                                            <%= prop.apellido.trim() %>, <%= prop.nombre.trim() %>
+                                          </option>
+                                          <% }) %>
+                                            <% } else { %>
+                                              <option disabled>No hay propietarios</option>
+                                              <% } %>
+
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-3 mb-3">
+
+                                    <label for="id_impuestos" class="form-label">Impuestos</label>
+                                    <input type="text" class="form-control" id="id_impuestos" name="id_impuestos"
+                                      placeholder="impuestos">
+                                  </div>
+
+
+
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <button type="submit" class="btn btn-success w-100">Guardar</button>
+  </div>
+  </form>
   </div>
   <div class="container mt-5">
 
 
 
-    <form class="row g-3 mt-3" action="/propiedades" method="POST">
+    <form class="row g-3 mt-3" action="/propiedades/buscar" method="POST">
 
 
       <div class="col-md-6 mb-3">
@@ -102,49 +140,119 @@
               </tr>
             </thead>
             <tbody>
-              <% propiedades.forEach(function(propiedad) { %>
-                <tr>
-                  <td>
-                    <%= propiedad.id_propiedades %>
-                  </td>
-                  <td>
-                    <%= propiedad.direccion %>
-                  </td>
-                  <td>
-                    <%= propiedad.localidad %>
-                  </td>
-                  <td>
-                    <%= propiedad.propietario %>
-                  </td>
-                  <td>
-                    <%= propiedad.impuesto %>
-                  </td>
-                  <td>
-                    <a href="/propiedades/editar/<%= propiedad.id_propiedades %>" class="btn btn-warning">Editar</a>
-                  </td>
-                  <td>
+              <% if (propiedades && propiedades.length> 0) { %>
+                <% propiedades.forEach(function(propiedad) { %>
+                  <tr>
+                    <td>
+                      <%= propiedad.id_propiedades %>
+                    </td>
+                    <td>
+                      <%= propiedad.direccion %>
+                    </td>
+                    <td>
+                      <%= propiedad.localidad %>
+                    </td>
+                    <td>
+                      <%= propiedad.id_propietario %>
+                    </td>
+                    <td>
+                      <%= propiedad.id_impuestos %>
+                    </td>
+                    <td>
+                      <a href="/propiedades/editar/<%= propiedad.id_propiedades %>" class="btn btn-warning">Editar</a>
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                        data-bs-target="#modalEliminar-<%= propiedad.id_propiedades %>">
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
 
-                    <form action="/propiedades/eliminar" method="POST" style="display:inline;">
-                      <input type="hidden" name="id_propiedades" value="<%= propiedad.id_propiedades %>">
-                      <button type="submit" class="btn btn-danger"
-                        onclick="return confirm('¿Seguro que deseas eliminar esta propiedad?')">Eliminar</button>
-
-                    </form>
-                  </td>
-
+                  <!-- Modal fuera de la tabla -->
+                  <div class="modal fade" id="modalEliminar-<%= propiedad.id_propiedades %>" tabindex="-1"
+                    aria-labelledby="labelEliminar-<%= propiedad.id_propiedades %>" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="labelEliminar-<%= propiedad.id_propiedades %>">
+                            Confirmar eliminación
+                          </h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                          ¿Estás seguro que deseas eliminar la propiedad
+                          <strong>
+                            <%= propiedad.direccion.trim() %>
+                          </strong>?
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                          <form action="/propiedades/eliminar" method="POST" style="display: inline;">
+                            <input type="hidden" name="id_propiedades" value="<%= propiedad.id_propiedades %>">
+                            <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <% }); %>
-            </tbody>
+                    <% } else { %>
+                      <tr>
+                        <td colspan="7" class="text-center">No hay propiedades para mostrar.</td>
+                      </tr>
+                      <% } %>
+
+
           </table>
         </div>
-
       </div>
+
+      </tbody>
+
+
     </div>
-    <script>
-      function confirmarEliminacion() {
-        return confirm("¿Está seguro que desea eliminar esta propiedad?");
+
+  </div>
+  </div>
+  <script>
+    function confirmarModificacion() {
+      return confirm("¿Estás seguro de que querés modificar esta propiedad?");
+    }
+  </script>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('formInsertar');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          if (!confirm("¿Desea guardar esta propiedad?")) {
+            e.preventDefault();
+            form.reset();
+          }
+        });
       }
-    </script>
-  
+    });
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("Bootstrap activado:", typeof bootstrap !== "undefined");
+    });
+  </script>
+
+
+  <script>
+    setTimeout(() => {
+      document.querySelectorAll('[class^="alert"]').forEach(a => a.remove());
+    }, 3000);
+  </script>
+
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 
 </body>
 

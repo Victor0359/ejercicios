@@ -1,120 +1,132 @@
 const database = require("./datadb");
-
+const express = require("express");
+const router = express.Router();
 async function obtenerPropiedad(datos) {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const resultado = await conn.query("SELECT * FROM propiedades_1 WHERE direccion LIKE ? ORDER BY direccion ASC",
-      [datos + '%']);
-    return resultado;
-  } catch (err) {
-    console.error("Error al obtener propiedades:", err);
+   if (datos && datos.trim() !== "") {
+      const resultado = await database.query(
+        "SELECT * FROM propiedades WHERE direccion ILIKE '%' || $1 || '%'",
+        [datos]
+      );
+      return resultado.rows; // Devuelve los registros correctamente
+    }
     return [];
-  } finally {
-    if (conn) conn.end();
+  } catch (err) {
+    console.error("Error al buscar propiedad:", err);
+    return [];
   }
 }
-async function obtenerPropiedadOrdenados() {
-  let conn;
+
+  async function obtenerPropiedadOrdenados() {
+  
   try {
-    conn = await database.conectar();
-    const resultado = await conn.query("SELECT * FROM propiedades_1 ORDER BY direccion ASC");
-    return resultado;
-  } catch (err) {
-    console.error("Error al obtener propiedades:", err);
+    if (datos && datos.trim() !== "") {
+      const resultado = await database.query("SELECT * FROM propiedades ORDER BY direccion ASC");
+     return resultado.rows; // Devuelve los registros correctamente
+    }
     return [];
-  } finally {
-    if (conn) conn.end();
+  } catch (err) {
+    console.error("Error al obtener propiedad:", err);
+    return [];
   }
 }
 
 async function agregarPropiedades(datos) {
-  let conn;
   try {
-    conn = await database.conectar();
-    const sql = "INSERT INTO propiedades_1 (direccion, localidad, propietario, impuesto) VALUES (?, ?, ?, ?)"; 
-    const resultado= await conn.query (sql,[datos.direccion,
-        datos.localidad,
-        datos.propietario,
-        datos.impuesto]);
-       
+    const direccion = typeof datos.direccion === 'string' ? datos.direccion.trim() : '';
+    const localidad = typeof datos.localidad === 'string' ? datos.localidad.trim() : '';
+    const id_propietario = parseInt(datos.id_propietario) || null;
+    const id_impuestos = parseInt(datos.id_impuestos) || 0;
+
+    const resultado = await database.query(
+      "INSERT INTO propiedades (direccion, localidad, id_propietario, id_impuestos) VALUES ($1, $2, $3, $4)",
+      [direccion, localidad, id_propietario, id_impuestos]
+    );
+
     return resultado;
   } catch (err) {
     console.error("Error al insertar propiedad:", err);
-    return null;
-  } finally {
-    if (conn) conn.end();
+    throw err;
   }
 }
 
-async function eliminarPropiedad({ id_propiedades }) {
-  let conn;
-  try {
-    conn = await database.conectar();
-    const sql = "DELETE FROM propiedades_1 WHERE id_propiedades = ?";
-    const resultado = await conn.query(sql, [id_propiedades]);
-    return resultado;
-  } catch (err) {
-    console.error("Error al eliminar la propiedad:", err);
-    return null;
-  } finally {
-    if (conn) conn.end();
-  }
+
+async function eliminarPropiedad({ id }) {
+ 
+     try {
+    const sql = "DELETE FROM propiedades WHERE id_propiedades = $1 RETURNING *";
+        const resultado = await database.query(sql, [id]);
+
+        console.log("🔍 SQL DELETE resultado:", resultado);
+
+        // Nos aseguramos de retornar un array vacío si no hay coincidencia
+        return resultado;
+    } catch (err) {
+        console.error("❌ Error en eliminarInquilinos:", err);
+        throw err;
+};
 }
+
+
 async function modificarPropiedades(datos) {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const sql = 'UPDATE propiedades_1 SET direccion = ?,localidad = ?,propietario = ?,impuesto = ? WHERE id_propiedades = ?'; 
-    const resultado= await conn.query (sql,[datos.direccion,
+   
+    const sql = 'UPDATE propiedades SET direccion = $1,localidad = $2,id_propietario = $3,id_impuestos = $4 WHERE id_propiedades = $5'; 
+    const resultado= await database.query (sql,[datos.direccion,
         datos.localidad,
-        datos.propietario,
-        datos.impuesto,
-        datos.id_propiedades]);
+        parseInt(datos.id_propietario),
+        parseInt(datos.id_impuestos),
+        parseInt(datos.id_propiedades)]);
        
-    return resultado;
+    console.log(`✅ Propiedad ID ${datos.id_propiedades} — Filas afectadas:`, resultado.rowCount);
+
+    return {
+      rowCount: resultado.rowCount,
+      rows: resultado.rows
+    };
   } catch (err) {
-    console.error("Error al modificar la propiedad:", err);
-    return null;
-  } finally {
-    if (conn) conn.end();
+    console.error("❌ Error al modificar propiedad:", err);
+    throw err; // Lo dejamos rebotar para que el route lo capture y maneje
   }
 }
+
 async function obtenerPropiedadesPorId(id_propiedades) {
-  let conn;
+ 
   try {
-    conn = await database.conectar();
-    const resultado = await conn.query("SELECT * FROM propiedades_1 WHERE id_propiedades = ? ORDER BY direccion ASC", [id_propiedades]);
-    return resultado[0];
+const sql = "SELECT * FROM propiedades WHERE id_propiedades = $1";
+    const resultado = await database.query (sql,[id_propiedades]);
+    return resultado.rows[0];
   } catch (err) {
     console.error("Error al obtener la propiedad por ID:", err);
     return null;
-  } finally {
-    if (conn) conn.end();
-  }
+  } 
 }
 async function obtenerPropietarioSql() {
-  let conn;
   try {
-    conn = await database.conectar();
-    if (!conn) throw new Error("No se pudo obtener la conexión a la base de datos");
-    const resultado = await conn.query("SELECT id_propietarios, apellido, nombre FROM propietarios ORDER BY apellido ASC");
-    // Siempre devuelve un array, aunque solo haya un propietario
-    //return Array.isArray(rows) ? rows : [rows];
-    return resultado;
+    const resultado = await database.query(
+      "SELECT id_propietarios, TRIM(apellido) AS apellido, TRIM(nombre) AS nombre FROM propietarios ORDER BY apellido ASC"
+    );
+    return resultado.rows;
   } catch (err) {
     console.error("Error al obtener propietario sql:", err);
     return [];
-  } finally {
-    if (conn) conn.end();
   }
 }
+async function obtenerImpuestosSql() {
+  const sql = "SELECT * FROM impuestos";
+  const resultado = await database.query(sql);
+  return resultado.rows;
+}
+
 module.exports = {
+obtenerImpuestosSql,
  obtenerPropiedad,
  agregarPropiedades,
  eliminarPropiedad,
  modificarPropiedades,
  obtenerPropiedadesPorId,
  obtenerPropietarioSql,
-  obtenerPropiedadOrdenados
-};
+ obtenerPropiedadOrdenados
+}
