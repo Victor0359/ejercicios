@@ -10,3 +10,12 @@ h1 {color: rgb(1, 10, 9) !important;
     margin-bottom: 20px;
     text-align: center;
 }
+.navbar-collapse.collapsing {
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+.navbar-collapse.show {
+  opacity: 1;
+  transition: opacity 0.3s ease-in;
+}

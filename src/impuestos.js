@@ -1,60 +1,64 @@
 const database= require('./datadb.js');
+const express=require("express");
+
+
+async function obtenerImpuestosPorDireccion(idPropiedad) {
+  try {
+    const resultado = await database.query(
+      `SELECT i.*, p.direccion 
+       FROM impuestos i 
+       JOIN propiedades p ON i.id_propiedades = p.id_propiedades 
+       WHERE i.id_propiedades = $1 
+       ORDER BY i.fecha DESC`,
+      [idPropiedad]
+    );
+    return resultado;
+  } catch (err) {
+    console.error("Error al obtener impuestos por dirección:", err);
+    return { rows: [] };
+  }
+}
+
+
 
 async function obtenerImpuestos() {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const resultado = await conn.query("SELECT * FROM impuestos ORDER BY fecha DESC");
+    
+    const resultado = await database.query("SELECT * FROM impuestos ORDER BY fecha DESC");
     return resultado;
   } catch (err) {
     console.error("Error al obtener impuestos:", err);
     return [];
-  } finally {
-    if (conn) conn.end();
-  }
+  } 
 }
 
 async function insertarImpuestos(datos) {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const sql = "INSERT INTO impuestos (id_propiedades,abl,aysa,exp_comunes,exp_extraordinarias,seguro,fecha) VALUES (?, ?, ?, ?, ?, ?,?)"; 
-    const resultado= await conn.query (sql,[datos.id_propiedades ||0, 
+    
+    const sql = "INSERT INTO impuestos (abl,aysa,exp_com,exp_ext,seguro,varios,fecha,id_propiedades) VALUES ($1, $2, $3, $4, $5, $6,$7,$8)"; 
+    const resultado= await database.query (sql,[ 
         datos.abl || 0, 
         datos.aysa || 0,  
-        datos.exp_comunes || 0,
-        datos.exp_extraordinarias || 0,
+        datos.exp_com || 0,
+        datos.exp_ext || 0,
         datos.seguro || 0,
-        datos.fecha]);
+        datos.varios || 0,
+        datos.fecha,
+        datos.id_propiedades || 0
+      ]);
        
     return resultado;
   } catch (err) {
-    console.error("Error al insertar propiedad:", err);
+    console.error("Error al insertar impuestos:", err);
     return null;
-  } finally {
-    if (conn) conn.end();
-  }
+  } 
 }
 
-async function obtenerPropiedadSql() {
-  let conn;
-  try {
-    conn = await database.conectar();
-    if (!conn) throw new Error("No se pudo obtener la conexión a la base de datos");
-    const resultado = await conn.query("SELECT id_propiedades, direccion, localidad FROM propiedades_1 ORDER BY direccion ASC");
-    // Siempre devuelve un array, aunque solo haya un propietario
-    //return Array.isArray(rows) ? rows : [rows];
-    return resultado;
-  } catch (err) {
-    console.error("Error al obtener propiedad sql:", err);
-    return [];
-  } finally {
-    if (conn) conn.end();
-  }
-}
 module.exports = {
   obtenerImpuestos,
   insertarImpuestos,
-  obtenerPropiedadSql
-  
+  obtenerImpuestosPorDireccion
+    
 };

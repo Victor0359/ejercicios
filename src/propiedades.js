@@ -31,6 +31,16 @@ async function obtenerPropiedad(datos) {
     return [];
   }
 }
+async function obtenerPropiedadesOrdenadasPorId () {
+  try {
+    const resultado = await database.query("SELECT id_propiedades, direccion, localidad FROM propiedades ORDER BY direccion ASC");
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al obtener propiedad:", err);
+    return [];
+  }
+}
+
 
 async function agregarPropiedades(datos) {
   try {
@@ -128,5 +138,6 @@ obtenerImpuestosSql,
  modificarPropiedades,
  obtenerPropiedadesPorId,
  obtenerPropietarioSql,
- obtenerPropiedadOrdenados
+ obtenerPropiedadOrdenados,
+ obtenerPropiedadesOrdenadasPorId
 }

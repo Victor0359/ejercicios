@@ -12,12 +12,14 @@
                 <select class="form-select" id="id_propiedades" name="id_propiedades" required>
                     <option value="">Seleccione una propiedad</option>
                     <% if (propiedades && propiedades.length> 0) { %>
-                        <% propiedades.forEach(function(prop) { if (prop.direccion && prop.direccion.trim() !=="" ) { %>
-                            <option value="<%= prop.id_propiedades %>">
-                                <%= prop.direccion %>
-                            </option>
-                            <% } }); %>
+                        <% propiedades.forEach(function(prop) { %>
+                            <% if (prop.direccion && prop.direccion.trim() !=="" ) { %>
+                                <option value="<%= prop.id_propiedades %>">
+                                    <%= prop.direccion %>
+                                </option>
                                 <% } %>
+                                    <% }); %>
+                                        <% } %>
                 </select>
             </div>
 
@@ -32,20 +34,23 @@
             </div>
 
             <div class="col-6 ">
-                <label for="exp_comunes" class="form-label">Expensas comunes</label>
-                <input type="text" class="form-control" id="exp_comunes" name="exp_comunes"
-                    placeholder="Expensas comunes">
+                <label for="exp_com" class="form-label">Expensas comunes</label>
+                <input type="text" class="form-control" id="exp_com" name="exp_com" placeholder="Expensas comunes">
             </div>
 
             <div class="col-6 ">
-                <label for="exp_extraordinarias" class="form-label">Expensas extraordinarias</label>
-                <input type="text" class="form-control" id="exp_extraordinarias" name="exp_extraordinarias"
+                <label for="exp_ext" class="form-label">Expensas extraordinarias</label>
+                <input type="text" class="form-control" id="exp_ext" name="exp_ext"
                     placeholder="Expensas extraordinarias">
             </div>
 
             <div class="col-6 ">
                 <label for="seguro" class="form-label">Seguro</label>
                 <input type="text" class="form-control" id="seguro" name="seguro" placeholder="Seguro">
+            </div>
+            <div class="col-6 ">
+                <label for="varios" class="form-label">Seguro</label>
+                <input type="text" class="form-control" id="varios" name="varios" placeholder="Seguro">
             </div>
 
             <div class="col-6 ">
@@ -55,36 +60,67 @@
 
             <div class="col sm-12 ">
                 <button type="submit" class="btn btn-primary">Guardar</button>
-                <div </form>
-                </div>
+        </form>
 
-                <div>
-                    <div class="mt-5">
-
-                        <h1>Formulario Impuestos</h1>
+        <div>
+            <div class="mt-5">
+                <h1>Formulario Impuestos</h1>
+                <form method="GET" action="/impuestos" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="filtroPropiedad" class="form-label">Filtrar por Propiedad</label>
+                        <select class="form-select" id="filtroPropiedad" name="id_propiedad"
+                            onchange="this.form.submit()">
+                            <option value="">Todas las propiedades</option>
+                            <% propiedades.forEach(function(prop) { %>
+                                <% if (prop.direccion && prop.direccion.trim() !=="" ) { %>
+                                    <option value="<%= prop.id_propiedades %>"
+                                        <%=String(prop.id_propiedades)===String(id_propiedad) ? 'selected' : '' %>>
+                                        <%= prop.direccion %>
+                                    </option>
+                                    <% } %>
+                                        <% }); %>
+                        </select>
                     </div>
-                    <div class="container mt-5">
 
-                        <div class="row">
-                            <div class="col">
-                                <table class="table table-striped table-bordered border-primary">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-primary" scope="col">ID_propiedad</th>
-                                            <th class="text-primary" scope="col">ABL</th>
-                                            <th class="text-primary" scope="col">AYSA</th>
-                                            <th class="text-primary" scope="col">EXP_COMUNES</th>
-                                            <th class="text-primary" scope="col">EXP_EXTRAORDINARIAS</th>
-                                            <th class="text-primary" scope="col">SEGURO</th>
-                                            <th class="text-primary" scope="col">FECHA</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <a href="/impuestos" class="btn btn-secondary">Limpiar filtro</a>
+                    </div>
+                </form>
+
+
+            </div>
+
+            <div class="container mt-5">
+
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-striped table-bordered border-primary">
+                            <thead>
+                                <tr>
+                                    <th class="text-primary" scope="col">ID_propiedad</th>
+                                    <th class="text-primary" scope="col">ABL</th>
+                                    <th class="text-primary" scope="col">AYSA</th>
+                                    <th class="text-primary" scope="col">EXP_COMUNES</th>
+                                    <th class="text-primary" scope="col">EXP_EXTRAORDINARIAS</th>
+                                    <th class="text-primary" scope="col">SEGURO</th>
+                                    <th class="text-primary" scope="col">VARIOS</th>
+                                    <th class="text-primary" scope="col">FECHA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (impuestos.length===0) { %>
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted">
+                                            No hay impuestos registrados para esta propiedad.
+                                        </td>
+                                    </tr>
+                                    <% } else { %>
                                         <% impuestos.forEach(function(impuestos) { %>
                                             <tr>
                                                 <td>
                                                     <%= impuestos.id_propiedades %>
                                                 </td>
+
                                                 <td>
                                                     <%= impuestos.abl %>
                                                 </td>
@@ -92,32 +128,50 @@
                                                     <%= impuestos.aysa %>
                                                 </td>
                                                 <td>
-                                                    <%= impuestos.exp_comunes %>
+                                                    <%= impuestos.exp_com %>
                                                 </td>
                                                 <td>
-                                                    <%= impuestos.exp_extraordinarias %>
+                                                    <%= impuestos.exp_ext %>
                                                 </td>
                                                 <td>
                                                     <%= impuestos.seguro %>
                                                 </td>
                                                 <td>
-                                                    <%= impuestos.fecha %>
+                                                    <%= impuestos.varios %>
                                                 </td>
-                                                <!-- <td>  <a href="/impuestos/editar/<%= impuestos.id_impuestos %>" class="btn btn-warning">Editar</a>
-            </td> -->
-                                                <% }); %>
+                                                <td>
+                                                    <%= new Date(impuestos.fecha).toLocaleDateString('es-AR') %>
+                                                </td>
+                                            </tr>
+                                            <% }); %>
+                                                <% } %>
+                            </tbody>
 
-                                    </tbody>
-                                </table>
-                            </div>
-
-
-
-                        </div>
+                        </table>
 
                     </div>
-                    
 
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const filtro = document.getElementById("filtroPropiedad");
+    if (filtro) {
+      filtro.addEventListener("change", function () {
+        filtro.form.submit();
+      });
+    }
+  });
+</script>
 </body>
 
 </html>

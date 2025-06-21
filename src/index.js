@@ -740,34 +740,58 @@ app.post('/propiedades/buscar', async (req, res) => {
 
 app.get("/impuestos", async (req, res) => {
   try {
-    const impuestosLista = await impuestos.obtenerImpuestos();
-    const propiedad = await impuestos.obtenerPropiedadSql();
+    const idPropiedad = req.query.id_propiedad;
+    const propiedadesLista = await propiedades.obtenerPropiedadesOrdenadasPorId();
+console.log("Valor recibido del filtro:", req.query.id_propiedad);
 
-    //console.log("propiedades para el dropdown", propiedades);
-    //console.log("impuestosLista", impuestosLista);
+    /* let impuestosLista; */
+
+    if (idPropiedad) {
+      impuestosLista = await impuestos.obtenerImpuestosPorDireccion(idPropiedad);
+    } else {
+      impuestosLista = await impuestos.obtenerImpuestos();
+    }
+
     res.render("impuestos", {
-      impuestos: impuestosLista,
-      propiedades: propiedad
+      impuestos: Array.isArray(impuestosLista.rows) ? impuestosLista.rows : [],
+      propiedades: propiedadesLista,
+      id_propiedad: idPropiedad || ""
     });
-    // Puedes dejar el log si lo necesitas
-
   } catch (err) {
-    console.error(err);
+    console.error("Error en /impuestos:", err);
     res.status(500).send("Error al cargar impuestos");
   }
 });
-app.post("/impuestos/insertar", async (req, res) => {
-  const { id_propiedades, abl, aysa, exp_comunes, exp_extraordinarias, seguro, fecha } = req.body;
-  try {
-    const resultado = await impuestos.insertarImpuestos({ id_propiedades, abl, aysa, exp_comunes, exp_extraordinarias, seguro, fecha });
-    console.log(req.body);
 
-    if (resultado && resultado.affectedRows > 0) {
+
+
+app.get("/impuestos/insertar",async (req,res) =>{
+
+try{
+const propiedad = await propiedades.obtenerPropiedadesOrdenadasPorId();
+       
+        res.render ("impuestos",{
+          propiedades: Array.isArray(propiedad) ? propiedad : []
+        });
+       } catch{
+       console.error("Error en /impuestos:", err);
+    res.status(500).send("Error al cargar impuestos");
+  }
+        
+});
+
+app.post("/impuestos/insertar", async (req, res) => {
+  const {  abl, aysa, exp_com, exp_ext, seguro, varios,fecha,id_propiedades} = req.body;
+  try {
+    const resultado = await impuestos.insertarImpuestos({ abl, aysa, exp_com, exp_ext, seguro,varios,fecha,id_propiedades });
+   
+
+    if (resultado && resultado.rowCount > 0) {
       res.redirect("/impuestos");
       // Nota: res.redirect termina la respuesta, así que no deberías enviar también un JSON aquí.
       // Si quieres enviar JSON, elimina el res.redirect y usa solo res.json.
     } else {
-      res.status(404).json({ message: "impuesto no insertada" });
+      res.status(404).json({ message: "impuesto no insertado" });
     }
 
   } catch (err) {
