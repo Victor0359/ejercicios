@@ -1,99 +1,125 @@
 const database = require("./datadb.js");
 
+
 async function obtenerContratos() {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const resultado = await conn.query(
+   
+    const resultado = await database.query(
       "SELECT * FROM contratos ORDER BY fecha_inicio DESC"
     );
-    return resultado;
+    return resultado.rows;
   } catch (err) {
     console.error("Error al obtener contratos:", err);
     return [];
-  } finally {
-    if (conn) conn.end();
+ 
+}
+}
+
+async function obtenerContratosPorIdPropiedad(id_propiedad) {
+  
+  try {
+   
+    const resultado = await database.query(
+      "SELECT * FROM contratos where id_propiedades=$1 ORDER BY fecha_inicio DESC",[id_propiedad]
+    );
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al obtener contratos:", err);
+    return [];
+ 
+}
+}
+
+async function obtenerPropiedadOrdenados() {
+  
+  try {
+   
+      const resultado = await database.query("SELECT * FROM propiedades ORDER BY direccion ASC");
+     return resultado.rows; // Devuelve los registros correctamente
+    
+   
+  } catch (err) {
+    console.error("Error al obtener propiedad:", err);
+    return [];
   }
 }
 
+
 async function agregarContratos(datos) {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const sql = "INSERT INTO contratos (id_propietarios, id_inquilinos,id_propiedades,fecha_inicio,duracion_cont, precio_inicial,precio_actual,honorarios,fecha_final) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
-    const resultado= await conn.query (sql,[datos.id_propietarios,
+    
+    const sql = "INSERT INTO contratos (id_propietarios,id_inquilinos,id_propiedades,fecha_inicio,precioinicial,precioactual,honorarios,duracion_contrato) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"; 
+    const resultado= await database.query (sql,[datos.id_propietarios,
         datos.id_inquilinos,
         datos.id_propiedades,
         datos.fecha_inicio,
-        datos.duracion_cont,
-        datos.precio_inicial,
-        datos.precio_actual,
+        datos.precioinicial,
+        datos.precioactual,
         datos.honorarios,
-        datos.fecha_final]);
+       datos.duracion_contrato]);
                
     return resultado;
   } catch (err) {
     console.error("Error al insertar contrato:", err);
     return null;
-  } finally {
-    if (conn) conn.end();
-  }
+  } 
 }
 
 async function modificarContrato(datos) {
-  let conn;
+  
   try {
-    conn = await database.conectar();
+    
     const sql = `
       UPDATE contratos SET
-        id_propietarios = ?,
-        id_inquilinos = ?,
-        id_propiedades = ?,
-        fecha_inicio = ?,
-        duracion_cont = ?,
-        precio_inicial = ?,
-        precio_actual = ?,
-        honorarios = ?
-      WHERE id_contratos = ?
+        id_propietarios = $1,
+        id_inquilinos = $2,
+        id_propiedades = $3,
+        fecha_inicio = $4,
+        precioinicial = $5,
+        precioactual = $6,
+        honorarios = $7,
+        duracion_contrato = $8
+      WHERE id_contratos = $9
     `;
-    const resultado = await conn.query(sql, [
+    const resultado = await database.query(sql, [
       datos.id_propietarios,
       datos.id_inquilinos,
       datos.id_propiedades,
       datos.fecha_inicio,
-      datos.duracion_cont,
-      datos.precio_inicial,
-      datos.precio_actual,
+      datos.precioinicial,
+      datos.precioactual,
       datos.honorarios,
+       datos.duracion_contrato,
       datos.id_contratos
     ]);
     return resultado;
   } catch (err) {
     console.error("Error al modificar contrato:", err);
     return null;
-  } finally {
-    if (conn) conn.end();
-  }
+  } 
 }
+
 async function obtenerContratoPorId(id) {
-  let conn;
+  
   try {
-    conn = await database.conectar();
-    const resultado = await conn.query("SELECT * FROM contratos WHERE id_contratos = ?", [id]);
+    
+    const resultado = await  database.query("SELECT * FROM contratos WHERE id_contratos = $1", [id]);
     return resultado;
 
   } catch (err) {
     console.error("Error al obtener contrato por ID:", err);
     return null;
-  } finally {
-    if (conn) conn.end();
-  }
+  } 
 }
 
 
 
-module.exports = {obtenerContratos,
+module.exports = { obtenerContratos,
     agregarContratos,
     modificarContrato,
-    obtenerContratoPorId
+    obtenerContratoPorId,
+    obtenerPropiedadOrdenados,
+    obtenerContratosPorIdPropiedad
 };

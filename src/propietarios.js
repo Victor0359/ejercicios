@@ -126,7 +126,7 @@ async function obtenerPropietariosPorDni(dni) {
 }
 async function obtenerTodosLosPropietarios() {
   try {
-    const resultado = await database.query("SELECT * FROM propietarios ORDER BY id_propietarios");
+    const resultado = await database.query("SELECT * FROM propietarios ORDER BY apellido");
     return resultado.rows; // Devuelve todos los registros encontrados
     
 

@@ -53,11 +53,6 @@
                 <input type="text" class="form-control" id="varios" name="varios" placeholder="Seguro">
             </div>
 
-            <div class="col-6 ">
-                <label for="fecha" class="form-label">Fecha</label>
-                <input type="date" class="form-control" id="fecha" name="fecha" placeholder="Fecha">
-            </div>
-
             <div class="col sm-12 ">
                 <button type="submit" class="btn btn-primary">Guardar</button>
         </form>
@@ -108,43 +103,50 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% if (impuestos.length===0) { %>
+                                <% if (hayFiltro && impuestos.length===0) { %>
                                     <tr>
                                         <td colspan="9" class="text-center text-muted">
                                             No hay impuestos registrados para esta propiedad.
                                         </td>
                                     </tr>
-                                    <% } else { %>
-                                        <% impuestos.forEach(function(impuestos) { %>
-                                            <tr>
-                                                <td>
-                                                    <%= impuestos.id_propiedades %>
-                                                </td>
+                                    <% } else if (!hayFiltro) { %>
+                                        <tr>
+                                            <td colspan="9" class="text-center text-muted">
+                                                Seleccioná una propiedad para ver sus impuestos.
+                                            </td>
+                                        </tr>
+                                        <% } else { %>
+                                            <% impuestos.forEach(function(impuestos) { %>
+                                                <tr>
+                                                    <td>
+                                                        <%= impuestos.id_propiedades %>
+                                                    </td>
+                                                    <td>
+                                                        <%= impuestos.abl %>
+                                                    </td>
+                                                    <td>
+                                                        <%= impuestos.aysa %>
+                                                    </td>
+                                                    <td>
+                                                        <%= impuestos.exp_com %>
+                                                    </td>
+                                                    <td>
+                                                        <%= impuestos.exp_ext %>
+                                                    </td>
+                                                    <td>
+                                                        <%= impuestos.seguro %>
+                                                    </td>
+                                                    <td>
+                                                        <%= impuestos.varios %>
+                                                    </td>
+                                                    <td>
+                                                        <%= new Date(impuestos.fecha).toLocaleDateString('es-AR') %>
+                                                    </td>
+                                                </tr>
+                                                <% }); %>
+                                                    <% } %>
 
-                                                <td>
-                                                    <%= impuestos.abl %>
-                                                </td>
-                                                <td>
-                                                    <%= impuestos.aysa %>
-                                                </td>
-                                                <td>
-                                                    <%= impuestos.exp_com %>
-                                                </td>
-                                                <td>
-                                                    <%= impuestos.exp_ext %>
-                                                </td>
-                                                <td>
-                                                    <%= impuestos.seguro %>
-                                                </td>
-                                                <td>
-                                                    <%= impuestos.varios %>
-                                                </td>
-                                                <td>
-                                                    <%= new Date(impuestos.fecha).toLocaleDateString('es-AR') %>
-                                                </td>
-                                            </tr>
-                                            <% }); %>
-                                                <% } %>
+
                             </tbody>
 
                         </table>
@@ -162,16 +164,16 @@
     </div>
 
 
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const filtro = document.getElementById("filtroPropiedad");
-    if (filtro) {
-      filtro.addEventListener("change", function () {
-        filtro.form.submit();
-      });
-    }
-  });
-</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const filtro = document.getElementById("filtroPropiedad");
+            if (filtro) {
+                filtro.addEventListener("change", function () {
+                    filtro.form.submit();
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

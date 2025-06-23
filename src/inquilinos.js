@@ -128,7 +128,7 @@ async function obtenerInquilinosPorDni(dni) {
 
 async function obtenerTodosLosInquilinos() {
   try {
-    const resultado = await database.query("SELECT * FROM inquilinos ORDER BY id_inquilinos");
+    const resultado = await database.query("SELECT * FROM inquilinos ORDER BY apellido");
     return resultado.rows; // Devuelve todos los registros encontrados
     
 

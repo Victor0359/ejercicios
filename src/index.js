@@ -742,7 +742,8 @@ app.get("/impuestos", async (req, res) => {
   try {
     const idPropiedad = req.query.id_propiedad;
     const propiedadesLista = await propiedades.obtenerPropiedadesOrdenadasPorId();
-console.log("Valor recibido del filtro:", req.query.id_propiedad);
+    const hayFiltro = Boolean(idPropiedad);
+
 
     /* let impuestosLista; */
 
@@ -755,7 +756,8 @@ console.log("Valor recibido del filtro:", req.query.id_propiedad);
     res.render("impuestos", {
       impuestos: Array.isArray(impuestosLista.rows) ? impuestosLista.rows : [],
       propiedades: propiedadesLista,
-      id_propiedad: idPropiedad || ""
+      id_propiedad: idPropiedad || "",
+      hayFiltro
     });
   } catch (err) {
     console.error("Error en /impuestos:", err);
@@ -781,9 +783,9 @@ const propiedad = await propiedades.obtenerPropiedadesOrdenadasPorId();
 });
 
 app.post("/impuestos/insertar", async (req, res) => {
-  const {  abl, aysa, exp_com, exp_ext, seguro, varios,fecha,id_propiedades} = req.body;
+  const {  abl, aysa, exp_com, exp_ext, seguro, varios,id_propiedades} = req.body;
   try {
-    const resultado = await impuestos.insertarImpuestos({ abl, aysa, exp_com, exp_ext, seguro,varios,fecha,id_propiedades });
+    const resultado = await impuestos.insertarImpuestos({ abl, aysa, exp_com, exp_ext, seguro,varios,id_propiedades });
    
 
     if (resultado && resultado.rowCount > 0) {
@@ -803,49 +805,78 @@ app.post("/impuestos/insertar", async (req, res) => {
 // ----------------------  contratos ----------------------
 app.get("/contratos", async (req, res) => {
   try {
-    const contratosLista = await contratos.obtenerContratos();
-    const propietariosLista = await propietarios.obtenerPropietarios();
-    const inquilinosLista = await inquilinos.obtenerInquilinosOrdenados();
-    const propiedadesLista = await propiedades.obtenerPropiedadOrdenados();
+    const id_propiedad = req.query.id_propiedad;
+    const hayFiltro = Boolean(id_propiedad);
+    const contratosLista = id_propiedad
+      ? await contratos.obtenerContratosPorIdPropiedad(id_propiedad)
+      : await contratos.obtenerContratos();
 
-    res.render("contratos", { contratos: contratosLista, propietarios: propietariosLista, inquilinos: inquilinosLista, propiedades: propiedadesLista });
+    const propietariosLista = await propietarios.obtenerTodosLosPropietarios();
+    const inquilinosLista = await inquilinos.obtenerTodosLosInquilinos();
+    const propiedadesLista = await contratos.obtenerPropiedadOrdenados();
+    console.log("Valor recibido en filtro:", id_propiedad);
+    
+    res.render("contratos", {
+      contratos: contratosLista,
+      propietarios: propietariosLista,
+      inquilinos: inquilinosLista,
+      propiedades: propiedadesLista,
+      hayFiltro,
+      id_propiedad
+    });
+    res.set("Cache-Control", "no-store");
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar contratos");
   }
 });
 
+app.get("/contratos/insertar",async (req,res) =>{
+
+try{
+const propiedad = await contratos.obtenerPropiedadOrdenados();
+       
+        res.render ("contratos",{
+          propiedades: Array.isArray(propiedad) ? propiedad : []
+        });
+       } catch{
+       console.error("Error en /impuestos:", err);
+    res.status(500).send("Error al cargar impuestos");
+  }
+        
+});
+
+
 app.post("/contratos/insertar", async (req, res) => {
   try {
-    let { id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, duracion_cont, precio_inicial, precio_actual, honorarios, fecha_final } = req.body;
+    let { id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial,precioactual,honorarios,duracion_contrato } = req.body;
+    console.log(req.body);
 
     // Convierte vacíos a 0
-    if (precio_inicial === '' || precio_inicial === undefined) precio_inicial = 0;
-    if (precio_actual === '' || precio_actual === undefined) precio_actual = 0;
+    if (precioinicial === '' || precioinicial === undefined) precioinicial = 0;
+    if (precioactual === '' || precioactual === undefined) precioactual = 0;
     if (honorarios === '' || honorarios === undefined) honorarios = 0;
-    if (duracion_cont === '' || duracion_cont === undefined) duracion_cont = 0;
-    if (fecha_final === '' || fecha_final === undefined) fecha_final = null;
+    if (duracion_contrato === '' || duracion_contrato === undefined) duracion_contrato = 0;
+    
 
     const resultado = await contratos.agregarContratos({
       id_propietarios,
       id_inquilinos,
       id_propiedades,
       fecha_inicio,
-      duracion_cont,
-      precio_inicial,
-      precio_actual,
+      precioinicial,
+      precioactual,
       honorarios,
-      fecha_final
+      duracion_contrato
+      
     });
 
     if (resultado && resultado.affectedRows > 0) {
       res.redirect("/contratos");
-    } else {
-      res.status(404).json({ message: "contrato no insertado" });
-    }
-  } catch (err) {
+    } } catch (err) {
     console.error(err);
-    res.status(500).send("Error al insertar contrato");
+    res.status(500).send("Error al cargar contratos");
   }
 });
 function toMysqlDate(fecha) {
@@ -859,21 +890,21 @@ function toMysqlDate(fecha) {
 }
 app.post("/contratos/modificar", async (req, res) => {
   try {
-    let { id_contratos, id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, duracion_cont, precio_inicial, precio_actual, honorarios } = req.body;
+    let { id_contratos, id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial, precioactual, honorarios, duracion_contrato, } = req.body;
 
     console.log("req.body")// Aquí tu lógica para actualizar el contrato en la base de datos
-    fecha_inicio = toMysqlDate(fecha_inicio);
+   
 
-    await contratos.modificarContrato({
+    const resultado= await contratos.modificarContrato({
       id_contratos,
       id_propietarios,
       id_inquilinos,
       id_propiedades,
       fecha_inicio,
-      duracion_cont,
-      precio_inicial,
-      precio_actual,
-      honorarios
+      precioinicial,
+      precioactual,
+      honorarios,
+      duracion_contrato
     });
     res.redirect("/contratos");
   } catch (err) {

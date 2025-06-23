@@ -9,7 +9,7 @@ async function obtenerImpuestosPorDireccion(idPropiedad) {
        FROM impuestos i 
        JOIN propiedades p ON i.id_propiedades = p.id_propiedades 
        WHERE i.id_propiedades = $1 
-       ORDER BY i.fecha DESC`,
+       ORDER BY i.fecha DESC LIMIT 4`,
       [idPropiedad]
     );
     return resultado;
@@ -25,7 +25,7 @@ async function obtenerImpuestos() {
   
   try {
     
-    const resultado = await database.query("SELECT * FROM impuestos ORDER BY fecha DESC");
+    const resultado = await database.query("SELECT * FROM impuestos ORDER BY fecha DESC ");
     return resultado;
   } catch (err) {
     console.error("Error al obtener impuestos:", err);
@@ -37,7 +37,7 @@ async function insertarImpuestos(datos) {
   
   try {
     
-    const sql = "INSERT INTO impuestos (abl,aysa,exp_com,exp_ext,seguro,varios,fecha,id_propiedades) VALUES ($1, $2, $3, $4, $5, $6,$7,$8)"; 
+    const sql = "INSERT INTO impuestos (abl,aysa,exp_com,exp_ext,seguro,varios,id_propiedades) VALUES ($1, $2, $3, $4, $5, $6,$7)"; 
     const resultado= await database.query (sql,[ 
         datos.abl || 0, 
         datos.aysa || 0,  
@@ -45,7 +45,6 @@ async function insertarImpuestos(datos) {
         datos.exp_ext || 0,
         datos.seguro || 0,
         datos.varios || 0,
-        datos.fecha,
         datos.id_propiedades || 0
       ]);
        
