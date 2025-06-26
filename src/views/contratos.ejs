@@ -178,7 +178,7 @@
                           <%= inquilino.fecha_finalcontrato ? new
                             Date(inquilino.fecha_finalcontrato).toLocaleDateString('es-AR') : '' %>
                         </td>
-                        <td><a href="/contratos/modificar/<%= inquilino.id_contratos %>"
+                        <td><a href="/contratos/editar/<%= inquilino.id_contratos %>"
                             class="btn btn-warning">Editar</a></td>
                       </tr>
                       <% }); %>

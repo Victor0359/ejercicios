@@ -1,6 +1,7 @@
 <div class="container mt-5">
 
 
+
   <form action="/recibo_alquiler/buscar" method="POST" class="form-inline mb-3">
 
     <div class="mt-5">
@@ -8,43 +9,46 @@
     </div>
     <div class="row mt-5 mb-3">
       <div class="col-md-6 mb-5 mt-4">
-        <label for="id_propiedades">
+        <label for="id_propiedad">
           <h2><b>Propiedades</b></h2>
         </label>
         <select class="form-select" id="id_propiedades" name="id_propiedades" required>
           <option value="">Seleccione una propiedad</option>
           <% if (propiedades && propiedades.length> 0) { %>
-            <% propiedades.forEach(function(inquilino) { %>
-              <option value="<%= inquilino.id_propiedades %>">
-                <%= inquilino.direccion %>
+            <% propiedades.forEach(function(prop) { %>
+              <option value="<%= prop.id_propiedades %>">
+                <%= prop.direccion %>
               </option>
               <% }); %>
                 <% } %>
         </select>
+
       </div>
-      
 
-        <button type="submit" class="btn btn-success ">Buscar</button>
 
-      
+      <button type="submit" class="btn btn-success ">Buscar</button>
+
+
 
     </div>
   </form>
 
   <% if (recibos && recibos.length> 0) { %>
-    <table class="table table-bordered">
+    <div class="col">
+          <table class="table table-striped table-bordered border-primary">
       <thead>
         <tr>
+          <th>Propietario</th>
+          <th>Inquilino</th>
           <th>N° Recibo</th>
           <th>Fecha</th>
-          <th>Inquilino</th>
-          <th>Propietario</th>
+          <th>cuota</th>
           <th>Monto</th>
-          <th>Meses Transcurridos</th>
           <th>abl</th>
           <th>aysa</th>
-          <th>Expensas</th>
+          <th>Expensas comunes</th>
           <th>seguro</th>
+          <th>varios</th>
           <th>Total</th>
           <!-- Agrega más columnas si lo necesitas -->
         </tr>
@@ -53,22 +57,25 @@
         <% recibos.forEach(function(r) { %>
           <tr>
             <td>
-              <%= r.num_recibo %>
+              <%= r.apellidopropietario %>
             </td>
             <td>
-              <%= r.fecha_actual %>
+              <%= r.apellidoinquilino %>
             </td>
             <td>
-              <%= r.apellido_inquilino %>
+              <%= r.numrecibo %>
             </td>
             <td>
-              <%= r.apellido_propietario %>
+              <%= new Date(r.fecha).toLocaleDateString("es-AR", { day: "2-digit" , month: "2-digit" , year: "numeric" })
+                %>
+            </td>
+
+
+            <td>
+              <%= r.cuota %>
             </td>
             <td>
-              <%= r.monto_mensual %>
-            </td>
-            <td>
-              <%= r.meses_transcurridos %>
+              <%= r.importemensual %>
             </td>
             <td>
               <%= r.abl %>
@@ -77,10 +84,13 @@
               <%= r.aysa %>
             </td>
             <td>
-              <%= r.expensas %>
+              <%= r.expcomunes %>
             </td>
             <td>
               <%= r.seguro %>
+            </td>
+            <td>
+              <%= r.varios %>
             </td>
             <td>
               <%= r.total %>
@@ -92,3 +102,4 @@
     <% } else if (typeof recibos !=="undefined" ) { %>
       <div class="alert alert-info">No hay recibos para esta propiedad.</div>
       <% } %>
+    </div>

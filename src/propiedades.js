@@ -21,10 +21,10 @@ async function obtenerPropiedad(datos) {
   async function obtenerPropiedadOrdenados() {
   
   try {
-    if (datos && datos.trim() !== "") {
+    
       const resultado = await database.query("SELECT * FROM propiedades ORDER BY direccion ASC");
      return resultado.rows; // Devuelve los registros correctamente
-    }
+    
     return [];
   } catch (err) {
     console.error("Error al obtener propiedad:", err);

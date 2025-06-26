@@ -832,20 +832,7 @@ app.get("/contratos", async (req, res) => {
   }
 });
 
-app.get("/contratos/insertar",async (req,res) =>{
 
-try{
-const propiedad = await contratos.obtenerPropiedadOrdenados();
-       
-        res.render ("contratos",{
-          propiedades: Array.isArray(propiedad) ? propiedad : []
-        });
-       } catch{
-       console.error("Error en /impuestos:", err);
-    res.status(500).send("Error al cargar impuestos");
-  }
-        
-});
 
 
 app.post("/contratos/insertar", async (req, res) => {
@@ -890,13 +877,13 @@ function toMysqlDate(fecha) {
 }
 app.post("/contratos/modificar", async (req, res) => {
   try {
-    let { id_contratos, id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial, precioactual, honorarios, duracion_contrato, } = req.body;
+    let {  id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial, precioactual, honorarios, duracion_contrato,id_contratos } = req.body;
 
     console.log("req.body")// Aquí tu lógica para actualizar el contrato en la base de datos
    
 
     const resultado= await contratos.modificarContrato({
-      id_contratos,
+      
       id_propietarios,
       id_inquilinos,
       id_propiedades,
@@ -904,7 +891,8 @@ app.post("/contratos/modificar", async (req, res) => {
       precioinicial,
       precioactual,
       honorarios,
-      duracion_contrato
+      duracion_contrato,
+      id_contratos
     });
     res.redirect("/contratos");
   } catch (err) {
@@ -913,30 +901,43 @@ app.post("/contratos/modificar", async (req, res) => {
   }
 
 });
-app.get("/contratos/modificar/:id", async (req, res) => {
+
+app.get("/contratos/editar/:id", async (req, res) => {
+  const id_contratos = req.params.id;
   try {
-    const id_contratos = req.params.id;
-    const contrato = await contratos.obtenerContratoPorId(id_contratos);
-    console.log("Contrato encontrado:", contrato);
-    if (contrato) {
-      res.render("editarContratos", { contrato: Array.isArray(contrato) ? contrato[0] : contrato });
-    } else {
-      res.status(404).send("Contrato no encontrado");
+    const resultado = await contratos.obtenerContratoPorId(id_contratos);
+    console.log("Resultado obtenido:", resultado);
+    console.log("Primer contrato:", resultado[0]);
+   
+    if (!resultado || resultado.length === 0)  {
+      return res.status(404).send("Contrato no encontrado");
     }
+
+    const listaPropietarios = await propietarios.obtenerTodosLosPropietarios();
+    const listaPropiedades = await propiedades.obtenerPropiedadOrdenados();
+    const listaInquilinos= await inquilinos.obtenerTodosLosInquilinos()
+
+    res.render("editarContratos", {
+      contrato:resultado.rows[0],
+      propietarios: listaPropietarios,
+      propiedades: listaPropiedades,
+      inquilinos: listaInquilinos
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al buscar el contrato");
+    console.error("❌ Error en GET /editar/:id:", err);
+    res.status(500).send("Error al buscar contratos");
   }
 });
+
 
 
 // ------------------- Recibo Inquilino ----------------------  
 // Mostrar el buscador y la tabla
 app.get("/recibo_alquiler/buscar", async (req, res) => {
   try {
-    const inquilinolista = await inquilinos.obtenerInquilinosOrdenados();
+    const inquilinolista = await inquilinos.obtenerTodosLosInquilinos();
     const propiedadesLista = await propiedades.obtenerPropiedadOrdenados(); // <-- agrega esto
-
+     
     res.render("buscar_recibo_alquiler", {
       inquilinos: inquilinolista,
       propiedades: propiedadesLista, // <-- envía la variable
@@ -949,17 +950,28 @@ app.get("/recibo_alquiler/buscar", async (req, res) => {
 });
 
 // Buscar recibos por propiedad (POST)
+// Buscar recibos por propiedad (POST)
 app.post("/recibo_alquiler/buscar", async (req, res) => {
   try {
-    const { id_propiedades } = req.body;
-    const propiedadesLista = await propiedades.obtenerPropiedadOrdenados();
+    const id_propiedades = req.body.id_propiedades;
+
+    if (!id_propiedades || id_propiedades.trim() === '') {
+      return res.render("buscar_recibo_alquiler", {
+        propiedades: await propiedades.obtenerPropiedadOrdenados(),
+        inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
+        recibos: [],
+        mensaje: "Debe seleccionar una propiedad antes de buscar recibos."
+      });
+    }
+
+    // ✅ Si pasó la validación, ahora sí busca los recibos:
     const recibos = await recibo_contrato.obtenerRecibosPorPropiedad(id_propiedades);
-    const inquilinosLista = await inquilinos.obtenerInquilinosOrdenados();
-
-    console.log(req.bopdy);
-
-    res.render("buscar_recibo_alquiler", { propiedades: propiedadesLista, inquilinos: inquilinosLista, recibos: recibos });
-
+    console.log("Recibos encontrados:", recibos);
+    res.render("buscar_recibo_alquiler", {
+      propiedades: await propiedades.obtenerPropiedadOrdenados(),
+      inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
+      recibos
+    });
 
   } catch (err) {
     console.error(err);
@@ -969,55 +981,71 @@ app.post("/recibo_alquiler/buscar", async (req, res) => {
 
 app.get('/api/datos_propiedad', async (req, res) => {
   try {
-    const id_propiedades = req.query.id_propiedades;
-    const contrato = await recibo_contrato.obtenerContratos_Id(id_propiedades);
-    const impuestosLista = await recibo_contrato.obtenerImpuestos(id_propiedades);
-    const ultimoRecibo = await recibo_contrato.obtenernumeroRecibo();
-
-
-    // Prepara los valores, aunque estén vacíos
-
-    const apellidoInquilino = contrato[0]?.apellidoInquilino || "";
-    const apellidoPropietario = contrato[0]?.apellidoPropietario || "";
-    const fecha_inicio = contrato[0]?.fecha_inicio || "";
-    const monto_mensual = contrato[0]?.precio_actual || "";
-    const exp_comunes = impuestosLista[0]?.exp_comunes || "";
-    const abl = impuestosLista[0]?.abl || "";
-    const aysa = impuestosLista[0]?.aysa || "";
-    const seguro = impuestosLista[0]?.seguro || "";
-    const numero_recibo = (ultimoRecibo[0]?.numero_recibo || 0) + 1;
-
-    // Calcula el total
-    function calcularTotal({ monto_mensual, abl, aysa, exp_comunes, seguro }) {
-      const aNum = v => Number(v) || 0;
-      return (
-        aNum(monto_mensual) +
-        aNum(abl) +
-        aNum(aysa) +
-        aNum(exp_comunes) +
-        aNum(seguro)
-      );
+   
+    const id = req.query.id_propiedades;
+    if (!id) {
+      return res.status(400).json({ error: 'Falta id_propiedades' });
     }
-    const total = calcularTotal({ monto_mensual, abl, aysa, exp_comunes, seguro });
 
-    // Envía la respuesta una sola vez
-    res.json({
+    // 1) Cargo datos de BD
+    const contrato     = await recibo_contrato.obtenerContratos_Id(id);
+    const impuestos    = await recibo_contrato.obtenerImpuestos(id);
+    const ultimo = await recibo_contrato.obtenernumeroRecibo();
+   
+    // 2) Extraigo valores (aseguro números por default)
+    const apellidoinquilino  = contrato[0]?.apellidoinquilino   || '';
+    const apellidopropietario= contrato[0]?.apellidopropietario || '';
+    const cuota              = Number(contrato[0]?.cuota)        || 0;
+    const importemensual     = Number(contrato[0]?.precioactual)|| 0;
+    const expcomunes         = Number(impuestos[0]?.exp_comunes)|| 0;
+    const abl                = Number(impuestos[0]?.abl)        || 0;
+    const aysa               = Number(impuestos[0]?.aysa)       || 0;
+    const seguro             = Number(impuestos[0]?.seguro)     || 0;
+    const varios             = Number(impuestos[0]?.varios)     || 0;
+    const numero_recibo = (ultimo.length > 0 && ultimo[0].numrecibo != null)
+  ? Number(ultimo[0].numrecibo) + 1
+  : 1; // Valor inicial si no hay recibos aún
+
+console.log('Valor de ultimo:', ultimo);
+console.log('Tipo de ultimo:', typeof ultimo);
+
+    const meses = [
+      "enero","febrero","marzo","abril","mayo","junio",
+      "julio","agosto","septiembre","octubre","noviembre","diciembre"
+    ];
+    const hoy = new Date();
+    const fecha_actual = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+
+    // 4) Total = suma de todos los importes numéricos
+    const total = importemensual
+                + expcomunes
+                + abl
+                + aysa
+                + seguro
+                + varios;
+
+    // 5) Devuelvo JSON limpio
+    return res.json({
       numero_recibo,
-      apellidoInquilino,
-      apellidoPropietario,
-      fecha_inicio,
-      monto_mensual,
-      exp_comunes,
+      apellidoinquilino,
+      apellidopropietario,
+      cuota,
+      importemensual,
+      expcomunes,
       abl,
       aysa,
       seguro,
-      total
+      varios,
+      total,
+      fecha_actual
     });
-
-  } catch (err) {
-    res.status(500).json({ error: "Error al obtener datos de la propiedad" });
+  }
+  catch (err) {
+    console.error('Error en /api/datos_propiedad:', err);
+    return res.status(500).json({ error: 'Error al obtener datos de la propiedad' });
   }
 });
+
 app.get("/recibo_inquilino", async (req, res) => {
   try {
     const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados(); // <-- trae todas las propiedades
@@ -1035,15 +1063,17 @@ app.get("/recibo_inquilino", async (req, res) => {
       propiedades: listaDePropiedades,
       numero_recibo: numero_recibo,
       id_propiedad_seleccionada: null,
-      apellidoInquilino: "",
-      apellidoPropietario: "",
+      apellidoinquilino: "",
+      apellidopropietario: "",
       fecha_actual: fechaFormateada,
-      fecha_inicio: "",
-      monto_mensual: "",
+      cuota: "",
+      importemensual: "",
       exp_comunes: "",
       abl: "",
       aysa: "",
-      seguro: ""
+      seguro: "",
+      varios: "",
+      total: 0
     });
   } catch (err) {
     console.error(err);
@@ -1060,17 +1090,17 @@ app.post("/recibo_inquilino", async (req, res) => {
     const numero = await recibo_contrato.obtenernumeroRecibo();
     const numero_recibo = (numero[0]?.numero_recibo || 0) + 1;
 
-    const apellidoInquilino = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].apellidoInquilino)
+    const apellidoinquilino = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].apellidoinquilino)
       : "";
-    const apellidoPropietario = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].apellidoPropietario)
+    const apellidopropietario = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].apellidopropietario)
       : "";
-    const fecha_inicial = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].fecha_inicio)
+    const cuota = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].cuota)
       : "";
-    const monto_mensuales = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].precio_actual)
+    const importemensual = Array.isArray(contrato) && contrato.length > 0
+      ? (contrato[0].importemensual)
       : "";
     const exp_comunes = Array.isArray(impuestosLista) && impuestosLista.length > 0
       ? (impuestosLista[0].exp_comunes)
@@ -1083,6 +1113,9 @@ app.post("/recibo_inquilino", async (req, res) => {
       : "";
     const seguro = Array.isArray(impuestosLista) && impuestosLista.length > 0
       ? (impuestosLista[0].seguro)
+      : "";
+      const varios = Array.isArray(impuestosLista) && impuestosLista.length > 0
+      ? (impuestosLista[0].varios)
       : "";
 
     const meses = [
@@ -1097,109 +1130,97 @@ app.post("/recibo_inquilino", async (req, res) => {
       propiedades: listaDePropiedades,
       numero_recibo: numero_recibo,
       id_propiedad_seleccionada: id_propiedades,
-      apellidoInquilino,
-      apellidoPropietario,
+      apellidoinquilino,
+      apellidopropietario,
+      cuota,
       fecha_actual: fechaFormateada,
       fecha_inicio: fecha_inicial,
-      monto_mensual: monto_mensuales,
+      importemensual: importemensual,
       exp_comunes: exp_comunes,
       abl: abl,
       aysa: aysa,
-      seguro: seguro
+      seguro: seguro,
+      varios: varios,
     });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar recibo de inquilino");
   }
-});
-app.post("/recibo_inquilino/insertar", async (req, res) => {
+});app.post("/recibo_inquilino/insertar", async (req, res) => {
   try {
+    // 1) Desestructuramos con valores por defecto
     let {
-      numero_recibo, meses_transcurridos, fecha_actual, apellidoInquilino, id_propiedades, apellidoPropietario, monto_mensual, abl, aysa, exp_comunes, seguro, total
+      numrecibo        = "0",
+      cuota            = "0",
+      fecha_actual     = "",
+      apellidoinquilino= "",
+      id_propiedad,
+      apellidopropietario = "",
+      importemensual   = "0",
+      abl              = "0",
+      aysa             = "0",
+      expcomunes       = "0",
+      seguro           = "0",
+      varios           = "0"
     } = req.body;
 
-    const contrato = await recibo_contrato.obtenerContratos_Id(id_propiedades);
+    // 2) Función para convertir strings a números seguros
+    const toNumber = v => {
+      const n = parseFloat(v);
+      return isNaN(n) ? 0 : n;
+    }    
 
-    if (!contrato || contrato.length === 0) {
-      // No existe contrato, muestra aviso y no inserta
-      const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados();
+    // 4) Convierto todos a números
+    numrecibo      = toNumber(numrecibo);
+    cuota          = toNumber(cuota);
+    importemensual = toNumber(importemensual);
+    abl            = toNumber(abl);
+    aysa           = toNumber(aysa);
+    expcomunes     = toNumber(expcomunes);
+    seguro         = toNumber(seguro);
+    varios         = toNumber(varios);
 
-      numero_recibo = numero_recibo || 0;
-      meses_transcurridos = meses_transcurridos || 0;
-      fecha_actual = fecha_actual || "";
-      apellidoInquilino = apellidoInquilino || "";
-      id_propiedades = id_propiedades || 0;
-      apellidoPropietario = apellidoPropietario || "";
-      monto_mensual = monto_mensual || 0;
-      abl = abl || 0;
-      aysa = aysa || 0;
-      exp_comunes = exp_comunes || 0;
-      seguro = seguro || 0;
-      total = total || 0;
-      // const reciboExistente = await recibo_contrato.existeReciboPorPropiedad(id_propiedades);
+    // 5) Calculo el total
+    const total = importemensual
+                + abl
+                + aysa
+                + expcomunes
+                + seguro
+                + varios;
 
-      if (reciboExistente) {
-        // Puedes renderizar la vista con un mensaje, o redirigir a modificar
-        return res.render("recibo_inquilino", {
-          propiedades: await propiedades.obtenerPropiedadOrdenados(),
-          numero_recibo,
-          id_propiedad_seleccionada: id_propiedades,
-          apellidoInquilino,
-          apellidoPropietario,
-          fecha_actual,
-          fecha_inicio: reciboExistente.fecha_inicio || "",
-          monto_mensual,
-          exp_comunes,
-          abl,
-          aysa,
-          seguro,
-          // mensaje: "Ya existe un recibo para esta propiedad."
-        });
-      }
+    // 6) Preparo la fecha en formato YYYY-MM-DD para la BD
+    const fechaPg = new Date().toISOString().slice(0, 10);
 
-      // Si no hay contrato y no hay recibo existente, también puedes retornar aquí si lo deseas
-      return res.render("recibo_inquilino", {
-        propiedades: listaDePropiedades,
-        numero_recibo,
-        id_propiedad_seleccionada: id_propiedades,
-        apellidoInquilino,
-        apellidoPropietario,
-        fecha_actual,
-        fecha_inicio: "",
-        monto_mensual,
-        exp_comunes,
-        abl,
-        aysa,
-        seguro,
-        mensaje: "No se puede insertar un recibo sin contrato asociado"
-      });
-    }
-
+    // 7) Llamo al método de inserción
     const resultado = await recibo_contrato.insertarRecibosInquilinos(
-      numero_recibo,
-      meses_transcurridos,
-      fecha_actual,
-      apellidoInquilino,
-      id_propiedades,
-      apellidoPropietario,
-      monto_mensual,
-      abl,
-      aysa,
-      exp_comunes,
-      seguro,
-      total
+      fechaPg,               // fecha (DATE)
+      id_propiedad,          // FK
+      apellidopropietario,   // id_propietario o string
+      apellidoinquilino,     // id_inquilino o string
+      numrecibo,             // numrecibo
+      cuota,                 // cuota
+      importemensual,        // importemensual
+      abl,                   // abl
+      aysa,                  // aysa
+      expcomunes,            // expcomunes
+      seguro,                // seguro
+      varios,                // varios
+      total                  // total
     );
 
-    if (resultado && resultado.affectedRows > 0) {
+    // 8) Resultado de la inserción
+    if (resultado.rowCount > 0) {
       res.redirect("/recibo_inquilino");
     } else {
-      res.status(404).json({ message: "recibo_inquilino no insertado" });
+      res.status(400).send("No se insertó el recibo.");
     }
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error al insertar recibo_inquilino");
+    console.error("Error al insertar recibo_inquilino:", err);
+    res.status(500).send("Error interno al insertar recibo_inquilino");
   }
 });
+
 // ------------------  login ----------------------
 
 
