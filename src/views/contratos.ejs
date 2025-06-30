@@ -126,6 +126,7 @@
                   <th class="text-primary" scope="col">honorarios</th>
                   <th class="text-primary" scope="col">duracion</th>
                   <th class="text-primary" scope="col">fecha finalcontrato</th>
+                  <th class="text-primary" scope="col">cuota</th>
                   <th class="text-primary" scope="col">Editar</th>
                 </tr>
               </thead>
@@ -178,6 +179,9 @@
                           <%= inquilino.fecha_finalcontrato ? new
                             Date(inquilino.fecha_finalcontrato).toLocaleDateString('es-AR') : '' %>
                         </td>
+                         <td>
+                          <%= inquilino.cuota %>
+                        </td>
                         <td><a href="/contratos/editar/<%= inquilino.id_contratos %>"
                             class="btn btn-warning">Editar</a></td>
                       </tr>
@@ -204,6 +208,32 @@
           }
         });
       </script>
+
+      <script>
+  document.querySelector('form').addEventListener('submit', function (e) {
+    const campos = [
+      { id: 'id_propietarios', nombre: 'Propietario' },
+      { id: 'id_inquilinos', nombre: 'Inquilino' },
+      { id: 'id_propiedades', nombre: 'Propiedad' },
+      { id: 'fecha_inicio', nombre: 'Fecha de inicio' },
+      { id: 'precio_inicial', nombre: 'Precio inicial' },
+      { id: 'precio_actual', nombre: 'Precio actual' },
+      { id: 'honorarios', nombre: 'Honorarios' },
+      { id: 'duracion_cont', nombre: 'Duración del contrato' }
+    ];
+
+    const vacios = campos.filter(c => {
+      const el = document.getElementById(c.id);
+      return !el || el.value.trim() === '';
+    });
+
+    if (vacios.length > 0) {
+      e.preventDefault();
+      alert('Faltan completar los siguientes campos:\n- ' + vacios.map(c => c.nombre).join('\n- '));
+    }
+  });
+</script>
+
 
 
 </body>

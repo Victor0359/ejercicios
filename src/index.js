@@ -15,7 +15,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
 const flash = require('express-flash');
-
+const funcion_letras= require("./funcion_letras");
 
 const app = express();
 
@@ -46,6 +46,10 @@ app.use(express.json());
 app.use(expressEjsLayouts);
 app.set("layout", "layout");
 app.use(cors());
+app.use((req, res, next) => {
+  res.locals.ocultarNavbar = false; // valor por defecto para TODAS las vistas
+  next();
+});
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -804,6 +808,8 @@ app.post("/impuestos/insertar", async (req, res) => {
 
 // ----------------------  contratos ----------------------
 app.get("/contratos", async (req, res) => {
+  console.log("URL completa:", req.url);
+  console.log("Query completa:", req.query);
   try {
     const id_propiedad = req.query.id_propiedad;
     const hayFiltro = Boolean(id_propiedad);
@@ -814,8 +820,9 @@ app.get("/contratos", async (req, res) => {
     const propietariosLista = await propietarios.obtenerTodosLosPropietarios();
     const inquilinosLista = await inquilinos.obtenerTodosLosInquilinos();
     const propiedadesLista = await contratos.obtenerPropiedadOrdenados();
-    console.log("Valor recibido en filtro:", id_propiedad);
-    
+    console.log("req.query completo:", req.query);
+console.log("Valor recibido en filtro:", id_propiedad);
+     res.set("Cache-Control", "no-store");
     res.render("contratos", {
       contratos: contratosLista,
       propietarios: propietariosLista,
@@ -824,7 +831,7 @@ app.get("/contratos", async (req, res) => {
       hayFiltro,
       id_propiedad
     });
-    res.set("Cache-Control", "no-store");
+   
 
   } catch (err) {
     console.error(err);
@@ -839,6 +846,15 @@ app.post("/contratos/insertar", async (req, res) => {
   try {
     let { id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial,precioactual,honorarios,duracion_contrato } = req.body;
     console.log(req.body);
+ function calcularCuota(fecha_inicio) {
+  const hoy = new Date();
+  const inicio = new Date(fecha_inicio);
+  
+
+  let meses = (hoy.getFullYear() - inicio.getFullYear()) * 12 + (hoy.getMonth() - inicio.getMonth());
+  if (hoy.getDate() < inicio.getDate()) meses--; // ajusta si el día aún no pasó
+  return meses;
+}
 
     // Convierte vacíos a 0
     if (precioinicial === '' || precioinicial === undefined) precioinicial = 0;
@@ -855,11 +871,13 @@ app.post("/contratos/insertar", async (req, res) => {
       precioinicial,
       precioactual,
       honorarios,
-      duracion_contrato
+      duracion_contrato,
+      cuota : calcularCuota(fecha_inicio),
+      
       
     });
 
-    if (resultado && resultado.affectedRows > 0) {
+    if (resultado && resultado.rowCount > 0) {
       res.redirect("/contratos");
     } } catch (err) {
     console.error(err);
@@ -877,13 +895,22 @@ function toMysqlDate(fecha) {
 }
 app.post("/contratos/modificar", async (req, res) => {
   try {
-    let {  id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial, precioactual, honorarios, duracion_contrato,id_contratos } = req.body;
+    const {
+      id_propietarios,
+      id_inquilinos,
+      id_propiedades,
+      fecha_inicio,
+      precioinicial,
+      precioactual,
+      honorarios,
+      duracion_contrato,
+      id_contratos
+    } = req.body;
 
-    console.log("req.body")// Aquí tu lógica para actualizar el contrato en la base de datos
-   
+    console.log("req.body:", req.body);
+    console.log("🔎 Buscando contrato con ID:", id_contratos);
 
-    const resultado= await contratos.modificarContrato({
-      
+    const resultado = await contratos.modificarContrato({
       id_propietarios,
       id_inquilinos,
       id_propiedades,
@@ -894,15 +921,22 @@ app.post("/contratos/modificar", async (req, res) => {
       duracion_contrato,
       id_contratos
     });
+
+    console.log("Resultado de la modificación:", resultado);
+
+    if (!resultado || resultado.rowCount === 0) {
+      return res.status(404).send("Contrato no encontrado");
+    }
+
     res.redirect("/contratos");
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error al modificar contrato:", err);
     res.status(500).send("Error al modificar contrato");
   }
-
 });
 
-app.get("/contratos/editar/:id", async (req, res) => {
+    app.get("/contratos/editar/:id", async (req, res) => {
   const id_contratos = req.params.id;
   try {
     const resultado = await contratos.obtenerContratoPorId(id_contratos);
@@ -918,7 +952,7 @@ app.get("/contratos/editar/:id", async (req, res) => {
     const listaInquilinos= await inquilinos.obtenerTodosLosInquilinos()
 
     res.render("editarContratos", {
-      contrato:resultado.rows[0],
+      contrato:resultado[0],
       propietarios: listaPropietarios,
       propiedades: listaPropiedades,
       inquilinos: listaInquilinos
@@ -1146,13 +1180,15 @@ app.post("/recibo_inquilino", async (req, res) => {
     console.error(err);
     res.status(500).send("Error al cargar recibo de inquilino");
   }
-});app.post("/recibo_inquilino/insertar", async (req, res) => {
+});
+
+app.post("/recibo_inquilino/insertar", async (req, res) => {
   try {
     // 1) Desestructuramos con valores por defecto
     let {
       numrecibo        = "0",
       cuota            = "0",
-      fecha_actual     = "",
+      fecha     = "",
       apellidoinquilino= "",
       id_propiedad,
       apellidopropietario = "",
@@ -1169,7 +1205,10 @@ app.post("/recibo_inquilino", async (req, res) => {
       const n = parseFloat(v);
       return isNaN(n) ? 0 : n;
     }    
-
+const ultimo = await recibo_contrato.obtenernumeroRecibo();
+      numrecibo = (ultimo.length > 0 && ultimo[0].numrecibo != null)
+  ? Number(ultimo[0].numrecibo) + 1
+  : 1;
     // 4) Convierto todos a números
     numrecibo      = toNumber(numrecibo);
     cuota          = toNumber(cuota);
@@ -1188,29 +1227,32 @@ app.post("/recibo_inquilino", async (req, res) => {
                 + seguro
                 + varios;
 
-    // 6) Preparo la fecha en formato YYYY-MM-DD para la BD
-    const fechaPg = new Date().toISOString().slice(0, 10);
+// 6) Preparo la fecha en formato YYYY-MM-DD para la BD
+const fechaPg = new Date().toISOString().slice(0, 10);
 
-    // 7) Llamo al método de inserción
-    const resultado = await recibo_contrato.insertarRecibosInquilinos(
-      fechaPg,               // fecha (DATE)
-      id_propiedad,          // FK
-      apellidopropietario,   // id_propietario o string
-      apellidoinquilino,     // id_inquilino o string
-      numrecibo,             // numrecibo
-      cuota,                 // cuota
-      importemensual,        // importemensual
-      abl,                   // abl
-      aysa,                  // aysa
-      expcomunes,            // expcomunes
-      seguro,                // seguro
-      varios,                // varios
-      total                  // total
-    );
+// 7) Llamo al método de inserción
+const resultado = await recibo_contrato.insertarRecibosInquilinos(
+  fechaPg,               // fecha (DATE)
+  id_propiedad,          // FK
+  apellidopropietario,   // id_propietario o string
+  apellidoinquilino,     // id_inquilino o string
+  numrecibo,        // numrecibo
+  cuota,                 // cuota
+  importemensual,        // importemensual
+  abl,                   // abl
+  aysa,                  // aysa
+  expcomunes,            // expcomunes
+  seguro,                // seguro
+  varios,                // varios
+  total                  // total
+);
 
     // 8) Resultado de la inserción
     if (resultado.rowCount > 0) {
-      res.redirect("/recibo_inquilino");
+     if (resultado.rowCount > 0) {
+  return res.redirect(`/recibo_inq_impreso/${numrecibo}`); // ⬅ redirige directamente
+}
+
     } else {
       res.status(400).send("No se insertó el recibo.");
     }
@@ -1220,6 +1262,61 @@ app.post("/recibo_inquilino", async (req, res) => {
     res.status(500).send("Error interno al insertar recibo_inquilino");
   }
 });
+// -------------------  recibo impreso inquilino ----------------------
+
+app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
+  try {
+   const numero_recibo = req.params.numero_recibo;;
+    const resultado = await recibo_contrato.obtenerRecibosPorNumrecibo(numero_recibo);
+    console.log("Número de resiultado:", resultado);
+    if (!resultado || resultado.length === 0) {
+       console.warn(`No se encontró recibo con numrecibo = ${numero_recibo}`);
+  return res.status(404).send("Recibo no encontrado");
+}
+    const prop= await propiedades.obtenerPropiedadesPorId(resultado[0].id_propiedad);
+    const total = Number(resultado[0].total);
+    const mes_contrato = new Date().toLocaleDateString('es-AR', { month: 'long' }).toUpperCase();
+    function ultimoDiaDelMes(fecha) {
+  const año = fecha.getFullYear();
+  const mes = fecha.getMonth() + 1;
+  return new Date(año, mes, 0).getDate();
+}
+const fechaActual = new Date();
+
+const vencimiento = ultimoDiaDelMes(fechaActual);
+
+
+    if (isNaN(total)) throw new TypeError("El total del recibo no es un número válido");
+    const letra = funcion_letras.numeroALetras(total);
+
+    console.log("Resultado obtenido:", resultado);
+    console.log("Propiedades obtenidas:", prop);
+
+    if (!resultado || resultado.length === 0) {
+      return res.status(404).send("Recibo no encontrado");
+    }
+    res.render("recibo_inq_impreso", {
+      ocultarNavbar: true,
+      recibo: resultado[0],
+      propiedades:prop,
+      letra:letra,
+      mes_contrato,
+      vencimiento,
+     fecha_original: new Date(resultado[0].fecha).toLocaleDateString("es-AR", {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }),
+
+    });
+  } catch (err) {
+    console.error("Error al generar el recibo:", err);
+    res.status(500).send("Error interno al generar el recibo");
+  }
+});
+
+
+    
 
 // ------------------  login ----------------------
 
@@ -1321,6 +1418,4 @@ const verificacion = async (req, res, next) => {
 app.get("/inicio", (req, res) => {
   res.render("inicio");
 });
-app.get("/login", (req, res) => {
-  res.render("login");
-});
+

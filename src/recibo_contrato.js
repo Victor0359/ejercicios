@@ -99,6 +99,21 @@ async function obtenerRecibosPorPropiedad(id_propiedad) {
     return [];
   } 
 }
+async function obtenerRecibosPorNumrecibo(numrecibo) {
+  
+  try {
+    
+    const resultado = await database.query(
+      "select * from recibo_inquilinos where numrecibo=$1",
+      [numrecibo]
+    );
+       
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al buscar recibos:", err);
+    return [];
+  } 
+}
 
 
 // async function obtenerRecibosPorInquilino(id_inquilino) {
@@ -121,6 +136,7 @@ async function obtenerRecibosPorPropiedad(id_propiedad) {
   insertarRecibosInquilinos,
   obtenernumeroRecibo,
   existeReciboPorPropiedad,
-  obtenerRecibosPorPropiedad
+  obtenerRecibosPorPropiedad,
+  obtenerRecibosPorNumrecibo
  
 };

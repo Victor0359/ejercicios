@@ -1,7 +1,4 @@
 <div class="container mt-5">
-
-
-
   <form action="/recibo_alquiler/buscar" method="POST" class="form-inline mb-3">
 
     <div class="mt-5">
@@ -50,6 +47,7 @@
           <th>seguro</th>
           <th>varios</th>
           <th>Total</th>
+          <th>Imprimir</th>
           <!-- Agrega más columnas si lo necesitas -->
         </tr>
       </thead>
@@ -95,6 +93,10 @@
             <td>
               <%= r.total %>
             </td>
+            <td>
+             <a href="/recibo_inq_impreso/<%= r.numrecibo %>" class="btn btn-sm btn-primary" target="_blank">Imprimir</a>
+
+            </td>
           </tr>
           <% }) %>
       </tbody>
@@ -103,3 +105,6 @@
       <div class="alert alert-info">No hay recibos para esta propiedad.</div>
       <% } %>
     </div>
+    <a href="/recibo_inquilino" class="btn btn-secondary mt-5 w-30">Cancelar</a>
+  </div>
+</div>
