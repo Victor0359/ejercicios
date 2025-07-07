@@ -106,13 +106,13 @@ async function obtenerContratosPorIdPropiedad(id_propiedad) {
     const resultado = await database.query(
       `SELECT *,
         ((DATE_PART('year', CURRENT_DATE) - DATE_PART('year', fecha_inicio)) * 12 +
-         (DATE_PART('month', CURRENT_DATE) - DATE_PART('month', fecha_inicio))) AS cuota
+         (DATE_PART('month', CURRENT_DATE) - DATE_PART('month', fecha_inicio))) AS cuota,honorarios
        FROM contratos
        WHERE id_propiedades = $1
        ORDER BY fecha_inicio DESC`,
       [id_propiedad]
     );
-    return resultado.rows;
+    return resultado;
   } catch (err) {
     console.error("❌ Error al obtener contratos por propiedad:", err);
     return [];

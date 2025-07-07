@@ -1,0 +1,191 @@
+<div class="container mt-5">
+
+
+
+  <form action="/recibo_propietario/insertar" method="POST">
+    <h1 class="mb-5 "><b> RECIBO PROPIETARIO</b></h1>
+
+
+    <% if (typeof mensaje !=="undefined" ) { %>
+      <div class="alert alert-warning">
+        <%= mensaje %>
+      </div>
+      <% } %>
+
+
+        <div class="row mb-3 mt-5">
+          <div class="col-md-4 mb-3">
+            <label for="numero_recibo" class="form-label"><b>Numero recibo</b></label>
+            <input type="text" class="auto-size form-control" id="numero_recibo" name="numrecibo" value="<%= numero_recibo %>" readonly>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <label for="fecha_actual" class="form-label"><b>Fecha actual</b></label>
+            <input type="text" class="auto-size form-control" id="fecha_actual" name="fecha"
+              value="<%= fecha_actual %>" readonly>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <label for="id_propiedades" class="form-label "><b> Propiedad</b></label>
+            <select class="form-select" id="id_propiedades" name="id_propiedad" required>
+              <option value="">Seleccione una propiedad</option>
+              <% if (propiedades && propiedades.length> 0) { %>
+                <% propiedades.forEach(function(prop) { if (prop.direccion && prop.direccion.trim() !=="" ) { %>
+                  <option value="<%= prop.id_propiedades %>">
+                    <%= prop.direccion %>
+                  </option>
+                  <% } }); %>
+                    <% } %>
+            </select>
+          </div>
+        </div>
+
+        <div class=" row  mb-3">
+
+          <div class=" col-md-4 mb-3">
+            <label for="apellidopropietario" class="form-label"> <b> Propietario</b></label>
+            <input type="text" class="form-control auto-size" id="apellidopropietario" name="apellidopropietario"
+              value="<%= apellidopropietario %>" readonly>
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="cuota" class="form-label "><b>Cuota</b></label>
+            <input type="number" id="cuota" class="form-control auto-size" name="cuota" value="<%= cuota %>" readonly>
+          </div>
+           
+          <div class="col-md-4 mb-3">
+            <label for="fecha1" class="form-label "><b>fecha recibo cobro</b></label>
+            <input type="date" id="fecha1" class="form-control auto-size" name="fecha1" value="<%= fecha1.slice(0,10) %>" readonly>
+          </div>
+         
+          <div class="row mt-5">
+            <div class="col-md-4 mb-3">
+              <label for="importemensual" class="form-label"><b>Monto mensual</b></label>
+              <input type="number" name="importemensual" id="importemensual" value="<%= importemensual %>">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="exp_ext" ><b>Expensas extraor</b></label>
+              <input type="number" name="exp_extraor" id="exp_extraor" value="<%= exp_extraor %>">
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label for="seguro" class="form-label"><b>Seguro</b></label>
+              <input type="number" name="seguro" id="seguro" value="<%= seguro %>">
+            </div>
+          </div>
+          <div class=" row mt-3">
+            <div class="col-md-4 mb-3">
+              <label for="varios"><b>Varios</b></label>
+              <input type="number" name="varios" id="varios" value="<%= varios || 0 %>">
+            </div>
+
+
+            <div class="col-md-4 mb-3">
+              <label for="honorario"><b>Honorarios</b></label>
+              <input type="number" name="honorarios" id="honorarios" value="<%= honorarios %>">
+            </div>
+
+
+            <div class="col-md-4 mb-3">
+              <label for="total" class="form-label "><b>TOTAL</b></label>
+              <input type="number" name="total" id="total" readonly>
+            </div>
+          </div>
+          <div class=" mt-5 mr-2 no-print">
+            <button type="submit" class="btn btn-primary" id="btn-generar-recibo">Generar Recibo</button>
+
+            <a href="/recibo_propietario" class="btn btn-secondary">Cancelar</a>
+
+            <a href="/recibo_prop_impreso/<%= numero_recibo %>" class="btn btn-secondary">Imprimir</a>
+
+
+            <a href="/recibo_alquiler_prop/buscar" class="btn btn-secondary mr-2">Buscar Recibo</a>
+
+
+          </div>
+  </form>
+
+  <div class=" mt-3">
+    <p>Nota: Este recibo es un comprobante de pago y debe ser guardado por el inquilino.</p>
+  </div>
+</div>
+<!-- <div class="no-print mt-3">
+    <p>Para imprimir, haga clic en el botón "Imprimir" o use la función de impresión de su navegador.</p>
+  </div> -->
+
+</div>
+<link rel="stylesheet" href="/css/propiedades.css">
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1) Referencia al <select>
+    const sel = document.getElementById('id_propiedades');
+    if (!sel) return;
+
+    // 2) Función para parsear números
+    const toNumber = v => parseFloat(v) || 0;
+
+    // 3) Función que recalcula el total
+    function recalcularTotal() {
+      const m = toNumber(document.getElementById('importemensual')?.value);
+      const e = toNumber(document.getElementById('exp_extraor')?.value);
+      const s = toNumber(document.getElementById('seguro')?.value);
+      const v = toNumber(document.getElementById('varios')?.value);
+      const a = toNumber(document.getElementById('honorarios')?.value);
+      document.getElementById('total').value = (m - a + s + v - e).toFixed(2);
+    }
+
+   
+    //4) Función que pinta los datos JSON en los inputs
+    function actualizarCampos(data) {
+      // Mapeo manual de cada campo — el key debe coincidir exactamente con el JSON
+      document.getElementById('numero_recibo').value = data.numero_recibo || '';
+      document.getElementById('fecha_actual').value = data.fecha_actual || '';
+      document.getElementById('fecha1').value = data.fecha1 ? data.fecha1.slice(0, 10) : '';
+      document.getElementById('apellidopropietario').value = data.apellidopropietario || '';
+      document.getElementById('cuota').value = data.cuota || '';
+      document.getElementById('importemensual').value = data.importemensual || '';
+      document.getElementById('exp_extraor').value = data.exp_extraor || '';
+      document.getElementById('seguro').value = data.seguro || '';
+      document.getElementById('varios').value = data.varios || '';
+      document.getElementById('honorarios').value = data.honorarios || '';
+      document.getElementById('total').value = data.total || 0;
+      
+    }
+
+    // 5) Cuando cambie el select, hacemos fetch y pintamos
+    sel.addEventListener('change', async () => {
+      const id = sel.value;
+      if (!id) return;
+      const res = await fetch(`/api/datos_propiedad/propietario?id_propiedades=${id}`);
+      const data = await res.json();
+      console.log('API ➞', data);   // <--- Asegurate de ver el JSON en consola
+      actualizarCampos(data);
+       console.log("Datos recibidos del backend:", data); 
+    });
+
+    // 6) Enlazamos inputs para recalcular en tiempo real
+    ['importemensual', 'exp_extraor', 'seguro', 'varios', 'honorario']
+      .forEach(id => document.getElementById(id)
+        ?.addEventListener('input', recalcularTotal)
+      );
+
+    // 7) Confirmación de envío
+    const form = document.querySelector('form[action="/recibo_propietario/insertar"]');
+    const btn = document.getElementById('btn-generar-recibo');
+    btn?.addEventListener('click', e => {
+      if (!confirm('¿Desea insertar el recibo?')) e.preventDefault();
+    });
+
+    // 8) Cálculo inicial
+    recalcularTotal();
+  });
+</script>
+
+
+
+
+
+
+</body>
+
+</html>

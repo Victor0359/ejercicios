@@ -16,7 +16,6 @@ body {
     padding: 30px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     position: relative;
-    /* Para la posición del "Pagado" */
 }
 
 .receipt-header {
@@ -32,36 +31,40 @@ body {
     font-size: 2.2em;
 }
 
-.receipt-details {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 0.95em;
-}
 
-.receipt-details1 {
+.receipt-details {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
     font-size: 0.95em;
 }
 
-.receipt-details div {
-    flex: 1;
+.receipt-details1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.95em;
 }
 
-.receipt-details1 .right {
-    text-align: right;
+
+.receipt-details1 > div {
+  flex: 1;
 }
 
 .receipt-details1 .left {
-    text-align: left;
+  text-align: left;
 }
 
-.receipt-details1 .centro {
-    text-align: center;
-    flex: 1;
+.receipt-details1 .center {
+  text-align: center;
 }
+
+.receipt-details1 .right {
+  text-align: right;
+}
+
+
 
 .receipt-item {
     margin-bottom: 25px;
@@ -70,6 +73,11 @@ body {
 .receipt-item p {
     margin: 5px 0;
     line-height: 1.6;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-align: justify;
 }
 
 .receipt-total {
@@ -92,9 +100,7 @@ body {
 .receipt-total-words {
     margin-top: 20px;
     font-size: 0.95em;
-    font-weight: normal;
     text-align: left;
-    /* Alineado a la izquierda */
 }
 
 .receipt-signature {
@@ -123,49 +129,91 @@ body {
     transform: translate(-50%, -50%) rotate(-25deg);
     font-size: 5em;
     color: rgba(0, 128, 0, 0.2);
-    /* Verde semitransparente */
     font-weight: bold;
     border: 5px solid rgba(0, 128, 0, 0.2);
     padding: 10px 20px;
     border-radius: 10px;
     pointer-events: none;
-    /* Asegura que no interfiera con la selección de texto */
     z-index: 1;
-    /* Para que esté por encima del contenido principal */
 }
 
-  .form-row {
+.form-row {
     display: flex;
     align-items: center;
-    margin-bottom: 0.60rem;
-  }
+    margin-bottom: 0.6rem;
+}
 
-  .form-row label {
+.form-row label {
     width: 150px;
     text-align: left;
     padding-right: 1rem;
     font-weight: bold;
     font-size: 0.75rem;
+}
 
-  }
-
-  .form-row input {
+.form-row input {
     width: auto;
-   min-width: 50px;         /* más compacto aún */
-  max-width: 100px;        /* opcional: evita que se extiendan demasiado */
-  padding: 0.3rem 0.4rem;  
+    min-width: 50px;
+    max-width: 100px;
+    padding: 0.3rem 0.4rem;
     font-size: 0.8rem;
     border: none;
-    border-bottom: 1px solid #888; /* línea inferior como guía visual */
+    border-bottom: 1px solid #888;
     background: transparent;
     text-align: right;
-  }
+}
 
-  .form-row input:focus {
+.form-row input:focus {
     outline: none;
     border-color: #007acc;
-  }
-/* Responsive adjustments */
+}
+
+/* Estilos para impresión en media hoja A4 */
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+        background: none;
+    }
+
+    .receipt-container {
+        width: 100%;
+        max-width: 100%;
+        height: 148mm;
+        padding: 10mm;
+        box-shadow: none;
+        border: none;
+        font-size: 0.75em;
+    }
+
+    .receipt-header h1 {
+        font-size: 1.5em;
+    }
+
+    .receipt-item p,
+    .receipt-details,
+    .receipt-details1,
+    .receipt-total,
+    .receipt-signature {
+        font-size: 0.85em;
+    }
+
+    .paid-stamp {
+        font-size: 3em;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
+    html, body {
+        width: 210mm;
+        height: 297mm;
+    }
+}
+
+/* Responsive mobile */
 @media (max-width: 600px) {
     .receipt-container {
         margin: 10px;

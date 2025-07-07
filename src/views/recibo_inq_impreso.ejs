@@ -7,23 +7,23 @@
 
 
                 <div class="receipt-container">
-                    <div class="paid-stamp">PAGADO</div>
+                    <!-- <div class="paid-stamp">PAGADO</div> -->
                     <div class="receipt-header">
                         <h1>RECIBO DE COBRO</h1>
                     </div>
 
                     <div class="receipt-details">
                         <div class="right">
-                            <p><strong>Fecha:</strong> <%= fecha_original %></p>
+                            <p><strong>Fecha:</strong> <%= fechaActual %></p>
                         </div>
 
                     </div>
                     <div class="receipt-details1">
 
-                        <div class="right">
+                        <div class="left">
                             <p><strong>Recibo Nº:</strong> <span id="receiptNumber"><%= recibo.numrecibo %></span>
                         </div>
-                        <div class="left">
+                        <div class="right">
                             <p><strong>Mes Cont:</strong> <span id="ownerName"><%= recibo.cuota %></span></p>
                         </div>
                     </div>
@@ -98,11 +98,6 @@
                 // Asignar la fecha actual al elemento con id "currentDate"
                 document.getElementById('currentDate').textContent = getCurrentDate();
 
-                // Puedes modificar estos valores dinámicamente si lo necesitas
-                // document.getElementById('receiptNumber').textContent = '0002';
-                // document.getElementById('receivedFrom').textContent = 'Otra Persona';
-                // document.getElementById('totalInWords').textContent = 'DOSCIENTOS CINCUENTA PESOS CON 50/100';
-                // document.getElementById('concept').textContent = 'Pago de Honorarios';
-                // document.getElementById('totalAmount').textContent = '250.50';
+              
             </script>
             </body>
