@@ -1767,14 +1767,6 @@ app.get('/debug-session', (req, res) => {
     <a href="/inicio">Ir a /inicio</a>
   `);
 });
-
-
-
-
-
-
-
-
 });
 
 // Cerrar sesión
@@ -1793,7 +1785,13 @@ function requireLogin(req, res, next) {
 
 app.get('/inicio', requireLogin, (req, res) => {
   res.render('inicio');
+})
+
+app.get('/', (req, res) => {
+    res.locals.ocultarNavbar = true;
+  res.render('login');
 });
+
 
 
 
