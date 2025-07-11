@@ -18,6 +18,8 @@ const flash = require('express-flash');
 const funcion_letras = require("./funcion_letras");
 const recibo_prop = require("./recRecPropietario");
 const app = express();
+const bcrypt = require('bcrypt');
+const PgSession = require('connect-pg-simple')(session);
 
 
 
@@ -50,6 +52,10 @@ app.use((req, res, next) => {
   res.locals.ocultarNavbar = false; // valor por defecto para TODAS las vistas
   next();
 });
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  next();
+});
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -77,9 +83,6 @@ app.use(
     },
   })
 );
-app.get('/', (req, res) => {
-  res.render("inicio");
-});
 
 app.use((req, res, next) => {
   res.locals.insertado = false;
@@ -984,7 +987,7 @@ app.get("/recibo_alquiler/buscar", async (req, res) => {
   }
 });
 
-// Buscar recibos por propiedad (POST)
+
 // Buscar recibos por propiedad (POST)
 app.post("/recibo_alquiler/buscar", async (req, res) => {
   try {
@@ -1320,68 +1323,6 @@ app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
 });
 // ------------------- recibo propietario ----------------------
 
-// app.post("/recibo_propietario", async (req, res) => {
-//   try {
-//     const id_propiedades = req.body.id_propiedades;
-
-//     const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados(); // <-- trae todas las propiedades
-//     // const contrato = await recibo_contrato.obtenerContratos_Id(id_propiedades);
-//     const resultado = await recibo_propietario.obtenerContratos_Id(id_propiedades);
-//     const impuesto    = await impuestos.obtenerImpuestosPorDireccion(id_propiedades);
-//     const honorarios  = await contratos.obtenerContratoPorId(id_propiedades);
-
-//     const apellidoinquilino = Array.isArray(resultado) && resultado.length > 0
-//       ? (resultado[0].apellidopropietario)
-//       : "";
-
-//     const cuota = Array.isArray(resultado) && resultado.length > 0
-//       ? (resultado[0].cuota)
-//       : "";
-//     const importemensual = Array.isArray(resultado) && resultado.length > 0
-//       ? (resultado[0].importemensual)
-//       : "";
-//     const exp_ext = Array.isArray(impuesto) && impuesto.length > 0
-//       ? (impuesto[0].exp_ext)
-//       : "";
-
-//       const seguro = Array.isArray(impuesto) && impuesto.length > 0
-//       ? (impuestosLista[0].seguro)
-//       : "";
-//       const varios = Array.isArray(impuesto) && impuesto.length > 0
-//       ? (impuestosLista[0].varios)
-//       : "";
-//       const honorario= Array.isArray(honorarios) && honorarios.length > 0
-//       ? (honorarios[0].honorarios)
-//       : "";
-
-//     const meses = [
-//       "enero", "febrero", "marzo", "abril", "mayo", "junio",
-//       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-//     ];
-//     const hoy = new Date();
-//     const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
-
-
-//     res.render("recibo_propietario", {
-//       propiedades: listaDePropiedades,
-//       numero_recibo: numero_recibo,
-//       id_propiedad_seleccionada: id_propiedades,
-//       apellidopropietario,
-//       cuota,
-//       fecha_actual: fechaFormateada,
-//       fecha_inicio: fecha_inicial,
-//       importemensual: importemensual,
-//       exp_ext: exp_ext,
-//       seguro: seguro,
-//       varios: varios,
-//       honorario: honorario,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send("Error al cargar recibo de inquilino");
-//   }
-// });
-
 app.post("/recibo_propietario", async (req, res) => {
   try {
     const { id_propiedades } = req.body;
@@ -1691,106 +1632,172 @@ res.render("recibo_prop_impreso", {
   }
 });
 
+app.post("/buscar_recProp", async (req, res) =>  {
+  try {
+    const id_propiedades = req.body.id_propiedades;
+
+    if (!id_propiedades || id_propiedades.trim() === '') {
+      return res.render("buscar_recibo_alquiler", {
+        propiedades: await propiedades.obtenerPropiedadOrdenados(),
+        inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
+        recibos: [],
+        mensaje: "Debe seleccionar una propiedad antes de buscar recibos."
+      });
+    }
+
+    // ✅ Si pasó la validación, ahora sí busca los recibos:
+    const recibos = await recibo_prop.rePropietarios(id_propiedades);
+    console.log("Recibos encontrados:", recibos);
+    res.render("buscar_recProp", {
+      propiedades: await propiedades.obtenerPropiedadOrdenados(),
+      inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
+      recibos
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error al buscar recibos");
+  }
+});
+
+app.get("/buscar_recProp", async (req, res) => {
+  res.render("buscar_recProp", {
+    propiedades: await propiedades.obtenerPropiedadOrdenados(),
+    inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
+    recibos: []
+  });
+});
+
+
+
 
 
 // ------------------  login ----------------------
 
-
-app.post("/login", async (req, res) => {
-  let conn2;
-  try {
-    const key = await getkey();
-    console.log("La key obtenida es:", key);
-
-    if (!key || key.length === 0) {
-      throw new Error("No se pudo obtener la clave secreta: respuesta vacía");
-    }
-
-    const secretKey = key[0]?.clave; // Obtén la clave secreta del primer elemento
-    console.log("La clave secreta es:", secretKey);
-
-    if (!secretKey) {
-      throw new Error("No se pudo obtener la clave secreta");
-    }
-
-    const { clave, nombre } = req.body;
-    if (!clave || !nombre) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Faltan credenciales en el cuerpo de la solicitud",
-        });
-    }
-
-    if (clave === key[0]?.clave && nombre.trim() === key[0]?.nombre) {
-      console.log("Credenciales válidas:", clave, nombre);
-
-      const playload = {
-        check: true,
-      };
-
-      const token = jdw.sign(playload, secretKey, {
-        algorithm: "HS256", // Algoritmo de firma
-        expiresIn: "7d", // Expira en 7 días
-      });
-
-      console.log("Token generado:", token);
-      return res.json({
-        success: true,
-        message: "Login exitoso",
-        token: token,
-      });
-    } else {
-      return res
-        .status(401)
-        .json({ success: false, message: "Credenciales incorrectas" });
-    }
-  } catch (err) {
-    console.error("Error en el endpoint de login:", err);
-    res.status(500).send("Error en el endpoint de login");
-  } finally {
-    if (conn2) conn2.end(); // Cierra la conexión
+app.use(session({
+  store: new PgSession({
+    pool: database,
+    tableName: 'session'
+  }),
+  secret: 'claveSuperSecreta',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
   }
+}));
+
+// Middleware de sesión fuera de los endpoints
+app.get('/login', (req, res) => {
+  if (req.session.usuarioId) return res.redirect('/inicio');
+  res.locals.ocultarNavbar = true;
+  res.render('login', { error: null });
 });
 
-const verificacion = async (req, res, next) => {
-  let token = req.headers["x-access-token"] || req.headers["authorization"];
-  console.log("Token recibido:", token);
 
-  if (!token) {
-    return res.status(403).send({ error: "Token no proporcionado" });
-  }
 
-  if (token.startsWith("Bearer ")) {
-    token = token.slice(7, token.length);
-    console.log("token sin Bearer:", token);
-  }
+// Para parsear body
+app.use(express.urlencoded({ extended: true }));
 
-  try {
-    const key = await getkey();
-    const secretKey = key[0]?.clave;
-    console.log("la key obtenida es:", secretKey);
-    if (!secretKey) {
-      throw new Error("No se pudo obtener la clave secreta");
-    }
-    const jdw = require("jsonwebtoken");
-    jdw.verify(token, secretKey, (err, decoded) => {
-      if (err) {
-        console.error("Error al verificar el token:", err);
-        return res.json({ message: "Token inválido" });
-      } else {
-        req.decoded = decoded;
-        next();
-      }
-    });
-  } catch (err) {
-    console.error("Error al obtener la clave para verificar el token:", err);
-    res.status(500).send("Error interno del servidor");
-  }
-};
+function verificarSesion(req, res, next) {
+  console.log("verificarSesion - usuarioId:", req.session.usuarioId);
+  if (req.session.usuarioId) return next();
+  res.redirect('/login');
+}
+// Página principal protegida
 
-app.get("/inicio", (req, res) => {
-  res.render("inicio");
+app.get('/inicio', verificarSesion, (req, res) => {
+  console.log("Sesión en /inicio:", req.session); // debería mostrar usuarioId
+  res.render('inicio', { email: req.session.email });
 });
+
+
+
+// Registro de usuario
+
+
+// Login del usuario
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+const resultado = await database.query(
+  'SELECT * FROM login WHERE email = $1',
+  [email]
+);
+
+if (resultado.rows.length === 0) {
+  res.locals.ocultarNavbar = true;
+  return res.render('login', { error: 'Usuario no encontrado' });
+}
+// (async () => {
+//   const hash = await bcrypt.hash("victor9530", 10);
+//   console.log("Hash generado:", hash);
+// })();
+
+
+const usuario = resultado.rows[0];
+const passwordMatch = await bcrypt.compare(password, usuario.password);
+
+
+const match = await bcrypt.compare(password, usuario.password);
+console.log('¿Coincide?', match);
+
+if (!match) {
+   res.locals.ocultarNavbar = true;
+  return res.render('login', { error: 'Contraseña incorrecta' });
+}
+
+// sesión OK
+req.session.usuarioId = usuario.id_login;
+req.session.email = usuario.email;
+
+req.session.save((err) => {
+  if (err) {
+    console.error('Error al guardar sesión:', err);
+    return res.render('login', { error: 'Falla al guardar sesión' });
+  }
+  res.redirect('/inicio');
+});
+
+app.get('/debug-session', (req, res) => {
+  console.log("Sesión actual:", req.session);
+  res.send(`
+    <h2>Estado de la sesión:</h2>
+    <pre>${JSON.stringify(req.session, null, 2)}</pre>
+    <a href="/inicio">Ir a /inicio</a>
+  `);
+});
+
+
+
+
+
+
+
+
+});
+
+// Cerrar sesión
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+
+function requireLogin(req, res, next) {
+  if (!req.session.usuarioId) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
+app.get('/inicio', requireLogin, (req, res) => {
+  res.render('inicio');
+});
+
+
+
+
+
+
 

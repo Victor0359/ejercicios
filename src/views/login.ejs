@@ -1,2 +1,46 @@
-<h1 pagina de login</h1>
-<p>Bienvenido a la página login de nuestra aplicación.</p>
+        
+
+
+<% if (typeof error !== 'undefined') { %>
+  <div class="alert alert-danger"><%= error %></div>
+<% } %>
+
+<h1> login</h1>
+
+<main>
+    <div class="container-fluid" >
+        <div class="row justify-content-center">
+        
+            <h1>Iniciar seccion</h1>
+        
+        <div>
+        <p> Ingresa tus credenciales para iniciar sección </p>
+        </div>
+    </div>
+   <form action="/login" method="POST">
+         <div>
+        <label for="email" class="sr-only">Usuario:</label>
+         <input type="email" name="email" id="email" placeholder="Ingrese su correo" required>
+         </div>
+         <div>
+         <label for="password"class="sr-only">Contraseña:</label>
+         <input type="password" name="password" id="password" placeholder="Ingrese su contraseña" required>
+         </div>
+         <div>
+         <button type="submit" id="login-button">Iniciar Sesión</button>
+         </div>
+
+   </form>
+ 
+    <a href="/logout">Cerrar sesión</a>
+
+    </div>
+</main>
+
+
+</form>
+
+
+ <link rel="stylesheet" href="/css/login.css">
+
+</body>

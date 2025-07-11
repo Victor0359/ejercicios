@@ -112,7 +112,7 @@ async function obtenerContratosPorIdPropiedad(id_propiedad) {
        ORDER BY fecha_inicio DESC`,
       [id_propiedad]
     );
-    return resultado;
+    return resultado.rows;
   } catch (err) {
     console.error("❌ Error al obtener contratos por propiedad:", err);
     return [];

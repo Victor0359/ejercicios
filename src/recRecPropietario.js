@@ -65,9 +65,26 @@ async function recibosPropietarios(numrecibo) {
   } 
 }
 
+async function rePropietarios(id) {
+  
+  try {
+    
+    const resultado = await database.query(
+      "select * from recibo_propietario where id_propiedad=$1 order by numrecibo desc limit 5",
+      [id]
+    );
+       
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al buscar recibos:", err);
+    return [];
+  } 
+}
+
 module.exports = {
   obtenerContratos_Id,
   insertarReciboPropietario_Id,
   obtenerPropietario_Id,
-  recibosPropietarios
+  recibosPropietarios,
+  rePropietarios
 };

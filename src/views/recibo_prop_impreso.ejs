@@ -1,7 +1,7 @@
 <% if (!ocultarNavbar) { %>
     <%- include('partials/navbar') %>
         <% } %>
-                <pre><%= JSON.stringify(reciboProp, null, 2) %></pre>
+                
            
                 <form id="FormEditar" action="/recibo_prop_impreso" method="GET" class="row">
                 <input type="hidden" name="numrecibo" value="<%= reciboProp.numrecibo %>"> 

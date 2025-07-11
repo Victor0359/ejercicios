@@ -1,0 +1,106 @@
+<div class="container mt-5">
+  <form action="/buscar_recProp" method="POST" class="form-inline mb-3">
+
+    <div class="mt-5">
+      <h1><b>Buscar Recibos Propietarios</b></h1>
+    </div>
+    <div class="row mt-5 mb-3">
+      <div class="col-md-6 mb-5 mt-4">
+        <label for="id_propiedad">
+          <h2><b>Propiedades</b></h2>
+        </label>
+        <select class="form-select" id="id_propiedades" name="id_propiedades" required>
+          <option value="">Seleccione una propiedad</option>
+          <% if (propiedades && propiedades.length> 0) { %>
+            <% propiedades.forEach(function(prop) { %>
+              <option value="<%= prop.id_propiedades %>">
+                <%= prop.direccion %>
+              </option>
+              <% }); %>
+                <% } %>
+        </select>
+
+      </div>
+
+
+      <button type="submit" class="btn btn-success ">Buscar</button>
+
+
+
+    </div>
+  </form>
+
+  <% if (recibos && recibos.length> 0) { %>
+    <div class="col">
+          <table class="table table-striped table-bordered border-primary">
+      <thead>
+        <tr>
+          <th>Propietario</th>
+          <th>Inquilino</th>
+          <th>N° Recibo</th>
+          <th>Fecha</th>
+          <th>cuota</th>
+          <th>Monto</th>
+          <th>Expensas ext</th>
+          <th>seguro</th>
+          <th>varios</th>
+          <th>Total</th>
+          <th>Imprimir</th>
+          <!-- Agrega más columnas si lo necesitas -->
+        </tr>
+      </thead>
+      <tbody>
+        <% recibos.forEach(function(r) { %>
+          <tr>
+            <td>
+              <%= r.apellidopropietario %>
+            </td>
+            <td>
+              <%= r.apellidoinquilino %>
+            </td>
+            <td>
+              <%= r.numrecibo %>
+            </td>
+            <td>
+              <%= new Date(r.fecha).toLocaleDateString("es-AR", { day: "2-digit" , month: "2-digit" , year: "numeric" })
+                %>
+            </td>
+
+
+            <td>
+              <%= r.cuota %>
+            </td>
+            <td>
+              <%= r.importemensual %>
+            </td>
+           
+            <td>
+              <%= r.exp_extraor %>
+            </td>
+            <td>
+              <%= r.seguro %>
+            </td>
+            <td>
+              <%= r.varios %>
+            </td>
+            <td>
+              <%= r.honorarios %>
+            </td>
+            <td>
+              <%= r.total %>
+            </td>
+            <td>
+             <a href="/recibo_prop_impreso/<%= r.numrecibo %>" class="btn btn-sm btn-primary" target="_blank">Imprimir</a>
+
+            </td>
+          </tr>
+          <% }) %>
+      </tbody>
+    </table>
+    <% } else if (typeof recibos !=="undefined" ) { %>
+      <div class="alert alert-info">No hay recibos para esta propiedad.</div>
+      <% } %>
+    </div>
+    <a href="/recibo_propietario" class="btn btn-secondary mt-5 w-30">Cancelar</a>
+  </div>
+</div>
