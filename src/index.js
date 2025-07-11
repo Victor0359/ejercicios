@@ -1788,9 +1788,17 @@ app.get('/inicio', requireLogin, (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    res.locals.ocultarNavbar = true;
+  console.log('Accedieron a la raíz /');
+  res.locals.ocultarNavbar = true;
   res.render('login');
 });
+
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
+
 
 
 
