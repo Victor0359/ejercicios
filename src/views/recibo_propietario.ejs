@@ -1,8 +1,13 @@
+
+
+
+
 <div class="container mt-5">
 
+<div id="mensaje-alerta" >
+</div>
 
-
-  <form action="/recibo_propietario/insertar" method="POST">
+  <form id="form-recibo"action="/recibo_propietario/insertar" method="POST">
     <h1 class="mb-5 "><b> RECIBO PROPIETARIO</b></h1>
 
 
@@ -92,7 +97,7 @@
             </div>
           </div>
           <div class=" mt-5 mr-2 no-print">
-            <button type="submit" class="btn btn-primary" id="btn-generar-recibo">Generar Recibo</button>
+             <button type="submit" class="btn btn-primary" id="btn-generar-recibo">Generar Recibo</button>
 
             <a href="/recibo_propietario" class="btn btn-secondary">Cancelar</a>
 
@@ -115,6 +120,17 @@
 
 </div>
 <link rel="stylesheet" href="/css/propiedades.css">
+
+
+<script>function mostrarMensaje(texto) {
+  const mensaje = document.getElementById("mensaje-alerta");
+  mensaje.textContent = texto;
+  mensaje.style.display = "block";
+  setTimeout(() => {
+    mensaje.style.display = "none";
+  }, 1000);
+}
+</script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // 1) Referencia al <select>
@@ -182,6 +198,37 @@
 </script>
 
 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('form-recibo');
+  const btn = document.getElementById('btn-generar-recibo');
+
+  btn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    
+    if (!confirm('¿Desea insertar el recibo?')) return;
+
+    try {
+      const res = await fetch('/recibo_propietario/insertar', {
+        method: 'POST',
+        body: new FormData(form)
+      });
+
+      const data = await res.json();
+      console.log('Respuesta JSON:', data);
+
+      if (data.exito) {
+        window.location.href = data.redireccion;
+      } else {
+        mostrarMensaje(data.mensaje || 'Error al insertar');
+      }
+    } catch (error) {
+      console.error('Error en el envío:', error);
+      mostrarMensaje('Falla al conectar con el servidor');
+    }
+  });
+});
+</script>
 
 
 

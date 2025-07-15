@@ -36,18 +36,15 @@ app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
-app.use(session({
-  secret: 'claveSecreta', // puede ser cualquier string largo
-  resave: false,
-  saveUninitialized: false
-}));
-app.use(flash());
+
+
 
 app.use(express.json());
 
-app.use(expressEjsLayouts);
-app.set("layout", "layout");
-app.use(cors());
+
+
+
+
 app.use((req, res, next) => {
   res.locals.ocultarNavbar = false; // valor por defecto para TODAS las vistas
   next();
@@ -56,9 +53,25 @@ app.use((req, res, next) => {
   res.locals.session = req.session;
   next();
 });
-
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(session({
+  store: new PgSession({
+    pool: database,
+    tableName: 'session',
+ 
+  }),
+  secret: 'claveSuperSecreta',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+  }
+}));
+app.use(flash());
+app.use(expressEjsLayouts);
+app.set("layout", "layout");
+app.use(cors());
 //nodem
 app.use(morgan("dev"));
 
@@ -92,9 +105,127 @@ app.use((req, res, next) => {
   next();
 });
 
+// Para parsear body
+app.use(express.urlencoded({ extended: true }));
+
+function verificarSesion(req, res, next) {
+  console.log("verificarSesion - usuarioId:", req.session.usuarioId);
+  if (req.session.usuarioId) return next();
+  res.redirect('/login');
+}
+// Página principal protegida
+
+// app.get('/inicio', verificarSesion, (req, res) => {
+//    res.locals.ocultarNavbar = false;
+//   console.log("Sesión en /inicio:", req.session); // debería mostrar usuarioId
+//   res.render('inicio', { email: req.session.email });
+// });
+
+app.use((req, res, next) => {
+  res.locals.mostrarNavbar = !!req.session.usuarioId; // o cualquier lógica que necesites
+  next();
+});
+
+// Registro de usuario
+
+
+// Login del usuario// 🟢 POST: intenta loguear al usuario
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const resultado = await database.query('SELECT * FROM login WHERE email = $1', [email]);
+
+  if (resultado.rows.length === 0) {
+    return res.render('login', { error: 'Usuario no encontrado'});
+  }
+
+  const usuario = resultado.rows[0];
+  const match = await bcrypt.compare(password, usuario.password);
+
+  console.log('¿Coincide?', match);
+
+  if (!match) {
+    return res.render('login', { error: 'Contraseña incorrecta', mostrarNavbar: true });
+  }
+
+  // Sesión OK
+  req.session.usuarioId = usuario.id_login;
+  req.session.email = usuario.email;
+
+  req.session.save((err) => {
+    if (err) {
+      console.error('Error al guardar sesión:', err);
+      return res.render('login', { error: 'Falla al guardar sesión', mostrarNavbar: true });
+    }
+    res.redirect('/inicio');
+  });
+});
+
+
+// 🟢 GET: inspeccionar sesión
+app.get('/debug-session', (req, res) => {
+  res.send(`<pre>${JSON.stringify(req.session, null, 2)}</pre>`);
+});
+
+app.get('/login', (req, res) => {
+  console.log("Entrando a /login");
+  if (req.session.usuarioId) {
+    return res.redirect('/inicio' );
+  }
+  
+  res.render('login', { error: null, });
+});
+// Cerrar sesión
+app.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.redirect('/inicio');
+    }
+    res.clearCookie('connect.sid');
+    res.redirect('/');
+  });
+});
+function requireLogin(req, res, next) {
+  console.log("Middleware requireLogin ejecutado. UsuarioId:", req.session.usuarioId);
+  if (!req.session.usuarioId) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
+app.get('/inicio', verificarSesion, (req, res) => {
+ 
+  res.render('inicio', { email: req.session.email,mostrarNavbar:true});
+});
+
+app.get('/', (req, res) => {
+  if (req.session.usuarioId) {
+    return res.redirect('/inicio');
+  }
+  res.render('login', { mostrarNavbar: false });
+});
+
+
+
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+app.use((req, res, next) => {
+  console.log("Sesión actual:", req.session);
+  next();
+});
+
+
+
 // ------------------  inquilinos ----------------------
 
-app.get("/inquilinos", async (req, res) => {
+app.get("/inquilinos",requireLogin, async (req, res) => {
   try {
     const lista = await inquilinos.obtenerInquilinos();
     res.render("inquilinos", {
@@ -336,7 +467,7 @@ app.post('/inquilinos/buscar', async (req, res) => {
 // ------------------  propietarios ----------------------
 
 
-app.get("/propietarios", async (req, res) => {
+app.get("/propietarios", requireLogin, async (req, res) => {
   try {
     const lista = await propietarios.obtenerPropietarios();
     res.render("propietarios", {
@@ -410,7 +541,7 @@ app.post('/propietarios/porId', async (req, res) => {
   }
 });
 
-app.post('/propietarios/modificar', async (req, res) => {
+app.post('/propietarios/modificar',requireLogin, async (req, res) => {
   const {
     id_propietarios,
     nombre,
@@ -537,7 +668,7 @@ app.get('/propietarios/editar/:id', async (req, res) => {
 
 
 
-app.post('/propietarios/buscar', async (req, res) => {
+app.post('/propietarios/buscar', requireLogin, async (req, res) => {
   const prop = req.body.prop;
   console.log("Datos recibidos para buscar propietarios:", prop);
   try {
@@ -558,20 +689,28 @@ app.post('/propietarios/buscar', async (req, res) => {
 
 // ------------------  propiedades ----------------------
 
-app.get("/propiedades", async (req, res) => {
+app.get("/propiedades", requireLogin, async (req, res) => {
   try {
     const propietariosLista = await propiedades.obtenerPropietarioSql();
     const propiedadesLista = await propiedades.obtenerPropiedad();
+   
 
     const mensaje = req.query.mensaje;
     const insertado = req.query.insertado;
 
-    res.render("propiedades", {
-      propiedades: propiedadesLista,
-      propietarios: propietariosLista,
-      mensaje,
-      insertado
-    });
+    
+    console.log(propiedadesLista)
+
+  
+ res.render("propiedades", {
+  mostrarNavbar: true,
+  propiedades: propiedadesLista || [],
+  propietarios: propietariosLista || [],
+  mensaje,
+  insertado,
+  eliminado: req.query.eliminado || false
+});
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar el formulario");
@@ -585,6 +724,7 @@ app.post("/propiedades", async (req, res) => {
     const propiedadesLista = await propiedades.obtenerPropiedad(id_propietario);
     const propietarios = await propiedades.obtenerPropietarioSql();
     console.log("propietarios para el dropdown", propietarios);
+ console.log("propietariosLista:", Array.isArray(propietarios), propietarios);
 
     res.render("propiedades", {
       propiedades: propiedadesLista,
@@ -616,7 +756,7 @@ app.post("/propiedades/porId", async (req, res) => {
   }
 });
 
-app.post("/propiedades/modificar", async (req, res) => {
+app.post("/propiedades/modificar", requireLogin, async (req, res) => {
   const { direccion, localidad, id_propietario, id_impuestos, id_propiedades } = req.body;
   if (id_impuestos === '' || id_impuestos === undefined) {
     id_impuestos = 0;
@@ -720,7 +860,7 @@ app.get("/propiedades/insertar", async (req, res) => {
   }
 });
 
-app.post('/propiedades/buscar', async (req, res) => {
+app.post('/propiedades/buscar', requireLogin, async (req, res) => {
   const datos = req.body.datos;
   console.log("Datos recibidos para buscar propietarios:", datos);
   try {
@@ -745,7 +885,7 @@ app.post('/propiedades/buscar', async (req, res) => {
 
 //----------------------- impúestos ----------------------
 
-app.get("/impuestos", async (req, res) => {
+app.get("/impuestos",requireLogin, async (req, res) => {
   try {
     const idPropiedad = req.query.id_propiedad;
     const propiedadesLista = await propiedades.obtenerPropiedadesOrdenadasPorId();
@@ -774,7 +914,7 @@ app.get("/impuestos", async (req, res) => {
 
 
 
-app.get("/impuestos/insertar", async (req, res) => {
+app.get("/impuestos/insertar", requireLogin, async (req, res) => {
 
   try {
     const propiedad = await propiedades.obtenerPropiedadesOrdenadasPorId();
@@ -810,7 +950,7 @@ app.post("/impuestos/insertar", async (req, res) => {
 });
 
 // ----------------------  contratos ----------------------
-app.get("/contratos", async (req, res) => {
+app.get("/contratos", requireLogin, async (req, res) => {
   console.log("URL completa:", req.url);
   console.log("Query completa:", req.query);
   try {
@@ -845,7 +985,7 @@ app.get("/contratos", async (req, res) => {
 
 
 
-app.post("/contratos/insertar", async (req, res) => {
+app.post("/contratos/insertar",requireLogin, async (req, res) => {
   try {
     let { id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial, precioactual, honorarios, duracion_contrato } = req.body;
     console.log(req.body);
@@ -897,7 +1037,7 @@ function toMysqlDate(fecha) {
   if (isNaN(d)) return null;
   return d.toISOString().slice(0, 10);
 }
-app.post("/contratos/modificar", async (req, res) => {
+app.post("/contratos/modificar", requireLogin, async (req, res) => {
   try {
     const {
       id_propietarios,
@@ -1302,7 +1442,7 @@ app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
     if (!resultado || resultado.length === 0) {
       return res.status(404).send("Recibo no encontrado");
     }
-    res.render("/recibo_prop_impreso", {
+    res.render("recibo_inq_impreso", {
       ocultarNavbar: true,
       recibo: resultado[0],
       propiedades: prop,
@@ -1349,10 +1489,7 @@ app.post("/recibo_propietario", async (req, res) => {
     const contrato = datosContrato?.[0] || {};
     const impuesto = impuestos?.[0] || {};
     const honorarios = contratos?.[0]?.honorarios || "";
-    console.log(contrato);
-    console.log(impuesto[0]);
-    console.log(honorarios[0]);
-    console.log(contrato[0]);
+    
     // Fecha formateada
     const hoy = new Date();
     const meses = [
@@ -1369,12 +1506,13 @@ app.post("/recibo_propietario", async (req, res) => {
       apellidopropietario: contrato.apellidopropietario || "",
       cuota: contrato.cuota || "",
       fecha_actual: fechaFormateada,
-      fecha_inicio: contrato.fecha_inicial || "",
+      fecha1: contrato.fecha_inicial || "",
       importemensual: contrato.importemensual || "",
       exp_extraor: impuesto.exp_extraor || "",
       seguro: impuesto.seguro || "",
       varios: impuesto.varios || "",
-      honorarios
+      honorarios,
+      mensaje
     });
 
   } catch (err) {
@@ -1534,6 +1672,8 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
      numrecibo = ultimoNumRecibo + 1;
      console.log("datos de insertar:", recibo_prop);
     // 5) Llamo al método de inserción pasando un OBJETO
+    
+    
     const resultado = await recibo_prop.insertarReciboPropietario_Id ({
       fecha,
       id_propiedad,
@@ -1549,13 +1689,18 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       honorarios,
       fecha_rec
     });
-
+    
     // 6) Resultado de la inserción
     if (resultado && resultado.rowCount > 0) {
-      return res.redirect(`/recibo_prop_impreso/${numrecibo}`);
-    } else {
-      res.status(400).send("No se insertó el recibo.");
-    }
+  return res.json({
+    exito: true,
+    mensaje: "Recibo cargado exitosamente",
+    redireccion: `/recibo_prop_impreso/${numrecibo}`
+  });
+} else {
+  res.json({ exito: false, mensaje: "No se pudo insertar el recibo" });
+}
+
 
   } catch (err) {
     console.error("Error al insertar recibo_propietario:", err);
@@ -1589,10 +1734,16 @@ const parseNumber = val => {
 
 // 📅 Fechas
 const fechaContrato = new Date(reciboProp.fecha);
-const fechaActual = new Date();
+// const fechaActual = new Date();
+const fechaActual = fechaContrato.toLocaleDateString("es-AR", {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric'
+});
+
 const mes_contrato = fechaContrato.toLocaleDateString("es-AR", { month: 'long' }).toUpperCase();
 const ultimoDiaDelMes = fecha => new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
-const vencimiento = ultimoDiaDelMes(fechaActual);
+const vencimiento = ultimoDiaDelMes(fechaContrato);
 
 // 🧾 Estructura consolidada para la vista
 reciboProp = {
@@ -1618,12 +1769,9 @@ res.render("recibo_prop_impreso", {
   letra,
   mes_contrato,
   vencimiento,
-  fechaActual: fechaActual.toLocaleDateString("es-AR", {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-});
+  fechaActual
+  });
+
 
 
   } catch (err) {
@@ -1674,129 +1822,11 @@ app.get("/buscar_recProp", async (req, res) => {
 
 // ------------------  login ----------------------
 
-app.use(session({
-  store: new PgSession({
-    pool: database,
-    tableName: 'session'
-  }),
-  secret: 'claveSuperSecreta',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
-  }
-}));
-
-// Middleware de sesión fuera de los endpoints
-app.get('/login', (req, res) => {
-  if (req.session.usuarioId) return res.redirect('/inicio');
-  res.locals.ocultarNavbar = true;
-  res.render('login', { error: null });
-});
 
 
 
-// Para parsear body
-app.use(express.urlencoded({ extended: true }));
-
-function verificarSesion(req, res, next) {
-  console.log("verificarSesion - usuarioId:", req.session.usuarioId);
-  if (req.session.usuarioId) return next();
-  res.redirect('/login');
-}
-// Página principal protegida
-
-app.get('/inicio', verificarSesion, (req, res) => {
-  console.log("Sesión en /inicio:", req.session); // debería mostrar usuarioId
-  res.render('inicio', { email: req.session.email });
-});
 
 
-
-// Registro de usuario
-
-
-// Login del usuario
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-const resultado = await database.query(
-  'SELECT * FROM login WHERE email = $1',
-  [email]
-);
-
-if (resultado.rows.length === 0) {
-  res.locals.ocultarNavbar = true;
-  return res.render('login', { error: 'Usuario no encontrado' });
-}
-// (async () => {
-//   const hash = await bcrypt.hash("victor9530", 10);
-//   console.log("Hash generado:", hash);
-// })();
-
-
-const usuario = resultado.rows[0];
-const passwordMatch = await bcrypt.compare(password, usuario.password);
-
-
-const match = await bcrypt.compare(password, usuario.password);
-console.log('¿Coincide?', match);
-
-if (!match) {
-   res.locals.ocultarNavbar = true;
-  return res.render('login', { error: 'Contraseña incorrecta' });
-}
-
-// sesión OK
-req.session.usuarioId = usuario.id_login;
-req.session.email = usuario.email;
-
-req.session.save((err) => {
-  if (err) {
-    console.error('Error al guardar sesión:', err);
-    return res.render('login', { error: 'Falla al guardar sesión' });
-  }
-  res.redirect('/inicio');
-});
-
-app.get('/debug-session', (req, res) => {
-  console.log("Sesión actual:", req.session);
-  res.send(`
-    <h2>Estado de la sesión:</h2>
-    <pre>${JSON.stringify(req.session, null, 2)}</pre>
-    <a href="/inicio">Ir a /inicio</a>
-  `);
-});
-});
-
-// Cerrar sesión
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/login');
-  });
-});
-
-function requireLogin(req, res, next) {
-  if (!req.session.usuarioId) {
-    return res.redirect('/login');
-  }
-  next();
-}
-
-app.get('/inicio', requireLogin, (req, res) => {
-  res.render('inicio');
-})
-
-app.get('/', (req, res) => {
-  console.log('Accedieron a la raíz /');
-  res.locals.ocultarNavbar = true;
-  res.render('login');
-});
-
-app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');
-  next();
-});
 
 
 

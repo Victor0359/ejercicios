@@ -1,5 +1,6 @@
 <body>
 
+
   <div class="container mt-5">
     <form class="row g-3 mt-2" action="/propiedades/insertar" method="POST">
 
@@ -20,9 +21,10 @@
                     </div>
 
                     <% } %>
-                      <% if (propietarios.length===0 && !eliminado) { %>
-                        <div class="alert alert-warning">⚠️ No hay propietarios cargados en el sistema.</div>
-                        <% } %>
+                      <% /* if (propietarios.length === 0 && !eliminado) {
+   <div class="alert alert-warning">⚠️ No hay propietarios cargados en el sistema.</div>
+} */ %>
+
 
 
                           <% if (eliminado) { %>
