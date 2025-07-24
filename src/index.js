@@ -1,238 +1,280 @@
+// Importa las librerías necesarias
 const express = require("express");
-const morgan = require("morgan");
-const database = require("./datadb");
-const jdw = require("jsonwebtoken");
-const expressEjsLayouts = require("express-ejs-layouts");
-const inquilinos = require("./inquilinos");
-const propietarios = require("./propietarios");
-const propiedades = require("./propiedades");
 const path = require("path");
-const impuestos = require("./impuestos");
-const contratos = require("./contratos");
-const recibo_contrato = require("./recibo_contrato");
-require("dotenv").config();
-const cors = require('cors');
-const helmet = require('helmet');
-const session = require('express-session');
-const flash = require('express-flash');
-const funcion_letras = require("./funcion_letras");
-const recibo_prop = require("./recRecPropietario");
+const session = require("express-session");
+const PgSession = require("connect-pg-simple")(session);
+const flash = require("connect-flash");
+const expressEjsLayouts = require("express-ejs-layouts");
+const cors = require("cors");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const bcrypt = require("bcrypt");
+const database = require("./datadb"); // Asegúrate de que esta ruta sea correcta desde src/
+const inquilinos = require("./inquilinos"); // Asegúrate de que esta ruta sea correcta desde src/
+const propietarios = require("./propietarios"); // Asegúrate de que esta ruta sea correcta desde src/
+const propiedades = require("./propiedades"); // Asegúrate de que esta ruta sea correcta desde src/
+const impuestos = require("./impuestos"); // Asegúrate de que esta ruta sea correcta desde src/
+const contratos = require("./contratos"); // Asegúrate de que esta ruta sea correcta desde src/
+const recibo_contrato = require("./recibo_contrato"); // Asegúrate de que esta ruta sea correcta desde src/
+const ping = require("ping");
+const recibo_prop = require("./recRecPropietario"); // Asegúrate de que esta ruta sea correcta desde src/
+const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea correcta desde src/
+const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager");
+const generateReceiptPDF = require("./receiptPDFGenerator");
+
 const app = express();
-const bcrypt = require('bcrypt');
-const PgSession = require('connect-pg-simple')(session);
+// Configuración básica
+require("dotenv").config();
+const PORT = process.env.PORT || 8000; // Usar el puerto de .env o 8000
 
+// --- Middlewares Esenciales (Orden Importa) ---
+app.use(express.json()); // Para parsear cuerpos de solicitud JSON
+app.use(express.urlencoded({ extended: true })); // Para parsear cuerpos de solicitud URL-encoded
+app.use(cors()); // Habilita CORS
+app.use(morgan("dev")); // Logging de solicitudes HTTP
 
+// Configurar rutas
 
+// --- Configuración de Sesión (si es necesaria y está descomentada) ---
+// Asegúrate de que 'database.pool' esté configurado correctamente para PgSession
+app.use(
+  session({
+    store: new PgSession({
+      pool: database, // Usa tu pool de conexión a la base de datos
+      tableName: "session", // Nombre de la tabla para almacenar sesiones
+    }),
+    secret: process.env.SESSION_SECRET || "your_secret_key", // Usa una clave secreta fuerte de .env
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 días
+  })
+);
+app.use(flash()); // Para mensajes flash (debe ir después de session si se usa)
 
+// --- Configuración de Seguridad ---
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: [
+        "'self'",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com",
+        "https://www.gstatic.com",
+        "'unsafe-inline'", // Necesario para Tailwind CSS si no usas PostCSS
+      ],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: [
+        "'self'",
+        "https://translate.google.com",
+        "https://cdn.jsdelivr.net",
+        "'unsafe-inline'", // Necesario para scripts inline en EJS
+      ],
+      imgSrc: ["'self'", "data:", "https://placehold.co"], // Para imágenes, si las usas
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com"], // Necesario para llamadas a la API de Gemini
+    },
+  })
+);
+
+// --- Configuración de Vistas EJS ---
+// Si index.js está en 'src', y las vistas están en 'src/views',
+// entonces __dirname ya es 'src', por lo que solo necesitas 'views'.
 app.set("views", path.join(__dirname, "views"));
-
-
 app.set("view engine", "ejs");
+app.use(expressEjsLayouts); // Si estás usando layouts de EJS
+app.set("layout", "layout"); // Define el layout por defecto si usas express-ejs-layouts
+
+// --- Archivos Estáticos ---
+// Si tu carpeta 'public' está en la RAÍZ del proyecto (fuera de 'src'),
+// necesitas retroceder un nivel desde 'src' para llegar a ella.
 app.use(express.static(path.join(__dirname, "..", "public")));
+// Si tu carpeta 'public' también está dentro de 'src' (ej. src/public),
+// entonces usarías:
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
-
-
-
-
-app.use(express.json());
-
-
-
-
-
+// Middlewares personalizados (después de session y flash si se usan)
 app.use((req, res, next) => {
-  res.locals.ocultarNavbar = false; // valor por defecto para TODAS las vistas
+  // Variables disponibles en todas las vistas
+  res.locals.mostrarNavbar = !!req.session?.usuarioId; // Usar optional chaining
+  res.locals.insertado = false;
+  res.locals.eliminado = false;
+  res.locals.mensaje = null;
+  res.locals.lista = [];
+
+  // Control de caché
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  );
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
+  console.log("Sesión actual:", req.session);
   next();
 });
-app.use((req, res, next) => {
-  res.locals.session = req.session;
-  next();
-});
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  store: new PgSession({
-    pool: database,
-    tableName: 'session',
- 
-  }),
-  secret: 'claveSuperSecreta',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+
+// Middleware para verificar sesión
+function verificarSesion(req, res, next) {
+  console.log(
+    "Middleware verificarSesion - usuarioId:",
+    req.session?.usuarioId
+  );
+  console.log("Session completa:", req.session);
+
+  if (!req.session?.usuarioId) {
+    console.log("No hay sesión válida, redirigiendo a /login");
+    return res.redirect("/login");
   }
-}));
-app.use(flash());
-app.use(expressEjsLayouts);
-app.set("layout", "layout");
-app.use(cors());
-//nodem
-app.use(morgan("dev"));
+  next();
+}
 
-app.post('/api-test', async (req, res) => {
+// Rutas
+app.get("/", (req, res) => {
+  console.log("Accediendo a ruta / - usuarioId:", req.session.usuarioId);
+  if (req.session.usuarioId) {
+    console.log("Usuario tiene sesión, redirigiendo a /inicio");
+    return res.redirect("/inicio");
+  }
+  console.log("Redirigiendo a login");
+  res.redirect("/login");
+});
+
+// Ruta de login (GET)
+app.get("/login", (req, res) => {
+  if (req.session.usuarioId) {
+    return res.redirect("/inicio");
+  }
+  res.render("login", {
+    mostrarNavbar: false,
+    error: null,
+  });
+});
+
+// Ruta de login (POST)
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  console.log("Intento de login con email:", email); // Debug
+
+  try {
+    const resultado = await database.query(
+      "SELECT * FROM login WHERE email = $1",
+      [email]
+    );
+
+    if (resultado.rows.length === 0) {
+      console.log("Usuario no encontrado para email:", email);
+      return res.render("login", {
+        error: "Usuario no encontrado",
+        mostrarNavbar: false,
+      });
+    }
+
+    const usuario = resultado.rows[0];
+    console.log("Usuario encontrado:", usuario); // Debug
+
+    // Comparación de contraseñas
+    const match = await bcrypt.compare(password, usuario.password);
+    console.log("Resultado comparación contraseña:", match); // Debug
+
+    if (!match) {
+      console.log("Contraseña incorrecta para usuario:", usuario.email);
+      return res.render("login", {
+        error: "Contraseña incorrecta",
+        mostrarNavbar: false,
+      });
+    }
+
+    // Establecer sesión
+    req.session.usuarioId = usuario.id_login;
+    req.session.email = usuario.email;
+    console.log("Sesión establecida para:", usuario.email); // Debug
+
+    // Guardar sesión antes de redirigir
+    req.session.save((err) => {
+      if (err) {
+        console.error("Error al guardar sesión:", err);
+        return res.render("login", {
+          error: "Error al iniciar sesión",
+          mostrarNavbar: false,
+        });
+      }
+
+      // Asegurar que la cookie se envía correctamente
+      res.setHeader(
+        "Set-Cookie",
+        `connect.sid=${req.sessionID}; Path=/; HttpOnly; SameSite=Lax`
+      );
+      console.log("Redirigiendo a /inicio con sesión:", req.session);
+      return res.redirect("/inicio");
+    });
+  } catch (error) {
+    console.error("Error en login:", error);
+    res.render("login", {
+      error: "Error del servidor",
+      mostrarNavbar: false,
+    });
+  }
+});
+// Ruta de inicio
+app.get("/inicio", verificarSesion, (req, res) => {
+  res.render("inicio", {
+    email: req.session.email,
+    mostrarNavbar: true,
+  });
+});
+
+// Ruta de logout
+app.get("/logout", (req, res) => {
+  console.log("Ejecutando logout");
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error al destruir sesión:", err);
+      return res.redirect("/inicio");
+    }
+    res.clearCookie("connect.sid");
+    console.log("Sesión destruida, redirigiendo a /login");
+    res.redirect("/login");
+  });
+});
+
+// Ruta para debug de sesión
+app.get("/debug-session", (req, res) => {
+  res.send(`<pre>${JSON.stringify(req.session, null, 2)}</pre>`);
+});
+
+// Ruta de prueba API
+app.post("/api-test", async (req, res) => {
   try {
     const result = await testAPIIsWriting();
     res.json(result);
   } catch (err) {
     res.status(500).json({
       error: err.message,
-      hint: "Verifica COMMIT y SSL"
+      hint: "Verifica COMMIT y SSL",
     });
   }
 });
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "'unsafe-inline'"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "https://translate.google.com", "https://cdn.jsdelivr.net", "'unsafe-inline'"],
-    },
-  })
-);
+// Prueba esto en tu código temporalmente para verificar el hash
+const testHash = async () => {
+  const hash = await bcrypt.hash("tucontraseña", 10);
+  console.log("Hash generado:", hash);
 
-app.use((req, res, next) => {
-  res.locals.insertado = false;
-  res.locals.eliminado = false;
-  res.locals.mensaje = null;
-  res.locals.lista = [];
-  next();
-});
+  const match = await bcrypt.compare("tucontraseña", hash);
+  console.log("¿Coincide?", match);
+};
+testHash();
 
-// Para parsear body
-app.use(express.urlencoded({ extended: true }));
-
-function verificarSesion(req, res, next) {
-  console.log("verificarSesion - usuarioId:", req.session.usuarioId);
-  if (req.session.usuarioId) return next();
-  res.redirect('/login');
-}
-// Página principal protegida
-
-// app.get('/inicio', verificarSesion, (req, res) => {
-//    res.locals.ocultarNavbar = false;
-//   console.log("Sesión en /inicio:", req.session); // debería mostrar usuarioId
-//   res.render('inicio', { email: req.session.email });
-// });
-
-app.use((req, res, next) => {
-  res.locals.mostrarNavbar = !!req.session.usuarioId; // o cualquier lógica que necesites
-  next();
-});
-
-// Registro de usuario
-
-
-// Login del usuario// 🟢 POST: intenta loguear al usuario
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const resultado = await database.query('SELECT * FROM login WHERE email = $1', [email]);
-
-  if (resultado.rows.length === 0) {
-    return res.render('login', { error: 'Usuario no encontrado'});
-  }
-
-  const usuario = resultado.rows[0];
-  const match = await bcrypt.compare(password, usuario.password);
-
-  console.log('¿Coincide?', match);
-
-  if (!match) {
-    return res.render('login', { error: 'Contraseña incorrecta', mostrarNavbar: true });
-  }
-
-  // Sesión OK
-  req.session.usuarioId = usuario.id_login;
-  req.session.email = usuario.email;
-
-  req.session.save((err) => {
-    if (err) {
-      console.error('Error al guardar sesión:', err);
-      return res.render('login', { error: 'Falla al guardar sesión', mostrarNavbar: true });
-    }
-    res.redirect('/inicio');
-  });
-});
-
-
-// 🟢 GET: inspeccionar sesión
-app.get('/debug-session', (req, res) => {
-  res.send(`<pre>${JSON.stringify(req.session, null, 2)}</pre>`);
-});
-
-app.get('/login', (req, res) => {
-  console.log("Entrando a /login");
-  if (req.session.usuarioId) {
-    return res.redirect('/inicio' );
-  }
-  
-  res.render('login', { error: null, });
-});
-// Cerrar sesión
-app.get('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      return res.redirect('/inicio');
-    }
-    res.clearCookie('connect.sid');
-    res.redirect('/');
-  });
-});
-function requireLogin(req, res, next) {
-  console.log("Middleware requireLogin ejecutado. UsuarioId:", req.session.usuarioId);
-  if (!req.session.usuarioId) {
-    return res.redirect('/login');
-  }
-  next();
-}
-
-app.get('/inicio', verificarSesion, (req, res) => {
- 
-  res.render('inicio', { email: req.session.email,mostrarNavbar:true});
-});
-
-app.get('/', (req, res) => {
-  if (req.session.usuarioId) {
-    return res.redirect('/inicio');
-  }
-  res.render('login', { mostrarNavbar: false });
-});
-
-
-
-app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');
-  next();
-});
-app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  next();
-});
-app.use((req, res, next) => {
-  console.log("Sesión actual:", req.session);
-  next();
-});
-
-
+// Iniciar servidor
 
 // ------------------  inquilinos ----------------------
 
-app.get("/inquilinos",requireLogin, async (req, res) => {
+app.get("/inquilinos", async (req, res) => {
   try {
     const lista = await inquilinos.obtenerInquilinos();
     res.render("inquilinos", {
       inquilinos: lista,
       insertado: req.query.insertado === "1",
       eliminado: req.query.eliminado === "1",
-      mensaje: req.query.mensaje || null
+      mensaje: req.query.mensaje || null,
     });
   } catch (error) {
     console.error("❌ Error al cargar inquilinos:", error);
@@ -241,7 +283,6 @@ app.get("/inquilinos",requireLogin, async (req, res) => {
 });
 app.post("/inquilinos", async (req, res) => {
   try {
-
     const datos = req.body;
     const prop = await inquilinos.obtenerInquilinos(datos);
     console.log(prop);
@@ -263,10 +304,17 @@ app.post("/inquilinos/porId", async (req, res) => {
     res.status(404).json({ message: "Inquilino no encontrado" });
   }
 });
-app.post('/inquilinos/editar/:id', async (req, res) => {
+app.post("/inquilinos/editar/:id", async (req, res) => {
   const { id } = req.params;
   const {
-    nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec
+    nombre,
+    apellido,
+    dni,
+    cuil,
+    direccion,
+    telefono,
+    celular,
+    correo_elec,
   } = req.body;
 
   try {
@@ -279,23 +327,21 @@ app.post('/inquilinos/editar/:id', async (req, res) => {
       direccion,
       telefono,
       celular,
-      correo_elec
+      correo_elec,
     });
 
     if (resultado && resultado.rowCount > 0) {
-
-      res.redirect('/inquilinos?mensaje=modificado');
-
+      res.redirect("/inquilinos?mensaje=modificado");
     } else {
       res.redirect(`/inquilinos/editar/${id}?mensaje=error`);
     }
   } catch (err) {
-    console.error('❌ Error al modificar inquilinos:', err);
-    res.status(500).send('💥 Error interno del servidor');
+    console.error("❌ Error al modificar inquilinos:", err);
+    res.status(500).send("💥 Error interno del servidor");
   }
 });
 
-app.post('/inquilinos/modificar', async (req, res) => {
+app.post("/inquilinos/modificar", async (req, res) => {
   const {
     id_inquilinos,
     nombre,
@@ -305,7 +351,7 @@ app.post('/inquilinos/modificar', async (req, res) => {
     direccion,
     telefono,
     celular,
-    correo_elec
+    correo_elec,
   } = req.body;
 
   try {
@@ -318,25 +364,27 @@ app.post('/inquilinos/modificar', async (req, res) => {
       direccion,
       telefono,
       celular,
-      correo_elec
+      correo_elec,
     });
 
     if (resultado && resultado.rowCount > 0) {
-      req.flash('success', '✅ Inquilino modificado correctamente');
-      res.redirect('/inquilinos');
+      req.flash("success", "✅ Inquilino modificado correctamente");
+      res.redirect("/inquilinos");
     } else {
-      req.flash('error', 'No se pudo modificar el inquilino');
+      req.flash("error", "No se pudo modificar el inquilino");
       res.redirect(`/inquilinos/editar/${id}`);
     }
-
   } catch (err) {
-    console.error('❌ Error al modificar inquilino:', err);
-    res.status(500).send('💥 Error interno del servidor');
+    console.error("❌ Error al modificar inquilino:", err);
+    res.status(500).send("💥 Error interno del servidor");
   }
 });
 
-app.post('/inquilinos/eliminar/:id', async (req, res) => {
-  console.log("📌 Recibiendo solicitud en /inquilinos/eliminar con ID:", req.params.id);
+app.post("/inquilinos/eliminar/:id", async (req, res) => {
+  console.log(
+    "📌 Recibiendo solicitud en /inquilinos/eliminar con ID:",
+    req.params.id
+  );
 
   const { id } = req.params;
   if (!id) {
@@ -351,18 +399,25 @@ app.post('/inquilinos/eliminar/:id', async (req, res) => {
       return res.status(404).json({ mensaje: "Inquilino no encontrado" });
     }
 
-    res.redirect('/inquilinos?eliminado=1');
+    res.redirect("/inquilinos?eliminado=1");
     return;
-
   } catch (err) {
     console.error("❌ Error al eliminar inquilino:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
-
 });
 
 app.post("/inquilinos/insertar", async (req, res) => {
-  const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
+  const {
+    nombre,
+    apellido,
+    dni,
+    cuil,
+    direccion,
+    telefono,
+    celular,
+    correo_elec,
+  } = req.body;
 
   try {
     const existentes = await inquilinos.obtenerInquilinosPorDni(dni);
@@ -370,15 +425,23 @@ app.post("/inquilinos/insertar", async (req, res) => {
     if (existentes && existentes.length > 0) {
       const lista = await inquilinos.obtenerInquilinos();
       return res.render("inquilinos", {
-
         inquilinos: lista,
         insertado: false,
         eliminado: false,
-        mensaje: "Ya existe un inquilino con ese DNI."
+        mensaje: "Ya existe un inquilino con ese DNI.",
       });
     }
 
-    const resultado = await inquilinos.agregarInquilinos({ nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
+    const resultado = await inquilinos.agregarInquilinos({
+      nombre,
+      apellido,
+      dni,
+      cuil,
+      direccion,
+      telefono,
+      celular,
+      correo_elec,
+    });
     console.log("🔎 Resultado de agregarInquilinos:", resultado);
 
     if (resultado && resultado.rowCount > 0) {
@@ -388,16 +451,13 @@ app.post("/inquilinos/insertar", async (req, res) => {
       // Fallo sin excepción
       const lista = await inquilinos.obtenerInquilinos();
       return res.render("inquilinos", {
-
-
         inquilinos: lista,
         insertado: false,
         eliminado: false,
 
-        mensaje: "No se pudo insertar el inquilino. Intente nuevamente."
+        mensaje: "No se pudo insertar el inquilino. Intente nuevamente.",
       });
     }
-
   } catch (err) {
     console.error(err);
     const lista = await inquilinos.obtenerInquilinos();
@@ -407,22 +467,22 @@ app.post("/inquilinos/insertar", async (req, res) => {
       insertado: false,
       eliminado: false,
 
-      mensaje: "Ocurrió un error en el servidor al insertar el inquilino."
+      mensaje: "Ocurrió un error en el servidor al insertar el inquilino.",
     });
   }
 });
 
-app.get('/inquilinos/editar/:id', async (req, res) => {
+app.get("/inquilinos/editar/:id", async (req, res) => {
   const { id } = req.params;
   const mensaje = req.query.mensaje || null;
 
   try {
     const inquilino = await inquilinos.obtenerInquilinosPorId(id);
-    res.render('editarInquilino', {
+    res.render("editarInquilino", {
       inquilino,
       mensaje,
       insertado: req.query.insertado === "1",
-      eliminado: req.query.eliminado === "1"
+      eliminado: req.query.eliminado === "1",
     });
   } catch (err) {
     console.error("❌ Error al cargar el formulario de edición:", err);
@@ -430,7 +490,7 @@ app.get('/inquilinos/editar/:id', async (req, res) => {
   }
 });
 
-app.post('/inquilinos/buscar', async (req, res) => {
+app.post("/inquilinos/buscar", async (req, res) => {
   const prop = req.body.prop;
   console.log("📥 Datos recibidos para buscar inquilinos:", prop);
 
@@ -445,36 +505,33 @@ app.post('/inquilinos/buscar', async (req, res) => {
       mensaje = `🔎 No se encontraron resultados para: "${prop}"`;
     }
 
-    res.render('inquilinos', {
+    res.render("inquilinos", {
       inquilinos: inquilinosEncontrados || [],
       insertado,
       eliminado,
-      mensaje
+      mensaje,
     });
-
   } catch (err) {
     console.error("❌ Error al buscar inquilinos:", err);
-    res.render('inquilinos', {
+    res.render("inquilinos", {
       inquilinos: [],
       insertado: false,
       eliminado: false,
-      mensaje: "Error del servidor al buscar inquilinos."
+      mensaje: "Error del servidor al buscar inquilinos.",
     });
   }
 });
 
-
 // ------------------  propietarios ----------------------
 
-
-app.get("/propietarios", requireLogin, async (req, res) => {
+app.get("/propietarios", async (req, res) => {
   try {
     const lista = await propietarios.obtenerPropietarios();
     res.render("propietarios", {
       propietarios: lista,
       insertado: req.query.insertado === "1",
       eliminado: req.query.eliminado === "1",
-      mensaje: req.query.mensaje || null
+      mensaje: req.query.mensaje || null,
     });
   } catch (error) {
     console.error("❌ Error al cargar propietarios:", error);
@@ -482,12 +539,17 @@ app.get("/propietarios", requireLogin, async (req, res) => {
   }
 });
 
-
-
-app.post('/propietarios/editar/:id', async (req, res) => {
+app.post("/propietarios/editar/:id", async (req, res) => {
   const { id } = req.params;
   const {
-    nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec
+    nombre,
+    apellido,
+    dni,
+    cuil,
+    direccion,
+    telefono,
+    celular,
+    correo_elec,
   } = req.body;
 
   try {
@@ -500,23 +562,21 @@ app.post('/propietarios/editar/:id', async (req, res) => {
       direccion,
       telefono,
       celular,
-      correo_elec
+      correo_elec,
     });
 
     if (resultado && resultado.rowCount > 0) {
-
-      res.redirect('/propietarios?mensaje=modificado');
-
+      res.redirect("/propietarios?mensaje=modificado");
     } else {
       res.redirect(`/propietarios/editar/${id}?mensaje=error`);
     }
   } catch (err) {
-    console.error('❌ Error al modificar propietario:', err);
-    res.status(500).send('💥 Error interno del servidor');
+    console.error("❌ Error al modificar propietario:", err);
+    res.status(500).send("💥 Error interno del servidor");
   }
 });
 
-app.post('/propietarios/porId', async (req, res) => {
+app.post("/propietarios/porId", async (req, res) => {
   console.log("🚀 Entrando a la ruta /propietarios/porId con datos:", req.body);
 
   const { id } = req.body;
@@ -526,7 +586,8 @@ app.post('/propietarios/porId', async (req, res) => {
 
   try {
     const resultado = await database.query(
-      "SELECT * FROM propietarios WHERE id_propietarios = $1", [id]
+      "SELECT * FROM propietarios WHERE id_propietarios = $1",
+      [id]
     );
     console.log("✅ Resultado de la consulta:", resultado.rows);
 
@@ -541,7 +602,7 @@ app.post('/propietarios/porId', async (req, res) => {
   }
 });
 
-app.post('/propietarios/modificar',requireLogin, async (req, res) => {
+app.post("/propietarios/modificar", async (req, res) => {
   const {
     id_propietarios,
     nombre,
@@ -551,7 +612,7 @@ app.post('/propietarios/modificar',requireLogin, async (req, res) => {
     direccion,
     telefono,
     celular,
-    correo_elec
+    correo_elec,
   } = req.body;
 
   try {
@@ -564,26 +625,27 @@ app.post('/propietarios/modificar',requireLogin, async (req, res) => {
       direccion,
       telefono,
       celular,
-      correo_elec
+      correo_elec,
     });
 
     if (resultado && resultado.rowCount > 0) {
-      req.flash('success', '✅ Propietario modificado correctamente');
-      res.redirect('/propietarios');
+      req.flash("success", "✅ Propietario modificado correctamente");
+      res.redirect("/propietarios");
     } else {
-      req.flash('error', 'No se pudo modificar el propietario');
+      req.flash("error", "No se pudo modificar el propietario");
       res.redirect(`/propietarios/editar/${id}`);
     }
-
   } catch (err) {
-    console.error('❌ Error al modificar propietario:', err);
-    res.status(500).send('💥 Error interno del servidor');
+    console.error("❌ Error al modificar propietario:", err);
+    res.status(500).send("💥 Error interno del servidor");
   }
 });
 
-
-app.post('/propietarios/eliminar/:id', async (req, res) => {
-  console.log("📌 Recibiendo solicitud en /propietarios/eliminar con ID:", req.params.id);
+app.post("/propietarios/eliminar/:id", async (req, res) => {
+  console.log(
+    "📌 Recibiendo solicitud en /propietarios/eliminar con ID:",
+    req.params.id
+  );
 
   const { id } = req.params;
   if (!id) {
@@ -598,19 +660,25 @@ app.post('/propietarios/eliminar/:id', async (req, res) => {
       return res.status(404).json({ mensaje: "Propietario no encontrado" });
     }
 
-    res.redirect('/propietarios?eliminado=1');
+    res.redirect("/propietarios?eliminado=1");
     return;
-
   } catch (err) {
     console.error("❌ Error al eliminar propietario:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
-
 });
 
-
 app.post("/propietarios/insertar", async (req, res) => {
-  const { nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec } = req.body;
+  const {
+    nombre,
+    apellido,
+    dni,
+    cuil,
+    direccion,
+    telefono,
+    celular,
+    correo_elec,
+  } = req.body;
 
   try {
     const existentes = await propietarios.obtenerPropietariosPorDni(dni);
@@ -619,11 +687,20 @@ app.post("/propietarios/insertar", async (req, res) => {
       const lista = await propietarios.obtenerPropietarios();
       return res.render("propietarios", {
         propietarios: lista,
-        mensaje: "Ya existe un propietario con ese DNI."
+        mensaje: "Ya existe un propietario con ese DNI.",
       });
     }
 
-    const resultado = await propietarios.agregarPropietarios({ nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec });
+    const resultado = await propietarios.agregarPropietarios({
+      nombre,
+      apellido,
+      dni,
+      cuil,
+      direccion,
+      telefono,
+      celular,
+      correo_elec,
+    });
 
     if (resultado && resultado.rowCount > 0) {
       console.log("Resultado del INSERT:", resultado); //Inserción exitosa
@@ -633,31 +710,30 @@ app.post("/propietarios/insertar", async (req, res) => {
       const lista = await propietarios.obtenerPropietarios();
       return res.render("propietarios", {
         propietarios: lista,
-        mensaje: "No se pudo insertar el propietario. Intente nuevamente."
+        mensaje: "No se pudo insertar el propietario. Intente nuevamente.",
       });
     }
-
   } catch (err) {
     console.error(err);
     const lista = await propietarios.obtenerPropietarios();
     return res.render("propietarios", {
       propietarios: lista,
-      mensaje: "Ocurrió un error en el servidor al insertar el propietario."
+      mensaje: "Ocurrió un error en el servidor al insertar el propietario.",
     });
   }
 });
 
-app.get('/propietarios/editar/:id', async (req, res) => {
+app.get("/propietarios/editar/:id", async (req, res) => {
   const { id } = req.params;
   const mensaje = req.query.mensaje || null;
 
   try {
     const propietario = await propietarios.obtenerPorId(id);
-    res.render('editarPropietario', {
+    res.render("editarPropietario", {
       propietario,
       mensaje: req.query.mensaje || null,
       insertado: req.query.insertado === "1",
-      eliminado: req.query.eliminado === "1"
+      eliminado: req.query.eliminado === "1",
     });
   } catch (err) {
     console.error("❌ Error al cargar el formulario de edición:", err);
@@ -665,52 +741,46 @@ app.get('/propietarios/editar/:id', async (req, res) => {
   }
 });
 
-
-
-
-app.post('/propietarios/buscar', requireLogin, async (req, res) => {
+app.post("/propietarios/buscar", async (req, res) => {
   const prop = req.body.prop;
   console.log("Datos recibidos para buscar propietarios:", prop);
   try {
-    const propietariosEncontrados = await propietarios.obtenerPropietarios(prop);
-    const eliminado = req.query.eliminado === '1';
-    res.render('propietarios', {
+    const propietariosEncontrados = await propietarios.obtenerPropietarios(
+      prop
+    );
+    const eliminado = req.query.eliminado === "1";
+    res.render("propietarios", {
       propietarios: propietariosEncontrados,
       eliminado,
       mensaje: req.query.mensaje || null,
-      insertado: req.query.insertado === "1"
+      insertado: req.query.insertado === "1",
     });
   } catch (err) {
     console.error(err);
-    res.render('propietarios', { propietarios: [] });
+    res.render("propietarios", { propietarios: [] });
   }
 });
 
-
 // ------------------  propiedades ----------------------
 
-app.get("/propiedades", requireLogin, async (req, res) => {
+app.get("/propiedades", async (req, res) => {
   try {
     const propietariosLista = await propiedades.obtenerPropietarioSql();
     const propiedadesLista = await propiedades.obtenerPropiedad();
-   
 
     const mensaje = req.query.mensaje;
     const insertado = req.query.insertado;
 
-    
-    console.log(propiedadesLista)
+    console.log(propiedadesLista);
 
-  
- res.render("propiedades", {
-  mostrarNavbar: true,
-  propiedades: propiedadesLista || [],
-  propietarios: propietariosLista || [],
-  mensaje,
-  insertado,
-  eliminado: req.query.eliminado || false
-});
-
+    res.render("propiedades", {
+      mostrarNavbar: true,
+      propiedades: propiedadesLista || [],
+      propietarios: propietariosLista || [],
+      mensaje,
+      insertado,
+      eliminado: req.query.eliminado || false,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar el formulario");
@@ -724,14 +794,17 @@ app.post("/propiedades", async (req, res) => {
     const propiedadesLista = await propiedades.obtenerPropiedad(id_propietario);
     const propietarios = await propiedades.obtenerPropietarioSql();
     console.log("propietarios para el dropdown", propietarios);
- console.log("propietariosLista:", Array.isArray(propietarios), propietarios);
+    console.log(
+      "propietariosLista:",
+      Array.isArray(propietarios),
+      propietarios
+    );
 
     res.render("propiedades", {
       propiedades: propiedadesLista,
-      propietarios: propietarios
+      propietarios: propietarios,
     });
     // Puedes dejar el log si lo necesitas
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar propiedades");
@@ -741,7 +814,9 @@ app.post("/propiedades/porId", async (req, res) => {
   const propiedad = req.body.id_propiedades;
 
   if (!propiedad) {
-    return res.status(400).json({ message: "ID de propiedad no proporcionado" });
+    return res
+      .status(400)
+      .json({ message: "ID de propiedad no proporcionado" });
   }
   try {
     const resultado = await propiedades.obtenerPropiedadesPorId(propiedad);
@@ -756,18 +831,23 @@ app.post("/propiedades/porId", async (req, res) => {
   }
 });
 
-app.post("/propiedades/modificar", requireLogin, async (req, res) => {
-  const { direccion, localidad, id_propietario, id_impuestos, id_propiedades } = req.body;
-  if (id_impuestos === '' || id_impuestos === undefined) {
+app.post("/propiedades/modificar", async (req, res) => {
+  const { direccion, localidad, id_propietario, id_impuestos, id_propiedades } =
+    req.body;
+  if (id_impuestos === "" || id_impuestos === undefined) {
     id_impuestos = 0;
   }
 
   try {
-    const resultado = await propiedades.modificarPropiedades({ direccion, localidad, id_propietario, id_impuestos, id_propiedades });
+    const resultado = await propiedades.modificarPropiedades({
+      direccion,
+      localidad,
+      id_propietario,
+      id_impuestos,
+      id_propiedades,
+    });
 
     res.redirect("/propiedades");
-
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al modificar propiedad");
@@ -788,7 +868,7 @@ app.get("/propiedades/editar/:id", async (req, res) => {
     res.render("editarPropiedad", {
       propiedad,
       propietarios: listaPropietarios,
-      impuestos: listaImpuestos
+      impuestos: listaImpuestos,
     });
   } catch (err) {
     console.error("❌ Error en GET /editar/:id:", err);
@@ -799,14 +879,15 @@ app.get("/propiedades/editar/:id", async (req, res) => {
 app.post("/propiedades/eliminar", async (req, res) => {
   const { id_propiedades } = req.body;
   try {
-    const resultado = await propiedades.eliminarPropiedad({ id: id_propiedades });
+    const resultado = await propiedades.eliminarPropiedad({
+      id: id_propiedades,
+    });
 
     if (resultado && resultado.rowCount) {
       res.redirect("/propiedades");
     } else {
       res.status(404).json({ message: "Propiedad no eliminada" });
     }
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al eliminar propiedad");
@@ -815,7 +896,9 @@ app.post("/propiedades/eliminar", async (req, res) => {
 app.post("/propiedades/eliminar/:id", async (req, res) => {
   const id_propiedades = req.params.id;
   try {
-    const resultado = await propiedades.eliminarPropiedad({ id: id_propiedades });
+    const resultado = await propiedades.eliminarPropiedad({
+      id: id_propiedades,
+    });
 
     if (resultado && resultado.rowCount) {
       res.redirect("/propiedades");
@@ -831,7 +914,12 @@ app.post("/propiedades/eliminar/:id", async (req, res) => {
 app.post("/propiedades/insertar", async (req, res) => {
   const { direccion, localidad, id_propietario, id_impuestos } = req.body;
   try {
-    const resultado = await propiedades.agregarPropiedades({ direccion, localidad, id_propietario, id_impuestos });
+    const resultado = await propiedades.agregarPropiedades({
+      direccion,
+      localidad,
+      id_propietario,
+      id_impuestos,
+    });
 
     if (resultado && resultado.rowCount > 0) {
       res.redirect("/propiedades?insertado=1");
@@ -840,7 +928,6 @@ app.post("/propiedades/insertar", async (req, res) => {
     } else {
       res.redirect("/propiedades?insertado=1");
     }
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al insertar propiedad");
@@ -852,7 +939,7 @@ app.get("/propiedades/insertar", async (req, res) => {
     const propiedadesLista = await propiedades.obtenerPropiedad();
     res.render("propiedades", {
       propiedades: propiedadesLista,
-      propietarios: propietarios
+      propietarios: propietarios,
     });
   } catch (err) {
     console.error(err);
@@ -860,42 +947,42 @@ app.get("/propiedades/insertar", async (req, res) => {
   }
 });
 
-app.post('/propiedades/buscar', requireLogin, async (req, res) => {
+app.post("/propiedades/buscar", async (req, res) => {
   const datos = req.body.datos;
   console.log("Datos recibidos para buscar propietarios:", datos);
   try {
     const propiedadesEncontrados = await propiedades.obtenerPropiedad(datos);
-    const eliminado = req.query.eliminado === '1';
+    const eliminado = req.query.eliminado === "1";
     const propietarios = await propiedades.obtenerPropietarioSql();
 
-    res.render('propiedades', {
+    res.render("propiedades", {
       propiedades: propiedadesEncontrados,
       propietarios: propietarios, // 👈 esto es lo que faltaba
       eliminado,
       mensaje: req.query.mensaje || null,
-      insertado: req.query.insertado === "1"
+      insertado: req.query.insertado === "1",
     });
-
   } catch (err) {
     console.error(err);
-    res.render('propiedades', { propiedades: [] });
+    res.render("propiedades", { propiedades: [] });
   }
 });
 
-
 //----------------------- impúestos ----------------------
 
-app.get("/impuestos",requireLogin, async (req, res) => {
+app.get("/impuestos", async (req, res) => {
   try {
     const idPropiedad = req.query.id_propiedad;
-    const propiedadesLista = await propiedades.obtenerPropiedadesOrdenadasPorId();
+    const propiedadesLista =
+      await propiedades.obtenerPropiedadesOrdenadasPorId();
     const hayFiltro = Boolean(idPropiedad);
-
 
     /* let impuestosLista; */
 
     if (idPropiedad) {
-      impuestosLista = await impuestos.obtenerImpuestosPorDireccion(idPropiedad);
+      impuestosLista = await impuestos.obtenerImpuestosPorDireccion(
+        idPropiedad
+      );
     } else {
       impuestosLista = await impuestos.obtenerImpuestos();
     }
@@ -904,7 +991,7 @@ app.get("/impuestos",requireLogin, async (req, res) => {
       impuestos: Array.isArray(impuestosLista.rows) ? impuestosLista.rows : [],
       propiedades: propiedadesLista,
       id_propiedad: idPropiedad || "",
-      hayFiltro
+      hayFiltro,
     });
   } catch (err) {
     console.error("Error en /impuestos:", err);
@@ -912,28 +999,32 @@ app.get("/impuestos",requireLogin, async (req, res) => {
   }
 });
 
-
-
-app.get("/impuestos/insertar", requireLogin, async (req, res) => {
-
+app.get("/impuestos/insertar", async (req, res) => {
   try {
     const propiedad = await propiedades.obtenerPropiedadesOrdenadasPorId();
 
     res.render("impuestos", {
-      propiedades: Array.isArray(propiedad) ? propiedad : []
+      propiedades: Array.isArray(propiedad) ? propiedad : [],
     });
   } catch {
     console.error("Error en /impuestos:", err);
     res.status(500).send("Error al cargar impuestos");
   }
-
 });
 
 app.post("/impuestos/insertar", async (req, res) => {
-  const { abl, aysa, exp_com, exp_ext, seguro, varios, id_propiedades } = req.body;
+  const { abl, aysa, exp_com, exp_ext, seguro, varios, id_propiedades } =
+    req.body;
   try {
-    const resultado = await impuestos.insertarImpuestos({ abl, aysa, exp_com, exp_ext, seguro, varios, id_propiedades });
-
+    const resultado = await impuestos.insertarImpuestos({
+      abl,
+      aysa,
+      exp_com,
+      exp_ext,
+      seguro,
+      varios,
+      id_propiedades,
+    });
 
     if (resultado && resultado.rowCount > 0) {
       res.redirect("/impuestos");
@@ -942,7 +1033,6 @@ app.post("/impuestos/insertar", async (req, res) => {
     } else {
       res.status(404).json({ message: "impuesto no insertado" });
     }
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al insertar impuesto");
@@ -950,7 +1040,7 @@ app.post("/impuestos/insertar", async (req, res) => {
 });
 
 // ----------------------  contratos ----------------------
-app.get("/contratos", requireLogin, async (req, res) => {
+app.get("/contratos", async (req, res) => {
   console.log("URL completa:", req.url);
   console.log("Query completa:", req.query);
   try {
@@ -972,39 +1062,44 @@ app.get("/contratos", requireLogin, async (req, res) => {
       inquilinos: inquilinosLista,
       propiedades: propiedadesLista,
       hayFiltro,
-      id_propiedad
+      id_propiedad,
     });
-
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar contratos");
   }
 });
 
-
-
-
-app.post("/contratos/insertar",requireLogin, async (req, res) => {
+app.post("/contratos/insertar", async (req, res) => {
   try {
-    let { id_propietarios, id_inquilinos, id_propiedades, fecha_inicio, precioinicial, precioactual, honorarios, duracion_contrato } = req.body;
+    let {
+      id_propietarios,
+      id_inquilinos,
+      id_propiedades,
+      fecha_inicio,
+      precioinicial,
+      precioactual,
+      honorarios,
+      duracion_contrato,
+    } = req.body;
     console.log(req.body);
     function calcularCuota(fecha_inicio) {
       const hoy = new Date();
       const inicio = new Date(fecha_inicio);
 
-
-      let meses = (hoy.getFullYear() - inicio.getFullYear()) * 12 + (hoy.getMonth() - inicio.getMonth());
+      let meses =
+        (hoy.getFullYear() - inicio.getFullYear()) * 12 +
+        (hoy.getMonth() - inicio.getMonth());
       if (hoy.getDate() < inicio.getDate()) meses--; // ajusta si el día aún no pasó
       return meses;
     }
 
     // Convierte vacíos a 0
-    if (precioinicial === '' || precioinicial === undefined) precioinicial = 0;
-    if (precioactual === '' || precioactual === undefined) precioactual = 0;
-    if (honorarios === '' || honorarios === undefined) honorarios = 0;
-    if (duracion_contrato === '' || duracion_contrato === undefined) duracion_contrato = 0;
-
+    if (precioinicial === "" || precioinicial === undefined) precioinicial = 0;
+    if (precioactual === "" || precioactual === undefined) precioactual = 0;
+    if (honorarios === "" || honorarios === undefined) honorarios = 0;
+    if (duracion_contrato === "" || duracion_contrato === undefined)
+      duracion_contrato = 0;
 
     const resultado = await contratos.agregarContratos({
       id_propietarios,
@@ -1016,8 +1111,6 @@ app.post("/contratos/insertar",requireLogin, async (req, res) => {
       honorarios,
       duracion_contrato,
       cuota: calcularCuota(fecha_inicio),
-
-
     });
 
     if (resultado && resultado.rowCount > 0) {
@@ -1037,7 +1130,7 @@ function toMysqlDate(fecha) {
   if (isNaN(d)) return null;
   return d.toISOString().slice(0, 10);
 }
-app.post("/contratos/modificar", requireLogin, async (req, res) => {
+app.post("/contratos/modificar", async (req, res) => {
   try {
     const {
       id_propietarios,
@@ -1048,7 +1141,7 @@ app.post("/contratos/modificar", requireLogin, async (req, res) => {
       precioactual,
       honorarios,
       duracion_contrato,
-      id_contratos
+      id_contratos,
     } = req.body;
 
     console.log("req.body:", req.body);
@@ -1063,7 +1156,7 @@ app.post("/contratos/modificar", requireLogin, async (req, res) => {
       precioactual,
       honorarios,
       duracion_contrato,
-      id_contratos
+      id_contratos,
     });
 
     console.log("Resultado de la modificación:", resultado);
@@ -1073,7 +1166,6 @@ app.post("/contratos/modificar", requireLogin, async (req, res) => {
     }
 
     res.redirect("/contratos");
-
   } catch (err) {
     console.error("❌ Error al modificar contrato:", err);
     res.status(500).send("Error al modificar contrato");
@@ -1093,13 +1185,13 @@ app.get("/contratos/editar/:id", async (req, res) => {
 
     const listaPropietarios = await propietarios.obtenerTodosLosPropietarios();
     const listaPropiedades = await propiedades.obtenerPropiedadOrdenados();
-    const listaInquilinos = await inquilinos.obtenerTodosLosInquilinos()
+    const listaInquilinos = await inquilinos.obtenerTodosLosInquilinos();
 
     res.render("editarContratos", {
       contrato: resultado[0],
       propietarios: listaPropietarios,
       propiedades: listaPropiedades,
-      inquilinos: listaInquilinos
+      inquilinos: listaInquilinos,
     });
   } catch (err) {
     console.error("❌ Error en GET /editar/:id:", err);
@@ -1107,9 +1199,7 @@ app.get("/contratos/editar/:id", async (req, res) => {
   }
 });
 
-
-
-// ------------------- Recibo Inquilino ----------------------  
+// ------------------- Recibo Inquilino ----------------------
 // Mostrar el buscador y la tabla
 app.get("/recibo_alquiler/buscar", async (req, res) => {
   try {
@@ -1119,7 +1209,7 @@ app.get("/recibo_alquiler/buscar", async (req, res) => {
     res.render("buscar_recibo_alquiler", {
       inquilinos: inquilinolista,
       propiedades: propiedadesLista, // <-- envía la variable
-      recibos: []
+      recibos: [],
     });
   } catch (err) {
     console.error(err);
@@ -1127,42 +1217,41 @@ app.get("/recibo_alquiler/buscar", async (req, res) => {
   }
 });
 
-
 // Buscar recibos por propiedad (POST)
 app.post("/recibo_alquiler/buscar", async (req, res) => {
   try {
     const id_propiedades = req.body.id_propiedades;
 
-    if (!id_propiedades || id_propiedades.trim() === '') {
+    if (!id_propiedades || id_propiedades.trim() === "") {
       return res.render("buscar_recibo_alquiler", {
         propiedades: await propiedades.obtenerPropiedadOrdenados(),
         inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
         recibos: [],
-        mensaje: "Debe seleccionar una propiedad antes de buscar recibos."
+        mensaje: "Debe seleccionar una propiedad antes de buscar recibos.",
       });
     }
 
     // ✅ Si pasó la validación, ahora sí busca los recibos:
-    const recibos = await recibo_contrato.obtenerRecibosPorPropiedad(id_propiedades);
+    const recibos = await recibo_contrato.obtenerRecibosPorPropiedad(
+      id_propiedades
+    );
     console.log("Recibos encontrados:", recibos);
     res.render("buscar_recibo_alquiler", {
       propiedades: await propiedades.obtenerPropiedadOrdenados(),
       inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
-      recibos
+      recibos,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al buscar recibos");
   }
 });
 
-app.get('/api/datos_propiedad', async (req, res) => {
+app.get("/api/datos_propiedad", async (req, res) => {
   try {
-
     const id = req.query.id_propiedades;
     if (!id) {
-      return res.status(400).json({ error: 'Falta id_propiedades' });
+      return res.status(400).json({ error: "Falta id_propiedades" });
     }
 
     // 1) Cargo datos de BD
@@ -1171,8 +1260,8 @@ app.get('/api/datos_propiedad', async (req, res) => {
     const ultimo = await recibo_contrato.obtenernumeroRecibo();
 
     // 2) Extraigo valores (aseguro números por default)
-    const apellidoinquilino = contrato[0]?.apellidoinquilino || '';
-    const apellidopropietario = contrato[0]?.apellidopropietario || '';
+    const apellidoinquilino = contrato[0]?.apellidoinquilino || "";
+    const apellidopropietario = contrato[0]?.apellidopropietario || "";
     const cuota = Number(contrato[0]?.cuota) || 0;
     const importemensual = Number(contrato[0]?.precioactual) || 0;
     const expcomunes = Number(impuestos[0]?.exp_comunes) || 0;
@@ -1180,27 +1269,35 @@ app.get('/api/datos_propiedad', async (req, res) => {
     const aysa = Number(impuestos[0]?.aysa) || 0;
     const seguro = Number(impuestos[0]?.seguro) || 0;
     const varios = Number(impuestos[0]?.varios) || 0;
-    const numero_recibo = (ultimo.length > 0 && ultimo[0].numrecibo != null)
-      ? Number(ultimo[0].numrecibo) + 1
-      : 1; // Valor inicial si no hay recibos aún
+    const numero_recibo =
+      ultimo.length > 0 && ultimo[0].numrecibo != null
+        ? Number(ultimo[0].numrecibo) + 1
+        : 1; // Valor inicial si no hay recibos aún
 
-    console.log('Valor de ultimo:', ultimo);
-    console.log('Tipo de ultimo:', typeof ultimo);
+    console.log("Valor de ultimo:", ultimo);
+    console.log("Tipo de ultimo:", typeof ultimo);
 
     const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
     ];
     const hoy = new Date();
-    const fecha_actual = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+    const fecha_actual = `${hoy.getDate()} de ${
+      meses[hoy.getMonth()]
+    } del ${hoy.getFullYear()}`;
 
     // 4) Total = suma de todos los importes numéricos
-    const total = importemensual
-      + expcomunes
-      + abl
-      + aysa
-      + seguro
-      + varios;
+    const total = importemensual + expcomunes + abl + aysa + seguro + varios;
 
     // 5) Devuelvo JSON limpio
     return res.json({
@@ -1215,12 +1312,13 @@ app.get('/api/datos_propiedad', async (req, res) => {
       seguro,
       varios,
       total,
-      fecha_actual
+      fecha_actual,
     });
-  }
-  catch (err) {
-    console.error('Error en /api/datos_propiedad:', err);
-    return res.status(500).json({ error: 'Error al obtener datos de la propiedad' });
+  } catch (err) {
+    console.error("Error en /api/datos_propiedad:", err);
+    return res
+      .status(500)
+      .json({ error: "Error al obtener datos de la propiedad" });
   }
 });
 
@@ -1232,11 +1330,23 @@ app.get("/recibo_inquilino", async (req, res) => {
     const numero_recibo = (numero[0]?.numero_recibo || 0) + 1;
 
     const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
     ];
     const hoy = new Date();
-    const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+    const fechaFormateada = `${hoy.getDate()} de ${
+      meses[hoy.getMonth()]
+    } del ${hoy.getFullYear()}`;
     res.render("recibo_inquilino", {
       propiedades: listaDePropiedades,
       numero_recibo: numero_recibo,
@@ -1251,7 +1361,7 @@ app.get("/recibo_inquilino", async (req, res) => {
       aysa: "",
       seguro: "",
       varios: "",
-      total: 0
+      total: 0,
     });
   } catch (err) {
     console.error(err);
@@ -1264,47 +1374,68 @@ app.post("/recibo_inquilino", async (req, res) => {
 
     const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados(); // <-- trae todas las propiedades
     const contrato = await recibo_contrato.obtenerContratos_Id(id_propiedades);
-    const impuestosLista = await recibo_contrato.obtenerImpuestos(id_propiedades);
+    const impuestosLista = await recibo_contrato.obtenerImpuestos(
+      id_propiedades
+    );
     const numero = await recibo_contrato.obtenernumeroRecibo();
     const numero_recibo = (numero[0]?.numero_recibo || 0) + 1;
 
-    const apellidoinquilino = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].apellidoinquilino)
-      : "";
-    const apellidopropietario = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].apellidopropietario)
-      : "";
-    const cuota = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].cuota)
-      : "";
-    const importemensual = Array.isArray(contrato) && contrato.length > 0
-      ? (contrato[0].importemensual)
-      : "";
-    const exp_comunes = Array.isArray(impuestosLista) && impuestosLista.length > 0
-      ? (impuestosLista[0].exp_comunes)
-      : "";
-    const abl = Array.isArray(impuestosLista) && impuestosLista.length > 0
-      ? (impuestosLista[0].abl)
-      : "";
-    const aysa = Array.isArray(impuestosLista) && impuestosLista.length > 0
-      ? (impuestosLista[0].aysa)
-      : "";
-    const seguro = Array.isArray(impuestosLista) && impuestosLista.length > 0
-      ? (impuestosLista[0].seguro)
-      : "";
-    const varios = Array.isArray(impuestosLista) && impuestosLista.length > 0
-      ? (impuestosLista[0].varios)
-      : "";
+    const apellidoinquilino =
+      Array.isArray(contrato) && contrato.length > 0
+        ? contrato[0].apellidoinquilino
+        : "";
+    const apellidopropietario =
+      Array.isArray(contrato) && contrato.length > 0
+        ? contrato[0].apellidopropietario
+        : "";
+    const cuota =
+      Array.isArray(contrato) && contrato.length > 0 ? contrato[0].cuota : "";
+    const importemensual =
+      Array.isArray(contrato) && contrato.length > 0
+        ? contrato[0].importemensual
+        : "";
+    const exp_comunes =
+      Array.isArray(impuestosLista) && impuestosLista.length > 0
+        ? impuestosLista[0].exp_comunes
+        : "";
+    const abl =
+      Array.isArray(impuestosLista) && impuestosLista.length > 0
+        ? impuestosLista[0].abl
+        : "";
+    const aysa =
+      Array.isArray(impuestosLista) && impuestosLista.length > 0
+        ? impuestosLista[0].aysa
+        : "";
+    const seguro =
+      Array.isArray(impuestosLista) && impuestosLista.length > 0
+        ? impuestosLista[0].seguro
+        : "";
+    const varios =
+      Array.isArray(impuestosLista) && impuestosLista.length > 0
+        ? impuestosLista[0].varios
+        : "";
 
     const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
     ];
     const hoy = new Date();
-    const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
-
+    const fechaFormateada = `${hoy.getDate()} de ${
+      meses[hoy.getMonth()]
+    } del ${hoy.getFullYear()}`;
 
     res.render("recibo_inquilino", {
+      title: "Recibo de Pago",
       propiedades: listaDePropiedades,
       numero_recibo: numero_recibo,
       id_propiedad_seleccionada: id_propiedades,
@@ -1341,18 +1472,19 @@ app.post("/recibo_inquilino/insertar", async (req, res) => {
       aysa = "0",
       expcomunes = "0",
       seguro = "0",
-      varios = "0"
+      varios = "0",
     } = req.body;
 
     // 2) Función para convertir strings a números seguros
-    const toNumber = v => {
+    const toNumber = (v) => {
       const n = parseFloat(v);
       return isNaN(n) ? 0 : n;
-    }
+    };
     const ultimo = await recibo_contrato.obtenernumeroRecibo();
-    numrecibo = (ultimo.length > 0 && ultimo[0].numrecibo != null)
-      ? Number(ultimo[0].numrecibo) + 1
-      : 1;
+    numrecibo =
+      ultimo.length > 0 && ultimo[0].numrecibo != null
+        ? Number(ultimo[0].numrecibo) + 1
+        : 1;
     // 4) Convierto todos a números
     numrecibo = toNumber(numrecibo);
     cuota = toNumber(cuota);
@@ -1364,42 +1496,33 @@ app.post("/recibo_inquilino/insertar", async (req, res) => {
     varios = toNumber(varios);
 
     // 5) Calculo el total
-    const total = importemensual
-      + abl
-      + aysa
-      + expcomunes
-      + seguro
-      + varios;
+    const total = importemensual + abl + aysa + expcomunes + seguro + varios;
 
     // 6) Preparo la fecha en formato YYYY-MM-DD para la BD
     const fechaPg = new Date().toISOString().slice(0, 10);
 
     // 7) Llamo al método de inserción
     const resultado = await recibo_contrato.insertarRecibosInquilinos(
-      fechaPg,               // fecha (DATE)
-      id_propiedad,          // FK
-      apellidopropietario,   // id_propietario o string
-      apellidoinquilino,     // id_inquilino o string
-      numrecibo,        // numrecibo
-      cuota,                 // cuota
-      importemensual,        // importemensual
-      abl,                   // abl
-      aysa,                  // aysa
-      expcomunes,            // expcomunes
-      seguro,                // seguro
-      varios,                // varios
-      total                  // total
+      fechaPg, // fecha (DATE)
+      id_propiedad, // FK
+      apellidopropietario, // id_propietario o string
+      apellidoinquilino, // id_inquilino o string
+      numrecibo, // numrecibo
+      cuota, // cuota
+      importemensual, // importemensual
+      abl, // abl
+      aysa, // aysa
+      expcomunes, // expcomunes
+      seguro, // seguro
+      varios, // varios
+      total // total
     );
-
 
     if (resultado && resultado.rowCount > 0) {
       return res.redirect(`/recibo_inq_impreso/${numrecibo}`); // ⬅ redirige directamente
-
-
     } else {
       res.status(400).send("No se insertó el recibo.");
     }
-
   } catch (err) {
     console.error("Error al insertar recibo_inquilino:", err);
     res.status(500).send("Error interno al insertar recibo_inquilino");
@@ -1409,18 +1532,24 @@ app.post("/recibo_inquilino/insertar", async (req, res) => {
 
 app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
   try {
-    const numero_recibo = req.params.numero_recibo;;
-    const resultado = await recibo_contrato.obtenerRecibosPorNumrecibo(numero_recibo);
-    console.log("Número de resultado:", resultado);
+    const numero_recibo = req.params.numero_recibo;
+    const resultado = await recibo_contrato.obtenerRecibosPorNumrecibo(
+      numero_recibo
+    );
+
     if (!resultado || resultado.length === 0) {
       console.warn(`No se encontró recibo con numrecibo = ${numero_recibo}`);
       return res.status(404).send("Recibo no encontrado");
     }
-    const prop = await propiedades.obtenerPropiedadesPorId(resultado[0].id_propiedad);
+    const prop = await propiedades.obtenerPropiedadesPorId(
+      resultado[0].id_propiedad
+    );
     const total = Number(resultado[0].total);
 
     const fechaContrato = new Date(resultado[0].fecha);
-    const mes_contrato = fechaContrato.toLocaleDateString('es-AR', { month: 'long' }).toUpperCase();
+    const mes_contrato = fechaContrato
+      .toLocaleDateString("es-AR", { month: "long" })
+      .toUpperCase();
 
     function ultimoDiaDelMes(fecha) {
       const año = fecha.getFullYear();
@@ -1433,28 +1562,26 @@ app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
     console.log("Fecha de vencimiento:", vencimiento);
     console.log("fechaActual:", fechaActual);
 
-    if (isNaN(total)) throw new TypeError("El total del recibo no es un número válido");
+    if (isNaN(total))
+      throw new TypeError("El total del recibo no es un número válido");
     const letra = funcion_letras.numeroALetras(total);
-
-    console.log("Resultado obtenido:", resultado);
-    console.log("Propiedades obtenidas:", prop);
 
     if (!resultado || resultado.length === 0) {
       return res.status(404).send("Recibo no encontrado");
     }
     res.render("recibo_inq_impreso", {
-      ocultarNavbar: true,
       recibo: resultado[0],
       propiedades: prop,
       letra: letra,
       mes_contrato,
       vencimiento,
       fechaActual: new Date(resultado[0].fecha).toLocaleDateString("es-AR", {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        title: "recibo_inquilino",
       }),
-
+      layout: "layout-recibos",
     });
   } catch (err) {
     console.error("Error al generar el recibo:", err);
@@ -1473,30 +1600,38 @@ app.post("/recibo_propietario", async (req, res) => {
     }
 
     // Obtener datos necesarios
-    const [
-      listaDePropiedades,
-      contratos,
-      impuestos,
-      datosContrato
-    ] = await Promise.all([
-      propiedades.obtenerPropiedadOrdenados(),
-      contratos.obtenerContratoPorId(id_propiedades),
-      impuestos.obtenerImpuestosPorDireccion(id_propiedades),
-      recibo_prop.obtenerContratos_Id(id_propiedades)
-    ]);
+    const [listaDePropiedades, contratos, impuestos, datosContrato] =
+      await Promise.all([
+        propiedades.obtenerPropiedadOrdenados(),
+        contratos.obtenerContratoPorId(id_propiedades),
+        impuestos.obtenerImpuestosPorDireccion(id_propiedades),
+        recibo_prop.obtenerContratos_Id(id_propiedades),
+      ]);
 
     // Extraer datos con fallback
     const contrato = datosContrato?.[0] || {};
     const impuesto = impuestos?.[0] || {};
     const honorarios = contratos?.[0]?.honorarios || "";
-    
+
     // Fecha formateada
     const hoy = new Date();
     const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
     ];
-    const fechaFormateada = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+    const fechaFormateada = `${hoy.getDate()} de ${
+      meses[hoy.getMonth()]
+    } del ${hoy.getFullYear()}`;
 
     // Renderizar vista
     res.render("recibo_propietario", {
@@ -1512,19 +1647,15 @@ app.post("/recibo_propietario", async (req, res) => {
       seguro: impuesto.seguro || "",
       varios: impuesto.varios || "",
       honorarios,
-      mensaje
+      mensaje,
     });
-
   } catch (err) {
     console.error("Error al cargar recibo de propietario:", err);
     res.status(500).send("Error interno al cargar el recibo");
   }
 });
 
-
-
-app.get('/api/datos_propiedad/propietario', async (req, res) => {
-
+app.get("/api/datos_propiedad/propietario", async (req, res) => {
   try {
     // 1) Leer query param
     const id = req.query.id_propiedades;
@@ -1534,45 +1665,50 @@ app.get('/api/datos_propiedad/propietario', async (req, res) => {
     }
 
     // 2) Consultas paralelas
-   const [contrato, propietario] = await Promise.all([
-            // devuelve datos del inquilino
-   recibo_prop.obtenerContratos_Id(id),
-  recibo_prop.obtenerPropietario_Id(id)
-        // devuelve datos del propietario
-]);
+    const [contrato, propietario] = await Promise.all([
+      // devuelve datos del inquilino
+      recibo_prop.obtenerContratos_Id(id),
+      recibo_prop.obtenerPropietario_Id(id),
+      // devuelve datos del propietario
+    ]);
 
-    console.log("Contrato obtenido:", contrato);
-    
-  
     console.log("Propietario obtenido:", propietario);
 
     // 3) Calcular nuevo número de recibo
 
     const apellidoPropietario = propietario?.[0]?.apellido || ""; // 3) Extraigo el apellido del propietario
     const cuota = Number(contrato?.[0]?.cuota) || 0; // 3) Extraigo la cuota del contrato
-    const numrecibo = Number(contrato?.[0]?.numrecibo) || 0;// 4) Parseo seguro de valores
-    const num = v => Number(v) || 0;
+    const numrecibo = Number(contrato?.[0]?.numrecibo) || 0; // 4) Parseo seguro de valores
+    const num = (v) => Number(v) || 0;
     const importemensual = num(contrato?.[0]?.importemensual);
     const exp_extraor = num(contrato?.[0]?.exp_ext);
     const seguro = num(contrato?.[0]?.seguro);
     const varios = num(contrato?.[0]?.varios);
     const honorarios = num(contrato?.[0]?.honorarios);
-    const fecha1 = (contrato?.[0]?.fecha || ""); //Extraigo la fecha del contrato
-    console.log(fecha1);
+    const fecha1 = contrato?.[0]?.fecha || ""; //Extraigo la fecha del contrato
+
     // 5) Fecha formateada
     const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
     ];
     const hoy = new Date();
-    const fecha_actual = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
-    const honorario1 = importemensual * honorarios / 100;
+    const fecha_actual = `${hoy.getDate()} de ${
+      meses[hoy.getMonth()]
+    } del ${hoy.getFullYear()}`;
+    const honorario1 = (importemensual * honorarios) / 100;
     // 6) Total
-    const total = importemensual
-      - exp_extraor
-      + seguro
-      + varios
-      - honorario1;
+    const total = importemensual - exp_extraor + seguro + varios - honorario1;
 
     // 7) Respuesta JSON
     return res.json({
@@ -1587,13 +1723,13 @@ app.get('/api/datos_propiedad/propietario', async (req, res) => {
       total: Number.isFinite(total) ? total : 0,
       fecha_actual: fecha_actual || "",
       fecha1: fecha1 || null,
-      fecha_rec: fecha1 || null
+      fecha_rec: fecha1 || null,
     });
-
-  }
-  catch (err) {
+  } catch (err) {
     console.error("Error en /api/datos_propiedad/propietario:", err);
-    return res.status(500).json({ error: "Error al obtener datos de la propiedad" });
+    return res
+      .status(500)
+      .json({ error: "Error al obtener datos de la propiedad" });
   }
 });
 
@@ -1602,10 +1738,22 @@ app.get("/recibo_propietario", async (req, res) => {
     const listaDePropiedades = await propiedades.obtenerPropiedadOrdenados();
     const hoy = new Date();
     const meses = [
-      "enero", "febrero", "marzo", "abril", "mayo", "junio",
-      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
     ];
-    const fecha_actual = `${hoy.getDate()} de ${meses[hoy.getMonth()]} del ${hoy.getFullYear()}`;
+    const fecha_actual = `${hoy.getDate()} de ${
+      meses[hoy.getMonth()]
+    } del ${hoy.getFullYear()}`;
 
     res.render("recibo_propietario", {
       propiedades: listaDePropiedades,
@@ -1619,7 +1767,7 @@ app.get("/recibo_propietario", async (req, res) => {
       exp_extraor: "",
       seguro: "",
       varios: "",
-      honorarios: ""
+      honorarios: "",
     });
   } catch (err) {
     console.error("Error al servir GET /recibo_propietario:", err);
@@ -1637,22 +1785,22 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       fecha1 = "",
       id_propiedad,
       apellidopropietario = "",
-     apellidoinquilino = "",
+      apellidoinquilino = "",
       importemensual = "0",
       exp_extraor = "0",
       seguro = "0",
       varios = "0",
       honorarios = "0",
-      total = "0"
+      total = "0",
     } = req.body;
     console.log("Datos recibidos:", req.body);
     // 2) Función para convertir strings a números seguros
-    const toNumber = v => {
+    const toNumber = (v) => {
       const n = parseFloat(v);
       return isNaN(n) ? 0 : n;
     };
-    const fecha_rec = (!fecha1 || fecha1 === "null" || fecha1.trim() === "") ? null : fecha1;
-
+    const fecha_rec =
+      !fecha1 || fecha1 === "null" || fecha1.trim() === "" ? null : fecha1;
 
     // 3) Convierto todos a números
     numrecibo = toNumber(numrecibo);
@@ -1667,14 +1815,15 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
     // 4) Preparo la fecha en formato YYYY-MM-DD para la BD
     const fechaPg = new Date().toISOString().slice(0, 10);
     fecha = fechaPg;
-     const { rows } = await database.query("SELECT MAX(numrecibo) AS ultimo FROM recibo_propietario");
-     const ultimoNumRecibo = rows[0].ultimo || 0;
-     numrecibo = ultimoNumRecibo + 1;
-     console.log("datos de insertar:", recibo_prop);
+    const { rows } = await database.query(
+      "SELECT MAX(numrecibo) AS ultimo FROM recibo_propietario"
+    );
+    const ultimoNumRecibo = rows[0].ultimo || 0;
+    numrecibo = ultimoNumRecibo + 1;
+
     // 5) Llamo al método de inserción pasando un OBJETO
-    
-    
-    const resultado = await recibo_prop.insertarReciboPropietario_Id ({
+
+    const resultado = await recibo_prop.insertarReciboPropietario_Id({
       fecha,
       id_propiedad,
       apellidopropietario,
@@ -1687,109 +1836,114 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       total,
       exp_extraor,
       honorarios,
-      fecha_rec
+      fecha_rec,
     });
-    
+
     // 6) Resultado de la inserción
     if (resultado && resultado.rowCount > 0) {
-  return res.json({
-    exito: true,
-    mensaje: "Recibo cargado exitosamente",
-    redireccion: `/recibo_prop_impreso/${numrecibo}`
-  });
-} else {
-  res.json({ exito: false, mensaje: "No se pudo insertar el recibo" });
-}
-
-
+      return res.json({
+        exito: true,
+        mensaje: "Recibo cargado exitosamente",
+        redireccion: `/recibo_prop_impreso/${numrecibo}`,
+      });
+    } else {
+      res.json({ exito: false, mensaje: "No se pudo insertar el recibo" });
+    }
   } catch (err) {
     console.error("Error al insertar recibo_propietario:", err);
     res.status(500).send("Error interno al insertar recibo_propietario");
   }
 });
 
+// --- RUTAS DE LA APLICACIÓN ---
 app.get("/recibo_prop_impreso/:numrecibo", async (req, res) => {
   try {
     const numrecibo = req.params.numrecibo;
-  console.log("Contenido de recibo_contrato:", recibo_prop);  
-    const resultado = await recibo_prop.recibosPropietarios(numrecibo);
 
+    const resultado = await recibo_prop.recibosPropietarios(numrecibo);
 
     if (!Array.isArray(resultado) || resultado.length === 0) {
       console.warn(`No se encontró recibo con numrecibo = ${numrecibo}`);
       return res.status(404).send("Recibo no encontrado");
     }
-   let reciboProp = resultado[0];
-    
-  
-    const datosPropiedades = await propiedades.obtenerPropiedadesPorId(reciboProp.id_propiedad);
-    
-      
-   // Parseador seguro
-const parseNumber = val => {
-  const num = Number(val);
-  return isNaN(num) ? 0 : num;
-};
+    let reciboProp = resultado[0];
 
+    const propiedadId = parseInt(reciboProp.id_propiedad, 10);
+    if (isNaN(propiedadId)) {
+      console.error(
+        `ID de propiedad inválido para recibo ${numrecibo}: ${reciboProp.id_propiedad}`
+      );
+      return res.status(500).send("Error interno: ID de propiedad inválido.");
+    }
 
-// 📅 Fechas
-const fechaContrato = new Date(reciboProp.fecha);
-// const fechaActual = new Date();
-const fechaActual = fechaContrato.toLocaleDateString("es-AR", {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric'
-});
+    const datosPropiedades = await propiedades.obtenerPropiedadesPorId(
+      propiedadId
+    );
 
-const mes_contrato = fechaContrato.toLocaleDateString("es-AR", { month: 'long' }).toUpperCase();
-const ultimoDiaDelMes = fecha => new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
-const vencimiento = ultimoDiaDelMes(fechaContrato);
+    let propiedadParaVista = {};
+    if (
+      datosPropiedades &&
+      typeof datosPropiedades === "object" &&
+      Object.keys(datosPropiedades).length > 0
+    ) {
+      propiedadParaVista = datosPropiedades;
+    } else {
+      console.warn(
+        `No se encontraron datos de propiedad para ID ${propiedadId} o el formato es incorrecto.`
+      );
+    }
 
-// 🧾 Estructura consolidada para la vista
-reciboProp = {
-  id: resultado[0].id_recibopropietarios,
-  fecha: resultado[0].fecha,
-  numrecibo: resultado[0].numrecibo,
-  importemensual: parseNumber(resultado[0].importemensual),
-  seguro: parseNumber(resultado[0].seguro),
-  varios: parseNumber(resultado[0].varios),
-  honorarios: parseNumber(resultado[0].honorarios),
-  exp_extraor: parseNumber(resultado[0].exp_extraor),
-  total: parseNumber(resultado[0].total),
-  apellidopropietario: resultado[0].apellidopropietario,
-  apellidoinquilino: resultado[0].apellidoinquilino,
-  cuota: resultado[0].cuota,
- };
- const letra = funcion_letras.numeroALetras(reciboProp.total);
+    const parseNumber = (val) => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
 
-res.render("recibo_prop_impreso", {
-  ocultarNavbar: true,
-  reciboProp,
-  propiedades: datosPropiedades,
-  letra,
-  mes_contrato,
-  vencimiento,
-  fechaActual
-  });
+    const fechaContrato = new Date(reciboProp.fecha);
+    const fechaActual = fechaContrato.toLocaleDateString("es-AR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
 
+    const mes_contrato = fechaContrato
+      .toLocaleDateString("es-AR", { month: "long" })
+      .toUpperCase();
+    const ultimoDiaDelMes = (fecha) =>
+      new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+    const vencimiento = ultimoDiaDelMes(fechaContrato);
 
+    const letra = funcion_letras.numeroALetras(reciboProp.total);
 
+    res.render("recibo_prop_impreso", {
+      reciboProp,
+      propiedades: propiedadParaVista,
+      letra: letra,
+      mes_contrato,
+      vencimiento,
+      fechaActual: new Date(resultado[0].fecha).toLocaleDateString("es-AR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+      title: "Recibo Propietario",
+      layout: "layout-recibos",
+    });
   } catch (err) {
     console.error("Error al generar el recibo:", err);
     res.status(500).send("Error interno al generar el recibo");
   }
 });
 
-app.post("/buscar_recProp", async (req, res) =>  {
+app.post("/buscar_recProp", async (req, res) => {
   try {
     const id_propiedades = req.body.id_propiedades;
 
-    if (!id_propiedades || id_propiedades.trim() === '') {
+    if (!id_propiedades || id_propiedades.trim() === "") {
       return res.render("buscar_recibo_alquiler", {
         propiedades: await propiedades.obtenerPropiedadOrdenados(),
         inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
         recibos: [],
-        mensaje: "Debe seleccionar una propiedad antes de buscar recibos."
+        mensaje: "Debe seleccionar una propiedad antes de buscar recibos.",
       });
     }
 
@@ -1799,9 +1953,8 @@ app.post("/buscar_recProp", async (req, res) =>  {
     res.render("buscar_recProp", {
       propiedades: await propiedades.obtenerPropiedadOrdenados(),
       inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
-      recibos
+      recibos,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al buscar recibos");
@@ -1812,28 +1965,30 @@ app.get("/buscar_recProp", async (req, res) => {
   res.render("buscar_recProp", {
     propiedades: await propiedades.obtenerPropiedadOrdenados(),
     inquilinos: await inquilinos.obtenerTodosLosInquilinos(),
-    recibos: []
+    recibos: [],
   });
 });
+// -----------------------------  impresion ----------------------------------
+// app.js
 
+// Importar una sola vez
 
+const reciboRouter = require("./routes/reciboRouter");
+app.use("/", reciboRouter);
 
+app.get("/.well-known/appspecific/com.chrome.devtools.json", (req, res) => {
+  res.status(204).send(); // No Content
+});
+app.use((err, req, res, next) => {
+  console.error("Error global:", err);
+  res.status(500).json({
+    message: "Error interno del servidor",
+    details: err.message,
+  });
+});
+const { limpiarRecibosDelDia } = require("./dailyReceiptsManager");
+limpiarRecibosDelDia();
 
-
-// ------------------  login ----------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});

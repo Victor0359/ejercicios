@@ -1,109 +1,153 @@
-<% if (!ocultarNavbar) { %>
-    <%- include('partials/navbar') %>
-        <% } %>
-                
-           
-                <form id="FormEditar" action="/recibo_prop_impreso" method="GET" class="row">
-                <input type="hidden" name="numrecibo" value="<%= reciboProp.numrecibo %>"> 
+  <body
+    class="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100"
+  >
+    <form
+      id="FormEditar"
+      action="/recibo_prop_impreso"
+      method="GET"
+      class="row w-full max-w-2xl"
+      
+    >
+      <input
+        type="hidden"
+        name="numrecibo"
+        value="<%= reciboProp.numrecibo %>"
+      />
 
+      <div class="receipt-container">
+        <div class="receipt-header">
+          <h1>RECIBO PROPIETARIO</h1>
+        </div>
 
-                <div class="receipt-container">
-                    <!-- <div class="paid-stamp">PAGADO</div> -->
-                    <div class="receipt-header">
-                        <h1>RECIBO PROPIETARIO</h1>
-                    </div>
+        <div class="receipt-details">
+          <div class="right">
+            <p>
+              <strong>Fecha:</strong>
 
-                    <div class="receipt-details">
-                        <div class="right">
-                            <p><strong>Fecha:</strong> <%= fechaActual %></p>
-                        </div>
+              <%= fechaActual %>
+            </p>
+          </div>
+        </div>
+        <div class="receipt-details1">
+          <div class="left">
+            <p>
+              <strong>Recibo Nº:</strong>
+              <span id="receiptNumber"> <%= reciboProp.numrecibo %> </span>
+            </p>
+          </div>
 
-                    </div>
-                    <div class="receipt-details1">
+          <div class="center">
+            <p>
+              <strong>Fecha Rec Pago:</strong>
+              <span id="ownerFecha">
+                <%= new Date(reciboProp.fecha).toLocaleDateString("es-AR") %>
+              </span>
+            </p>
+          </div>
+          <div class="right">
+            <p>
+              <strong>Mes Cont:</strong>
+              <span id="ownerName"> <%= reciboProp.cuota %> </span>
+            </p>
+          </div>
+        </div>
 
-                        <div class="left">
-                            <p><strong>Recibo Nº:</strong> <span id="receiptNumber"><%= reciboProp.numrecibo %></span>
-                        </div>
-                       
-                        <div class="center">
-                            <p><strong>Fecha Rec Pago:</strong> <span id="ownerFecha"></span> <%= new Date(reciboProp.fecha).toLocaleDateString("es-AR") %></span></p>
-                        </div>
-                        <div class="right">
-                            <p><strong>Mes Cont:</strong> <span id="ownerName"><%= reciboProp.cuota %></span></p>
-                        </div>
-                   
-                    </div>
+        <div class="receipt-item">
+          <p>
+            <strong>Recibí de:</strong> GARROTE PROPIEDADES la suma de pesos <%=
+            letra %>, ($ <%= Number(reciboProp.total).toLocaleString("es-AR",
+            {minimumFractionDigits: 2}) %>) en concepto de pago de la locación
+            correspondiente a la propiedad ubicada en la localidad de <%=
+            propiedades.localidad %>, con frente a la calle <%=
+            propiedades.direccion %>, mes de <%= mes_contrato %> con vencimiento
+            el dia <%= vencimiento %> de <%= mes_contrato %>.
+          </p>
+        </div>
+        <div class="form-row">
+          <label for="mensualidad" class="form-label">Mensualidad</label>
+          <span>$</span>
+          <input
+            type="text"
+            name="mensualidad"
+            value="<%= reciboProp.importemensual %>"
+            readonly
+          />
+        </div>
+        <div class="form-row">
+          <label for="exp_extraor" class="form-label"
+            >EXPENSAS EXTRAORDINARIAS</label
+          >
+          <span>$</span>
+          <input
+            type="text"
+            name="exp_extraor"
+            value="<%= reciboProp.exp_extraor %>"
+            readonly
+          />
+        </div>
+        <div class="form-row">
+          <label for="seguro" class="form-label">SEGURO</label>
+          <span>$</span>
+          <input
+            type="text"
+            name="seguro"
+            value="<%= reciboProp.seguro %>"
+            readonly
+          />
+        </div>
+        <div class="form-row">
+          <label for="varios" class="form-label">VARIOS</label>
+          <span>$</span>
+          <input
+            type="text"
+            name="varios"
+            value="<%= reciboProp.varios %>"
+            readonly
+          />
+        </div>
 
-                    <div class="receipt-item">
-                        <p><strong>Recibí de:</strong> GARROTE PROPIEDADES la suma de pesos <%= letra %>, ($ <%= Number(reciboProp.total).toLocaleString("es-AR", {minimumFractionDigits: 2}) %>) en concepto de pago de la locacion correspondiente a la propiedad ubicada en la localidad de <%= propiedades.localidad %>, con frente a la calle <%= propiedades.direccion %>, mes de <%= mes_contrato %> con vencimiento el dia <%= vencimiento %> de <%= mes_contrato %>.</p>
-                    </div>
-                    <div class="form-row">
+        <div class="form-row">
+          <label for="honorarios" class="form-label">HONORARIOS</label>
+          <span>$</span>
+          <input
+            type="text"
+            name="honorarios"
+            value="<%= reciboProp.honorarios %>"
+            readonly
+          />
+        </div>
 
-                        <label for="mensualidad" class="form-label">Mensualidad</label>
-                        <span>$</span>
-                        <input type="text" name="mensualidad" value="<%= reciboProp.importemensual %>">
-                    </div>
-                      <div class="form-row">
-                    <label for="exp_extraor" class="form-label">EXPENSAS EXTRAORDINARIAS</label>
-                        <span>$</span>
-                        <input type="text" name="exp_extraor" value="<%= reciboProp.exp_extraor %>">
-                    </div>
-                    <div class="form-row">
+        <div class="receipt-total">
+          Total:
+          <span id="totalAmount"
+            ><span>$</span>
+            <%= Number(reciboProp.total).toLocaleString("es-AR",
+            {minimumFractionDigits: 2}) %>
+          </span>
+        </div>
 
-                        <label for="seguro" class="form-label">SEGURO</label>
-                        <span>$</span>
+        <div class="receipt-signature">
+          <div class="signature-line"></div>
+          <p>Firma y Aclaración</p>
+        </div>
+      </div>
+      <div class="form-row mt-6">
+        <button
+          id="btnImprimir"
+          type="button"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
+        >
+          Imprimir
+        </button>
+      </div>
+      <div
+        id="messageBox"
+        class="mt-4 p-3 rounded-md text-center hidden"
+        role="alert"
+      ></div>
+    </form>
 
-                        <input type="text" name="seguro" value="<%= reciboProp.seguro %>">
-                    </div>
-                    <div class="form-row">
+   
+  </body>
+</html>
 
-                        <label for="varios" class="form-label">VARIOS</label>
-                        <span>$</span>
-                        <input type="text" name="varios" value="<%= reciboProp.varios %>">
-                    </div>
-
-                    <div class="form-row">
-
-                        <label for="honorarios" class="form-label">HONORARIOS</label>
-                        <span>$</span>
-                        <input type="text" name="honorarios" value="<%= reciboProp.honorarios %>">
-                    </div>
-
-
-                    <div class="receipt-total">
-                        Total: <span id="totalAmount"><span>$</span> <%= Number(reciboProp.total).toLocaleString("es-AR", {minimumFractionDigits: 2}) %></span></span>
-                    </div>
-
-                    <div class="receipt-signature">
-                        <div class="signature-line"></div>
-                        <p>Firma y Aclaración</p>
-                    </div>
-                </div>
-            </form>
-            <link rel="stylesheet" href="/css/recibo_imprimir.css">
-            <!-- <script>
-                window.onload = () => {
-                    window.print();
-                };
-            </script> -->
-            <script>
-                // Función para obtener la fecha actual en formato DD/MM/AAAA
-                function getCurrentDate() {
-                    const today = new Date();
-                    const day = String(today.getDate()).padStart(2, '0');
-                    const month = String(today.getMonth() + 1).padStart(2, '0'); // Enero es 0!
-                    const year = today.getFullYear();
-                    return `${day}/${month}/${year}`;
-                }
-
-                // Asignar la fecha actual al elemento con id "currentDate"
-                //document.getElementById('currentDate').textContent = getCurrentDate();
-
-                // Puedes modificar estos valores dinámicamente si lo necesitas
-                // document.getElementById('receiptNumber').textContent = '0002';
-                // document.getElementById('receivedFrom').textContent = 'Otra Persona';
-                // document.getElementById('totalInWords').textContent = 'DOSCIENTOS CINCUENTA PESOS CON 50/100';
-                // document.getElementById('concept').textContent = 'Pago de Honorarios';
-                // document.getElementById('totalAmount').textContent = '250.50';
-            </script>
-            </body>

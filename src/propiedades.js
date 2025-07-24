@@ -2,9 +2,8 @@ const database = require("./datadb");
 const express = require("express");
 const router = express.Router();
 async function obtenerPropiedad(datos) {
-  
   try {
-   if (datos && datos.trim() !== "") {
+    if (datos && datos.trim() !== "") {
       const resultado = await database.query(
         "SELECT * FROM propiedades WHERE direccion ILIKE '%' || $1 || '%'",
         [datos]
@@ -18,22 +17,24 @@ async function obtenerPropiedad(datos) {
   }
 }
 
-  async function obtenerPropiedadOrdenados() {
-  
+async function obtenerPropiedadOrdenados() {
   try {
-    
-      const resultado = await database.query("SELECT * FROM propiedades ORDER BY direccion ASC");
-     return resultado.rows; // Devuelve los registros correctamente
-    
+    const resultado = await database.query(
+      "SELECT * FROM propiedades ORDER BY direccion ASC"
+    );
+    return resultado.rows; // Devuelve los registros correctamente
+
     return [];
   } catch (err) {
     console.error("Error al obtener propiedad:", err);
     return [];
   }
 }
-async function obtenerPropiedadesOrdenadasPorId () {
+async function obtenerPropiedadesOrdenadasPorId() {
   try {
-    const resultado = await database.query("SELECT id_propiedades, direccion, localidad FROM propiedades ORDER BY direccion ASC");
+    const resultado = await database.query(
+      "SELECT id_propiedades, direccion, localidad FROM propiedades ORDER BY direccion ASC"
+    );
     return resultado.rows;
   } catch (err) {
     console.error("Error al obtener propiedad:", err);
@@ -41,11 +42,12 @@ async function obtenerPropiedadesOrdenadasPorId () {
   }
 }
 
-
 async function agregarPropiedades(datos) {
   try {
-    const direccion = typeof datos.direccion === 'string' ? datos.direccion.trim() : '';
-    const localidad = typeof datos.localidad === 'string' ? datos.localidad.trim() : '';
+    const direccion =
+      typeof datos.direccion === "string" ? datos.direccion.trim() : "";
+    const localidad =
+      typeof datos.localidad === "string" ? datos.localidad.trim() : "";
     const id_propietario = parseInt(datos.id_propietario) || null;
     const id_impuestos = parseInt(datos.id_impuestos) || 0;
 
@@ -61,40 +63,41 @@ async function agregarPropiedades(datos) {
   }
 }
 
-
 async function eliminarPropiedad({ id }) {
- 
-     try {
+  try {
     const sql = "DELETE FROM propiedades WHERE id_propiedades = $1 RETURNING *";
-        const resultado = await database.query(sql, [id]);
+    const resultado = await database.query(sql, [id]);
 
-        console.log("🔍 SQL DELETE resultado:", resultado);
+    console.log("🔍 SQL DELETE resultado:", resultado);
 
-        // Nos aseguramos de retornar un array vacío si no hay coincidencia
-        return resultado;
-    } catch (err) {
-        console.error("❌ Error en eliminarInquilinos:", err);
-        throw err;
-};
+    // Nos aseguramos de retornar un array vacío si no hay coincidencia
+    return resultado;
+  } catch (err) {
+    console.error("❌ Error en eliminarInquilinos:", err);
+    throw err;
+  }
 }
 
-
 async function modificarPropiedades(datos) {
-  
   try {
-   
-    const sql = 'UPDATE propiedades SET direccion = $1,localidad = $2,id_propietario = $3,id_impuestos = $4 WHERE id_propiedades = $5'; 
-    const resultado= await database.query (sql,[datos.direccion,
-        datos.localidad,
-        parseInt(datos.id_propietario),
-        parseInt(datos.id_impuestos),
-        parseInt(datos.id_propiedades)]);
-       
-    console.log(`✅ Propiedad ID ${datos.id_propiedades} — Filas afectadas:`, resultado.rowCount);
+    const sql =
+      "UPDATE propiedades SET direccion = $1,localidad = $2,id_propietario = $3,id_impuestos = $4 WHERE id_propiedades = $5";
+    const resultado = await database.query(sql, [
+      datos.direccion,
+      datos.localidad,
+      parseInt(datos.id_propietario),
+      parseInt(datos.id_impuestos),
+      parseInt(datos.id_propiedades),
+    ]);
+
+    console.log(
+      `✅ Propiedad ID ${datos.id_propiedades} — Filas afectadas:`,
+      resultado.rowCount
+    );
 
     return {
       rowCount: resultado.rowCount,
-      rows: resultado.rows
+      rows: resultado.rows,
     };
   } catch (err) {
     console.error("❌ Error al modificar propiedad:", err);
@@ -103,15 +106,14 @@ async function modificarPropiedades(datos) {
 }
 
 async function obtenerPropiedadesPorId(id_propiedades) {
- 
   try {
-const sql = "SELECT * FROM propiedades WHERE id_propiedades = $1";
-    const resultado = await database.query (sql,[id_propiedades]);
+    const sql = "SELECT * FROM propiedades WHERE id_propiedades = $1";
+    const resultado = await database.query(sql, [id_propiedades]);
     return resultado.rows[0];
   } catch (err) {
     console.error("Error al obtener la propiedad por ID:", err);
     return null;
-  } 
+  }
 }
 async function obtenerPropietarioSql() {
   try {
@@ -131,13 +133,13 @@ async function obtenerImpuestosSql() {
 }
 
 module.exports = {
-obtenerImpuestosSql,
- obtenerPropiedad,
- agregarPropiedades,
- eliminarPropiedad,
- modificarPropiedades,
- obtenerPropiedadesPorId,
- obtenerPropietarioSql,
- obtenerPropiedadOrdenados,
- obtenerPropiedadesOrdenadasPorId
-}
+  obtenerImpuestosSql,
+  obtenerPropiedad,
+  agregarPropiedades,
+  eliminarPropiedad,
+  modificarPropiedades,
+  obtenerPropiedadesPorId,
+  obtenerPropietarioSql,
+  obtenerPropiedadOrdenados,
+  obtenerPropiedadesOrdenadasPorId,
+};

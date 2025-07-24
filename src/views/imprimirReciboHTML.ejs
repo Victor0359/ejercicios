@@ -1,0 +1,45 @@
+function imprimirReciboHTML(reciboData) {
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Recibo</title>
+      <style>
+        @page { size: 80mm 200mm; margin: 0; }
+        body { 
+          width: 80mm;
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          padding: 5mm;
+          margin: 0;
+        }
+        .center { text-align: center; }
+        .left { text-align: left; }
+        .divider { border-top: 1px dashed #000; margin: 5px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="center">
+        <h2>RECIBO DE PAGO</h2>
+      </div>
+      <div class="left">
+        <p>Número: ${reciboData.numero}</p>
+        <p>Fecha: ${new Date().toLocaleDateString()}</p>
+        <div class="divider"></div>
+        <p>Cliente: ${reciboData.cliente}</p>
+        <p>Monto: $${reciboData.total.toFixed(2)}</p>
+      </div>
+      <script>
+        window.onload = function() {
+          setTimeout(() => {
+            window.print();
+            window.close();
+          }, 300);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
