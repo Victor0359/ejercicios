@@ -16,7 +16,7 @@ const propiedades = require("./propiedades"); // Asegúrate de que esta ruta sea
 const impuestos = require("./impuestos"); // Asegúrate de que esta ruta sea correcta desde src/
 const contratos = require("./contratos"); // Asegúrate de que esta ruta sea correcta desde src/
 const recibo_contrato = require("./recibo_contrato"); // Asegúrate de que esta ruta sea correcta desde src/
-const ping = require("ping");
+
 const recibo_prop = require("./recRecPropietario"); // Asegúrate de que esta ruta sea correcta desde src/
 const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea correcta desde src/
 const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager");
