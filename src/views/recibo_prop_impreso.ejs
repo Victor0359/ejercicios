@@ -132,13 +132,32 @@
         </div>
       </div>
       <div class="form-row mt-6">
-        <button
-          id="btnImprimir"
-          type="button"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105"
-        >
-          Imprimir
-        </button>
+       <div class="form-row mt-4 flex gap-4">
+  <button
+    id="btnImprimirUno"
+    type="button"
+    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+  >
+    Imprimir este recibo
+  </button>
+
+  <button
+    id="btnImprimirTodos"
+    type="button"
+    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+  >
+    Imprimir todos los de hoy
+  </button>
+
+  <button
+    type="button"
+    onclick="location.href='/recibo_propietario'"
+    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+  >
+    Volver
+  </button>
+</div>
+
       </div>
       <div
         id="messageBox"
@@ -146,7 +165,21 @@
         role="alert"
       ></div>
     </form>
+<script>
+  const numrecibo = document.querySelector("[name='numrecibo']").value;
 
+  document.getElementById("btnImprimirUno").addEventListener("click", async () => {
+    await fetch(`/generar_pdf/${numrecibo}`);
+    window.location.href = "/recibo_propietario";
+  });
+
+  document.getElementById("btnImprimirTodos").addEventListener("click", async () => {
+    await fetch(`/generar_pdfs_dia`);
+    window.location.href = "/recibo_propietario";
+  });
+</script>
+
+<link rel="stylesheet" href="/css/recibo_imprimir.css" />
    
   </body>
 </html>

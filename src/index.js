@@ -1986,8 +1986,59 @@ app.use((err, req, res, next) => {
     details: err.message,
   });
 });
-const { limpiarRecibosDelDia } = require("./dailyReceiptsManager");
-limpiarRecibosDelDia();
+const puppeteer = require("puppeteer");
+
+app.get("/generar_pdfs_dia", async (req, res) => {
+  const puppeteer = require("puppeteer");
+  const fs = require("fs");
+  const path = require("path");
+
+  const fechaHoy = new Date().toISOString().slice(0, 10);
+  const carpeta = path.join(__dirname, "recibos_pdf", fechaHoy);
+  if (!fs.existsSync(carpeta)) fs.mkdirSync(carpeta, { recursive: true });
+
+  const listaRecibos = obtenerRecibosDelDia(); // Tu lógica para listar recibos
+
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  for (const recibo of listaRecibos) {
+    const page = await browser.newPage();
+    const url = `ejerciciosvictor.onrender.com/recibo_prop_impreso?numrecibo=${recibo.numrecibo}`;
+    await page.goto(url, { waitUntil: "networkidle0" });
+
+    const ruta = path.join(carpeta, `recibo_${recibo.numrecibo}.pdf`);
+    await page.pdf({
+      path: ruta,
+      format: "A5",
+      landscape: true,
+      printBackground: true,
+      margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
+    });
+
+    await page.close();
+  }
+
+  await browser.close();
+  res.send(`✅ Todos los recibos del día fueron generados en PDF`);
+});
+
+const cron = require("node-cron");
+
+// Ejecutar todos los días a las 00:00
+cron.schedule("0 0 * * *", () => {
+  const baseDir = path.join(__dirname, "recibos_pdf");
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  fs.readdirSync(baseDir).forEach((folder) => {
+    if (folder !== hoy) {
+      fs.rmSync(path.join(baseDir, folder), { recursive: true, force: true });
+      console.log(`Carpeta eliminada: ${folder}`);
+    }
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);

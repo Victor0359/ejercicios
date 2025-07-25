@@ -171,46 +171,18 @@ body {
 /* Estilos para impresión en media hoja A4 */
 /* recibo_imprimir.css */
 @media print {
+  @page {
+    size: A5 landscape;
+    margin: 1cm;
+  }
+
   body {
-    width: 148mm;
-    height: 210mm;
-    margin: 0;
-    padding: 10mm;
-    font-size: 10pt;
-  }
-  
-  .button-container {
-    display: none;
-  }
-  
-  .receipt-container {
-    width: 100%;
-    height: 100%;
-    border: none;
-    box-shadow: none;
-    margin: 0;
+    background: white;
     padding: 0;
+    margin: 0;
   }
-  
-  .receipt-header h1 {
-    font-size: 16pt;
-  }
-  
-  .receipt-details, .receipt-details1 {
-    font-size: 9pt;
-  }
-  
-  .receipt-item {
-    font-size: 9pt;
-    margin: 5mm 0;
-  }
-  
-  .receipt-total {
-    font-size: 10pt;
-    margin-top: 10mm;
-  }
-  
-  .receipt-signature {
-    margin-top: 20mm;
+
+  #btnImprimir {
+    display: none;
   }
 }
