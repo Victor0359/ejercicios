@@ -1,20 +1,15 @@
   <body
     class="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100"
   >
-    <form
-      id="FormEditar"
-      action="/recibo_prop_impreso"
-      method="GET"
-      class="row w-full max-w-2xl"
-      
-    >
-      <input
-        type="hidden"
-        name="numrecibo"
-        value="<%= reciboProp.numrecibo %>"
-      />
+    <form>
+    <input
+  type="hidden"
+  name="numrecibo"
+  value="<%= numrecibo %>"
+/>
 
-      <div class="receipt-container">
+      
+         <div class="receipt-container">
         <div class="receipt-header">
           <h1>RECIBO PROPIETARIO</h1>
         </div>

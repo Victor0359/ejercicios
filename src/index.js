@@ -1636,19 +1636,20 @@ app.post("/recibo_propietario", async (req, res) => {
     // Renderizar vista
     res.render("recibo_propietario", {
       propiedades: listaDePropiedades,
-      numero_recibo: contrato.numero_recibo || "",
+      numero_recibo,
       id_propiedad_seleccionada: id_propiedades,
       apellidopropietario: contrato.apellidopropietario || "",
       cuota: contrato.cuota || "",
       fecha_actual: fechaFormateada,
       fecha1: contrato.fecha_inicial || "",
       importemensual: contrato.importemensual || "",
-      exp_extraor: impuesto.exp_extraor || "",
-      seguro: impuesto.seguro || "",
-      varios: impuesto.varios || "",
-      honorarios,
+      exp_extraor: impuestos.exp_extraor || "",
+      seguro: impuestos.seguro || "",
+      varios: impuestos.varios || "",
+      honorarios: contrato.honorarios || "",
       mensaje,
     });
+    console.log(res.render);
   } catch (err) {
     console.error("Error al cargar recibo de propietario:", err);
     res.status(500).send("Error interno al cargar el recibo");
@@ -1665,10 +1666,11 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     }
 
     // 2) Consultas paralelas
-    const [contrato, propietario] = await Promise.all([
+    const [contrato, propietario, fechas] = await Promise.all([
       // devuelve datos del inquilino
       recibo_prop.obtenerContratos_Id(id),
       recibo_prop.obtenerPropietario_Id(id),
+      recibo_prop.fechaReciboInquilino(id),
       // devuelve datos del propietario
     ]);
 
@@ -1677,16 +1679,19 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     // 3) Calcular nuevo número de recibo
 
     const apellidoPropietario = propietario?.[0]?.apellido || ""; // 3) Extraigo el apellido del propietario
-    const cuota = Number(contrato?.[0]?.cuota) || 0; // 3) Extraigo la cuota del contrato
-    const numrecibo = Number(contrato?.[0]?.numrecibo) || 0; // 4) Parseo seguro de valores
+    // 3) Extraigo la cuota del contrato
+
     const num = (v) => Number(v) || 0;
+    const cuota = num(contrato?.[0]?.cuota) || 0;
+    const numrecibo = num(contrato?.[0]?.numrecibo) || 0; // 4) Parseo seguro de valores
     const importemensual = num(contrato?.[0]?.importemensual);
     const exp_extraor = num(contrato?.[0]?.exp_ext);
     const seguro = num(contrato?.[0]?.seguro);
     const varios = num(contrato?.[0]?.varios);
-    const honorarios = num(contrato?.[0]?.honorarios);
-    const fecha1 = contrato?.[0]?.fecha || ""; //Extraigo la fecha del contrato
+    const honorarios = num(propietario?.[0]?.honorarios);
+    const fecha1 = fechas?.[0]?.fecha; //Extraigo la fecha del contrato
 
+    const fecha2 = fecha1.toISOString().split("T")[0];
     // 5) Fecha formateada
     const meses = [
       "enero",
@@ -1702,13 +1707,12 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
       "noviembre",
       "diciembre",
     ];
-    const hoy = new Date();
-    const fecha_actual = `${hoy.getDate()} de ${
-      meses[hoy.getMonth()]
-    } del ${hoy.getFullYear()}`;
+    const ahora = new Date();
+    const hoy = ahora.toISOString().split("T")[0];
     const honorario1 = (importemensual * honorarios) / 100;
     // 6) Total
     const total = importemensual - exp_extraor + seguro + varios - honorario1;
+    console.log("valores:", honorario1, total, fecha2);
 
     // 7) Respuesta JSON
     return res.json({
@@ -1721,9 +1725,9 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
       varios: varios || 0,
       honorarios: honorario1 || 0,
       total: Number.isFinite(total) ? total : 0,
-      fecha_actual: fecha_actual || "",
-      fecha1: fecha1 || null,
-      fecha_rec: fecha1 || null,
+      fecha_actual: hoy || "",
+      //fecha1: fecha2 || null,
+      fecha_rec: fecha2 || "",
     });
   } catch (err) {
     console.error("Error en /api/datos_propiedad/propietario:", err);
@@ -1761,8 +1765,8 @@ app.get("/recibo_propietario", async (req, res) => {
       id_propiedad_seleccionada: "",
       apellidopropietario: "",
       cuota: "",
-      fecha_actual,
-      fecha1: "",
+      fecha_actual: "",
+      fecha_rec: "",
       importemensual: "",
       exp_extraor: "",
       seguro: "",
@@ -1782,8 +1786,8 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       numrecibo = "0",
       cuota = "0",
       fecha = "",
-      fecha1 = "",
-      id_propiedad,
+      fecha_rec = "",
+      id_propiedad = "0",
       apellidopropietario = "",
       apellidoinquilino = "",
       importemensual = "0",
@@ -1793,16 +1797,14 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       honorarios = "0",
       total = "0",
     } = req.body;
-    console.log("Datos recibidos:", req.body);
+
     // 2) Función para convertir strings a números seguros
     const toNumber = (v) => {
       const n = parseFloat(v);
       return isNaN(n) ? 0 : n;
     };
-    const fecha_rec =
-      !fecha1 || fecha1 === "null" || fecha1.trim() === "" ? null : fecha1;
-
     // 3) Convierto todos a números
+    id_propiedad = toNumber(id_propiedad);
     numrecibo = toNumber(numrecibo);
     cuota = toNumber(cuota);
     importemensual = toNumber(importemensual);
@@ -1812,14 +1814,41 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
     honorarios = toNumber(honorarios);
     total = toNumber(total);
 
+    function parsearFechaISO(fecha) {
+      if (!fecha || fecha === "null" || fecha.trim() === "") return null;
+
+      const f = new Date(fecha);
+      return f instanceof Date && !isNaN(f.getTime())
+        ? f.toISOString().slice(0, 10)
+        : null;
+    }
+
+    const regexFechaISO = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (regexFechaISO.test(fecha_rec)) {
+      fecha_rec = parsearFechaISO(fecha_rec);
+    } else {
+      console.warn("Formato inválido:", fecha_rec);
+    }
+
     // 4) Preparo la fecha en formato YYYY-MM-DD para la BD
     const fechaPg = new Date().toISOString().slice(0, 10);
     fecha = fechaPg;
-    const { rows } = await database.query(
-      "SELECT MAX(numrecibo) AS ultimo FROM recibo_propietario"
-    );
-    const ultimoNumRecibo = rows[0].ultimo || 0;
-    numrecibo = ultimoNumRecibo + 1;
+    console.log("Objeto a insertar:", {
+      fecha,
+      id_propiedad,
+      apellidopropietario,
+      apellidoinquilino,
+      numrecibo,
+      cuota,
+      importemensual,
+      seguro,
+      varios,
+      total,
+      exp_extraor,
+      honorarios,
+      fecha_rec,
+    });
 
     // 5) Llamo al método de inserción pasando un OBJETO
 
@@ -1839,14 +1868,17 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       fecha_rec,
     });
 
-    // 6) Resultado de la inserción
-    if (resultado && resultado.rowCount > 0) {
+    console.log(resultado);
+    // Nueva condición más robusta:
+    if (resultado && resultado.id_recibopropietarios) {
       return res.json({
         exito: true,
         mensaje: "Recibo cargado exitosamente",
+        numrecibo,
         redireccion: `/recibo_prop_impreso/${numrecibo}`,
       });
     } else {
+      console.warn("Inserción sin resultado válido:", resultado);
       res.json({ exito: false, mensaje: "No se pudo insertar el recibo" });
     }
   } catch (err) {
@@ -1925,9 +1957,12 @@ app.get("/recibo_prop_impreso/:numrecibo", async (req, res) => {
         month: "long",
         year: "numeric",
       }),
+      numrecibo, // <-- este es el que faltaba
       title: "Recibo Propietario",
       layout: "layout-recibos",
     });
+
+    //res.redirect(`/recibo_prop_impreso/${numrecibo}?exito=1`);
   } catch (err) {
     console.error("Error al generar el recibo:", err);
     res.status(500).send("Error interno al generar el recibo");

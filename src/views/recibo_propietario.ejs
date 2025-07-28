@@ -1,13 +1,11 @@
 
 
-
-
 <div class="container mt-5">
 
-<div id="mensaje-alerta" >
-</div>
+  <div id="mensaje-alerta">
+  </div>
 
-  <form id="form-recibo"action="/recibo_propietario/insertar" method="POST">
+  <form id="form-recibo" action="/recibo_propietario/insertar" method="POST">
     <h1 class="mb-5 "><b> RECIBO PROPIETARIO</b></h1>
 
 
@@ -21,15 +19,16 @@
         <div class="row mb-3 mt-5">
           <div class="col-md-4 mb-3">
             <label for="numero_recibo" class="form-label"><b>Numero recibo</b></label>
-            <input type="text" class="auto-size form-control" id="numero_recibo" name="numrecibo" value="<%= numero_recibo %>" readonly>
+            <input type="text" class="auto-size form-control" id="numero_recibo" name="numrecibo"
+              value="<%= numero_recibo %>" readonly>
           </div>
-          
+
           <div class="col-md-4 mb-3">
             <label for="fecha_actual" class="form-label"><b>Fecha actual</b></label>
-            <input type="text" class="auto-size form-control" id="fecha_actual" name="fecha"
-              value="<%= fecha_actual %>" readonly>
+            <input type="text" class="auto-size form-control" id="fecha_actual" name="fecha" value="<%= fecha_actual %>"
+              readonly>
           </div>
-          
+
           <div class="col-md-4 mb-3">
             <label for="id_propiedades" class="form-label "><b> Propiedad</b></label>
             <select class="form-select" id="id_propiedades" name="id_propiedad" required>
@@ -57,19 +56,20 @@
             <label for="cuota" class="form-label "><b>Cuota</b></label>
             <input type="number" id="cuota" class="form-control auto-size" name="cuota" value="<%= cuota %>" readonly>
           </div>
-           
+
           <div class="col-md-4 mb-3">
-            <label for="fecha1" class="form-label "><b>fecha recibo cobro</b></label>
-            <input type="date" id="fecha1" class="form-control auto-size" name="fecha1" value="<%= fecha1.slice(0,10) %>" readonly>
+            <label for="fecha_rec" class="form-label "><b>fecha recibo cobro</b></label>
+            <input type="date" id="fecha_rec" class="form-control auto-size" name="fecha_rec"
+              value="<%= fecha_rec %>" readonly>
           </div>
-         
+
           <div class="row mt-5">
             <div class="col-md-4 mb-3">
               <label for="importemensual" class="form-label"><b>Monto mensual</b></label>
               <input type="number" name="importemensual" id="importemensual" value="<%= importemensual %>">
             </div>
             <div class="col-md-4 mb-3">
-              <label for="exp_ext" ><b>Expensas extraor</b></label>
+              <label for="exp_ext"><b>Expensas extraor</b></label>
               <input type="number" name="exp_extraor" id="exp_extraor" value="<%= exp_extraor %>">
             </div>
 
@@ -97,7 +97,9 @@
             </div>
           </div>
           <div class=" mt-5 mr-2 no-print">
-             <button type="submit" class="btn btn-primary" id="btn-generar-recibo">Generar Recibo</button>
+            
+
+            <button type="submit" class="btn btn-primary" id="btn-generar-recibo">Generar Recibo</button>
 
             <a href="/recibo_propietario" class="btn btn-secondary">Cancelar</a>
 
@@ -121,114 +123,108 @@
 </div>
 <link rel="stylesheet" href="/css/propiedades.css">
 
-
-<script>function mostrarMensaje(texto) {
-  const mensaje = document.getElementById("mensaje-alerta");
-  mensaje.textContent = texto;
-  mensaje.style.display = "block";
-  setTimeout(() => {
-    mensaje.style.display = "none";
-  }, 1000);
-}
-</script>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // 1) Referencia al <select>
-    const sel = document.getElementById('id_propiedades');
-    if (!sel) return;
-
-    // 2) Función para parsear números
-    const toNumber = v => parseFloat(v) || 0;
-
-    // 3) Función que recalcula el total
-    function recalcularTotal() {
-      const m = toNumber(document.getElementById('importemensual')?.value);
-      const e = toNumber(document.getElementById('exp_extraor')?.value);
-      const s = toNumber(document.getElementById('seguro')?.value);
-      const v = toNumber(document.getElementById('varios')?.value);
-      const a = toNumber(document.getElementById('honorarios')?.value);
-      document.getElementById('total').value = (m - a + s + v - e).toFixed(2);
-    }
-
-   
-    //4) Función que pinta los datos JSON en los inputs
-    function actualizarCampos(data) {
-      // Mapeo manual de cada campo — el key debe coincidir exactamente con el JSON
-      document.getElementById('numero_recibo').value = data.numero_recibo || '';
-      document.getElementById('fecha_actual').value = data.fecha_actual || '';
-      document.getElementById('fecha1').value = data.fecha1 ? data.fecha1.slice(0, 10) : '';
-      document.getElementById('apellidopropietario').value = data.apellidopropietario || '';
-      document.getElementById('cuota').value = data.cuota || '';
-      document.getElementById('importemensual').value = data.importemensual || '';
-      document.getElementById('exp_extraor').value = data.exp_extraor || '';
-      document.getElementById('seguro').value = data.seguro || '';
-      document.getElementById('varios').value = data.varios || '';
-      document.getElementById('honorarios').value = data.honorarios || '';
-      document.getElementById('total').value = data.total || 0;
-      
-    }
-
-    // 5) Cuando cambie el select, hacemos fetch y pintamos
-    sel.addEventListener('change', async () => {
-      const id = sel.value;
-      if (!id) return;
-      const res = await fetch(`/api/datos_propiedad/propietario?id_propiedades=${id}`);
-      const data = await res.json();
-      console.log('API ➞', data);   // <--- Asegurate de ver el JSON en consola
-      actualizarCampos(data);
-       console.log("Datos recibidos del backend:", data); 
-    });
-
-    // 6) Enlazamos inputs para recalcular en tiempo real
-    ['importemensual', 'exp_extraor', 'seguro', 'varios', 'honorario']
-      .forEach(id => document.getElementById(id)
-        ?.addEventListener('input', recalcularTotal)
-      );
-
-    // 7) Confirmación de envío
-    const form = document.querySelector('form[action="/recibo_propietario/insertar"]');
-    const btn = document.getElementById('btn-generar-recibo');
-    btn?.addEventListener('click', e => {
-      if (!confirm('¿Desea insertar el recibo?')) e.preventDefault();
-    });
-
-    // 8) Cálculo inicial
-    recalcularTotal();
-  });
-</script>
-
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('form-recibo');
+  const sel = document.getElementById('id_propiedades');
   const btn = document.getElementById('btn-generar-recibo');
+  const form = document.querySelector('form[action="/recibo_propietario/insertar"]');
 
+  // ✅ Parsear números
+  const toNumber = v => parseFloat(v) || 0;
+
+  // 🔢 Recalcular TOTAL
+  function recalcularTotal() {
+    const m = toNumber(document.getElementById('importemensual')?.value);
+    const e = toNumber(document.getElementById('exp_extraor')?.value);
+    const s = toNumber(document.getElementById('seguro')?.value);
+    const v = toNumber(document.getElementById('varios')?.value);
+    const a = toNumber(document.getElementById('honorarios')?.value);
+    document.getElementById('total').value = (m - e + s + v - a).toFixed(2);
+  }
+
+  // 🖊️ Pintar campos desde API
+  function actualizarCampos(data) {
+    const campos = [
+      'numero_recibo', 'fecha_actual', 'fecha_rec', 'apellidopropietario',
+      'cuota', 'importemensual', 'exp_extraor', 'seguro',
+      'varios', 'honorarios', 'total'
+    ];
+
+    campos.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) input.value = data[id] || '';
+      else console.warn(`⚠️ Campo "${id}" no encontrado.`);
+    });
+
+    recalcularTotal();
+  }
+
+  // 🔄 Actualizar campos al cambiar propiedad
+  sel?.addEventListener('change', async () => {
+    const id = sel.value;
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/datos_propiedad/propietario?id_propiedades=${id}`);
+      const data = await res.json();
+      console.log('API ➞', data);
+      actualizarCampos(data);
+    } catch (err) {
+      console.error('Error al cargar datos de propiedad:', err);
+      alert('Error al obtener los datos del propietario');
+    }
+  });
+
+  // ✨ Inputs que modifican el total
+  ['importemensual', 'exp_extraor', 'seguro', 'varios', 'honorarios'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', recalcularTotal);
+  });
+
+  // 🧾 Enviar el recibo con confirmación
   btn?.addEventListener('click', async (e) => {
     e.preventDefault();
-    
     if (!confirm('¿Desea insertar el recibo?')) return;
 
+    const datos = {
+      fecha: document.getElementById('fecha_actual')?.value,
+      id_propiedad: document.getElementById('id_propiedades')?.value,
+      apellidopropietario: document.getElementById('apellidopropietario')?.value,
+      apellidoinquilino: '', // si tenés el campo podés agregarlo
+      numrecibo: document.getElementById('numero_recibo')?.value,
+      cuota: document.getElementById('cuota')?.value,
+      importemensual: document.getElementById('importemensual')?.value,
+      exp_extraor: document.getElementById('exp_extraor')?.value,
+      seguro: document.getElementById('seguro')?.value,
+      varios: document.getElementById('varios')?.value,
+      honorarios: document.getElementById('honorarios')?.value,
+      total: document.getElementById('total')?.value,
+      fecha_rec: document.getElementById('fecha_rec')?.value
+    };
+
     try {
-      const res = await fetch('/recibo_propietario/insertar', {
-        method: 'POST',
-        body: new FormData(form)
+      const res = await fetch("/recibo_propietario/insertar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos)
       });
 
       const data = await res.json();
-      console.log('Respuesta JSON:', data);
-
       if (data.exito) {
+        alert(data.mensaje);
         window.location.href = data.redireccion;
       } else {
-        mostrarMensaje(data.mensaje || 'Error al insertar');
+        alert("⚠️ " + data.mensaje);
       }
-    } catch (error) {
-      console.error('Error en el envío:', error);
-      mostrarMensaje('Falla al conectar con el servidor');
+    } catch (err) {
+      console.error("Error en el insert:", err);
+      alert("❌ Error al insertar el recibo");
     }
   });
 });
 </script>
+
+
+
+
 
 
 

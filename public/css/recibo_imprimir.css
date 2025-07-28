@@ -186,3 +186,19 @@ body {
     display: none;
   }
 }
+
+  #mensaje-alerta {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #28a745; /* verde éxito */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 9999;
+    display: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+
