@@ -1,16 +1,24 @@
-// dailyReceiptsManager.js
+// src/dailyReceiptsManager.js
 // pdfService.js (antes agruparPdf.js)
-const fs = require("fs").promises;
+
+// Importaciones CommonJS
+const fs = require("fs").promises; // Usar .promises para funciones asíncronas de fs
 const path = require("path");
-const { default: PDFMerger } = require("pdf-merger-js");
-const merger = new PDFMerger();
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const { generateReceiptPDF } = require("./receiptPDFGenerator");
-const printer = require("./printer");
+const printer = require("./printer"); // Asegúrate de que este módulo sea CommonJS o maneja ESM
+
+// Función para obtener el módulo PDFMerger de forma asíncrona
+// Esto es necesario porque 'pdf-merger-js' es un ES Module
+async function getPDFMerger() {
+  const { default: PDFMerger } = await import("pdf-merger-js");
+  return PDFMerger;
+}
 
 // Configuración
 const A5_WIDTH = 148 * 2.83465;
 const A5_HEIGHT = 210 * 2.83465;
+// __dirname está disponible en módulos CommonJS
 const receiptsFolder = path.join(__dirname, "receipts");
 const dailyFolder = path.join(__dirname, "daily");
 const tempFolder = path.join(__dirname, "temp");
@@ -53,14 +61,18 @@ async function ensureFoldersExist() {
   await fs.mkdir(dailyFolder, { recursive: true });
   await fs.mkdir(tempFolder, { recursive: true });
 }
+
 async function printPDF(pathToFile, printerName) {
+  // Nota: El error "Sistema operativo no compatible" para la impresión
+  // podría persistir si 'pdf-to-printer' no es compatible con el entorno de Render.
+  // Esta función solo se ha adaptado a la sintaxis, no a la compatibilidad del SO.
   await printer.print(pathToFile, {
     printer: printerName,
     paperSize: "A5",
   });
 }
 
-// Generar PDF
+// Generar PDF (esta función parece incompleta, pero la mantengo como está)
 async function dailyReceiptsManager(receiptData) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A5_WIDTH, A5_HEIGHT]);
@@ -87,14 +99,21 @@ async function saveReceipt(receiptData) {
     const today = new Date().toISOString().split("T")[0];
     const dailyPath = path.join(dailyFolder, `${today}.pdf`);
 
-    const merger = new PDFMerger();
-    try {
-      const existingPdf = await fs.readFile(dailyPath);
-      await merger.add(existingPdf);
-    } catch (err) {}
+    // Obtener la clase PDFMerger de forma asíncrona
+    const MyPDFMerger = await getPDFMerger();
+    const mergerInstance = new MyPDFMerger(); // Instancia el merger aquí
 
-    await merger.add(pdfBytes);
-    await merger.save(dailyPath);
+    try {
+      // Intenta leer el PDF diario existente
+      const existingPdf = await fs.readFile(dailyPath);
+      await mergerInstance.add(existingPdf);
+    } catch (err) {
+      // Si el archivo no existe, no hay problema, simplemente no se añade
+      // console.log("No existe PDF diario previo, creando uno nuevo.");
+    }
+
+    await mergerInstance.add(pdfBytes); // Añade el nuevo recibo
+    await mergerInstance.save(dailyPath); // Guarda el PDF diario actualizado
 
     return { success: true, path: receiptPath };
   } catch (error) {
@@ -127,6 +146,8 @@ async function printReceipt(receiptData) {
 
     await fs.writeFile(tempPath, pdfBytes);
 
+    // Nota: Si getDefaultPrinter() usa 'printer.getPrinters()',
+    // y 'printer' es 'pdf-to-printer', esto podría fallar en Render.
     const printerName = process.env.PRINTER_NAME || (await getDefaultPrinter());
     await printer.print(tempPath, {
       printer: printerName,
@@ -148,10 +169,13 @@ async function printReceipt(receiptData) {
 
 // Obtener impresora por defecto
 async function getDefaultPrinter() {
+  // Esto dependerá de la compatibilidad de 'pdf-to-printer' con el SO de Render.
+  // Si falla, es posible que necesites un enfoque diferente para la impresión en la nube.
   const printers = await printer.getPrinters();
   return printers.find((p) => p.isDefault)?.name || "Microsoft Print to PDF";
 }
 
+// Exporta las funciones que se usarán en otros módulos CommonJS
 module.exports = {
   generateReceiptPDF,
   saveReceipt,
