@@ -2029,7 +2029,7 @@ app.get("/generar_pdfs_dia", async (req, res) => {
   const path = require("path");
 
   const fechaHoy = new Date().toISOString().slice(0, 10);
- const carpeta = path.join("/tmp", "recibos_pdf", fechaHoy);
+  const carpeta = path.join("/tmp", "recibos_pdf", fechaHoy);
 
   if (!fs.existsSync(carpeta)) fs.mkdirSync(carpeta, { recursive: true });
 
@@ -2076,12 +2076,10 @@ cron.schedule("0 0 * * *", () => {
     }
   });
 });
-const browser = await puppeteer.launch({
-  headless: true,
-  executablePath: process.env.CHROME_PATH || undefined,
-  args: ["--no-sandbox", "--disable-setuid-sandbox"]
-});
-
+// const browser = await puppeteer.launch({
+//   headless: true,
+//   args: ["--no-sandbox", "--disable-setuid-sandbox"],
+// });
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
