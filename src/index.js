@@ -16,7 +16,8 @@ const propiedades = require("./propiedades"); // Asegúrate de que esta ruta sea
 const impuestos = require("./impuestos"); // Asegúrate de que esta ruta sea correcta desde src/
 const contratos = require("./contratos"); // Asegúrate de que esta ruta sea correcta desde src/
 const recibo_contrato = require("./recibo_contrato"); // Asegúrate de que esta ruta sea correcta desde src/
-
+const puppeteer = require("puppeteer-core"); // Usa puppeteer-core
+const chromium = require("@sparticuz/chromium"); // Importa chromium
 const recibo_prop = require("./recRecPropietario"); // Asegúrate de que esta ruta sea correcta desde src/
 const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea correcta desde src/
 const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager");
@@ -2021,10 +2022,8 @@ app.use((err, req, res, next) => {
     details: err.message,
   });
 });
-const puppeteer = require("puppeteer");
 
 app.get("/generar_pdfs_dia", async (req, res) => {
-  const puppeteer = require("puppeteer");
   const fs = require("fs");
   const path = require("path");
 
@@ -2036,8 +2035,10 @@ app.get("/generar_pdfs_dia", async (req, res) => {
   const listaRecibos = obtenerRecibosDelDia(); // Tu lógica para listar recibos
 
   const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"], // Usa los argumentos recomendados de chromium
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(), // Apunta al ejecutable de chromium
+    headless: chromium.headless, // Usa la configuración de modo headless de chromium
   });
 
   for (const recibo of listaRecibos) {

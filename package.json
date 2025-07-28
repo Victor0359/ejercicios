@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "20": "^3.1.9",
+    "@sparticuz/chromium": "^138.0.2",
     "bcrypt": "^6.0.0",
     "connect-flash": "^0.1.1",
     "connect-pg-simple": "^10.0.0",
@@ -29,7 +30,7 @@
     "pdf-merger-js": "^5.1.2",
     "pdf-to-printer": "^5.6.0",
     "pg": "^8.16.0",
-    "puppeteer": "^24.15.0"
+    "puppeteer-core": "^24.15.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
