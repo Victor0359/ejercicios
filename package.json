@@ -6,13 +6,12 @@
     "dev": "nodemon src/index.js",
     "build-project": "node build-project.js",
     "test": "jest",
-    "start": "nodemon src/index.js"
+    "start": "node src/index.js"
   },
   "keywords": [],
   "author": "Victor Hugo",
   "license": "ISC",
   "dependencies": {
-    "20": "^3.1.9",
     "@sparticuz/chromium": "^138.0.2",
     "bcrypt": "^6.0.0",
     "connect-flash": "^0.1.1",
@@ -24,7 +23,6 @@
     "express-ejs-layouts": "^2.5.1",
     "express-session": "^1.18.1",
     "helmet": "^8.1.0",
-    "node": "^22.16.0",
     "node-cron": "^4.2.1",
     "pdf-lib": "^1.17.1",
     "pdf-merger-js": "^5.1.2",
