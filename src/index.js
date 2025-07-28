@@ -2029,7 +2029,8 @@ app.get("/generar_pdfs_dia", async (req, res) => {
   const path = require("path");
 
   const fechaHoy = new Date().toISOString().slice(0, 10);
-  const carpeta = path.join(__dirname, "recibos_pdf", fechaHoy);
+ const carpeta = path.join("/tmp", "recibos_pdf", fechaHoy);
+
   if (!fs.existsSync(carpeta)) fs.mkdirSync(carpeta, { recursive: true });
 
   const listaRecibos = obtenerRecibosDelDia(); // Tu lógica para listar recibos
@@ -2041,7 +2042,8 @@ app.get("/generar_pdfs_dia", async (req, res) => {
 
   for (const recibo of listaRecibos) {
     const page = await browser.newPage();
-    const url = `ejerciciosvictor.onrender.com/recibo_prop_impreso?numrecibo=${recibo.numrecibo}`;
+    const url = `https://ejerciciosvictor.onrender.com/recibo_prop_impreso?numrecibo=${recibo.numrecibo}`;
+
     await page.goto(url, { waitUntil: "networkidle0" });
 
     const ruta = path.join(carpeta, `recibo_${recibo.numrecibo}.pdf`);
@@ -2074,6 +2076,12 @@ cron.schedule("0 0 * * *", () => {
     }
   });
 });
+const browser = await puppeteer.launch({
+  headless: true,
+  executablePath: process.env.CHROME_PATH || undefined,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
+
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
