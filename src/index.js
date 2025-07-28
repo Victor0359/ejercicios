@@ -2010,8 +2010,14 @@ app.get("/buscar_recProp", async (req, res) => {
 // Importar una sola vez
 
 const reciboRouter = require("./routes/reciboRouter");
-app.use("/", reciboRouter);
 
+app.use((err, req, res, next) => {
+  console.error("Error global:", err);
+  res.status(500).json({
+    message: "Error interno del servidor",
+    details: err.message,
+  });
+});
 app.get("/.well-known/appspecific/com.chrome.devtools.json", (req, res) => {
   res.status(204).send(); // No Content
 });
@@ -2024,64 +2030,85 @@ app.use((err, req, res, next) => {
 });
 
 app.get("/generar_pdfs_dia", async (req, res) => {
-  const fs = require("fs");
-  const path = require("path");
+  try {
+    const fechaHoy = new Date().toISOString().slice(0, 10);
+    // Para Render, usar /tmp es seguro para archivos temporales
+    const carpeta = path.join("/tmp", "recibos_pdf", fechaHoy);
 
-  const fechaHoy = new Date().toISOString().slice(0, 10);
-  const carpeta = path.join("/tmp", "recibos_pdf", fechaHoy);
+    // Crea la carpeta si no existe
+    if (!fs.existsSync(carpeta)) {
+      fs.mkdirSync(carpeta, { recursive: true });
+    }
 
-  if (!fs.existsSync(carpeta)) fs.mkdirSync(carpeta, { recursive: true });
+    const listaRecibos = await obtenerRecibosDelDia(); // Asegúrate de que esta función sea async
 
-  const listaRecibos = obtenerRecibosDelDia(); // Tu lógica para listar recibos
-
-  const browser = await puppeteer.launch({
-    args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"], // Usa los argumentos recomendados de chromium
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(), // Apunta al ejecutable de chromium
-    headless: chromium.headless, // Usa la configuración de modo headless de chromium
-  });
-
-  for (const recibo of listaRecibos) {
-    const page = await browser.newPage();
-    const url = `https://ejerciciosvictor.onrender.com/recibo_prop_impreso?numrecibo=${recibo.numrecibo}`;
-
-    await page.goto(url, { waitUntil: "networkidle0" });
-
-    const ruta = path.join(carpeta, `recibo_${recibo.numrecibo}.pdf`);
-    await page.pdf({
-      path: ruta,
-      format: "A5",
-      landscape: true,
-      printBackground: true,
-      margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
+    // Lanza el navegador Puppeteer
+    const browser = await puppeteer.launch({
+      args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
 
-    await page.close();
+    // Itera sobre cada recibo para generar su PDF
+    for (const recibo of listaRecibos) {
+      const page = await browser.newPage();
+      const url = `https://ejerciciosvictor.onrender.com/recibo_prop_impreso?numrecibo=${recibo.numrecibo}`;
+
+      await page.goto(url, { waitUntil: "networkidle0" });
+
+      const ruta = path.join(carpeta, `recibo_${recibo.numrecibo}.pdf`);
+      await page.pdf({
+        path: ruta,
+        format: "A5",
+        landscape: true,
+        printBackground: true,
+        margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
+      });
+
+      await page.close();
+      console.log(`PDF generado para recibo ${recibo.numrecibo} en ${ruta}`);
+    }
+
+    await browser.close();
+    res.send(
+      `✅ Todos los recibos del día fueron generados en PDF en ${carpeta}`
+    );
+  } catch (error) {
+    console.error("Error al generar PDFs diarios:", error);
+    res.status(500).json({
+      message: "Error al generar PDFs diarios",
+      details: error.message,
+    });
   }
-
-  await browser.close();
-  res.send(`✅ Todos los recibos del día fueron generados en PDF`);
 });
-
 const cron = require("node-cron");
-
-// Ejecutar todos los días a las 00:00
+// Tarea cron para limpiar carpetas de recibos antiguos
+// Nota: __dirname está disponible en módulos CommonJS
 cron.schedule("0 0 * * *", () => {
-  const baseDir = path.join(__dirname, "recibos_pdf");
+  // En un entorno de Render, /tmp es un buen lugar para archivos temporales
+  // que se limpian automáticamente. Si necesitas persistencia, considera un almacenamiento externo.
+  const baseDir = path.join("/tmp", "recibos_pdf");
   const hoy = new Date().toISOString().slice(0, 10);
 
-  fs.readdirSync(baseDir).forEach((folder) => {
-    if (folder !== hoy) {
-      fs.rmSync(path.join(baseDir, folder), { recursive: true, force: true });
-      console.log(`Carpeta eliminada: ${folder}`);
-    }
-  });
+  if (fs.existsSync(baseDir)) {
+    fs.readdirSync(baseDir).forEach((folder) => {
+      if (folder !== hoy) {
+        const folderPath = path.join(baseDir, folder);
+        try {
+          fs.rmSync(folderPath, { recursive: true, force: true });
+          console.log(`Carpeta eliminada: ${folder}`);
+        } catch (error) {
+          console.error(`Error al eliminar carpeta ${folder}:`, error);
+        }
+      }
+    });
+  } else {
+    console.log(`Directorio base ${baseDir} no encontrado para limpieza.`);
+  }
 });
-// const browser = await puppeteer.launch({
-//   headless: true,
-//   args: ["--no-sandbox", "--disable-setuid-sandbox"],
-// });
 
+// Puerto en el que la aplicación escuchará
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
 });
