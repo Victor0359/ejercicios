@@ -2005,89 +2005,31 @@ app.get("/buscar_recProp", async (req, res) => {
   });
 });
 // -----------------------------  impresion ----------------------------------
-// app.js
 
-// Importar una sola vez
+// Inicializa la aplicación Express
 
-const reciboRouter = require("./routes/reciboRouter");
+// --- Middlewares globales ---
+// Middleware para parsear el cuerpo de las solicitudes POST como JSON
 
-app.use((err, req, res, next) => {
-  console.error("Error global:", err);
-  res.status(500).json({
-    message: "Error interno del servidor",
-    details: err.message,
-  });
-});
+// Middleware para parsear el cuerpo de las solicitudes POST como URL-encoded (para formularios HTML)
+
+// Ruta para la verificación de Chrome DevTools (si es necesaria)
 app.get("/.well-known/appspecific/com.chrome.devtools.json", (req, res) => {
   res.status(204).send(); // No Content
 });
-app.use((err, req, res, next) => {
-  console.error("Error global:", err);
-  res.status(500).json({
-    message: "Error interno del servidor",
-    details: err.message,
-  });
-});
+const reciboRouter = require("./routes/reciboRouter");
+// --- Uso del Router ---
+// ¡Importante! Aquí es donde se conectan las rutas de reciboRouter.js a tu aplicación Express.
+// Todas las rutas definidas en reciboRouter.js estarán disponibles a partir de aquí.
+app.use("/", reciboRouter);
 
-app.get("/generar_pdfs_dia", async (req, res) => {
-  try {
-    const fechaHoy = new Date().toISOString().slice(0, 10);
-    // Para Render, usar /tmp es seguro para archivos temporales
-    const carpeta = path.join("/tmp", "recibos_pdf", fechaHoy);
-
-    // Crea la carpeta si no existe
-    if (!fs.existsSync(carpeta)) {
-      fs.mkdirSync(carpeta, { recursive: true });
-    }
-
-    const listaRecibos = await obtenerRecibosDelDia(); // Asegúrate de que esta función sea async
-
-    // Lanza el navegador Puppeteer
-    const browser = await puppeteer.launch({
-      args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
-
-    // Itera sobre cada recibo para generar su PDF
-    for (const recibo of listaRecibos) {
-      const page = await browser.newPage();
-      const url = `https://ejerciciosvictor.onrender.com/recibo_prop_impreso?numrecibo=${recibo.numrecibo}`;
-
-      await page.goto(url, { waitUntil: "networkidle0" });
-
-      const ruta = path.join(carpeta, `recibo_${recibo.numrecibo}.pdf`);
-      await page.pdf({
-        path: ruta,
-        format: "A5",
-        landscape: true,
-        printBackground: true,
-        margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
-      });
-
-      await page.close();
-      console.log(`PDF generado para recibo ${recibo.numrecibo} en ${ruta}`);
-    }
-
-    await browser.close();
-    res.send(
-      `✅ Todos los recibos del día fueron generados en PDF en ${carpeta}`
-    );
-  } catch (error) {
-    console.error("Error al generar PDFs diarios:", error);
-    res.status(500).json({
-      message: "Error al generar PDFs diarios",
-      details: error.message,
-    });
-  }
-});
+// --- Funciones y Rutas específicas de index.js (si no están en el router) ---
+// La ruta /generar_pdfs_dia y la función obtenerRecibosDelDia
+// han sido movidas o centralizadas en reciboRouter.js y dailyReceiptsManager.js.
+// Por lo tanto, se eliminan de aquí para evitar duplicados.
 const cron = require("node-cron");
 // Tarea cron para limpiar carpetas de recibos antiguos
-// Nota: __dirname está disponible en módulos CommonJS
 cron.schedule("0 0 * * *", () => {
-  // En un entorno de Render, /tmp es un buen lugar para archivos temporales
-  // que se limpian automáticamente. Si necesitas persistencia, considera un almacenamiento externo.
   const baseDir = path.join("/tmp", "recibos_pdf");
   const hoy = new Date().toISOString().slice(0, 10);
 
@@ -2106,6 +2048,16 @@ cron.schedule("0 0 * * *", () => {
   } else {
     console.log(`Directorio base ${baseDir} no encontrado para limpieza.`);
   }
+});
+
+// --- Manejador de errores global ---
+// ¡Importante! Este middleware DEBE ir al final, después de todas tus rutas y otros middlewares.
+app.use((err, req, res, next) => {
+  console.error("Error global:", err);
+  res.status(500).json({
+    message: "Error interno del servidor",
+    details: err.message,
+  });
 });
 
 // Puerto en el que la aplicación escuchará

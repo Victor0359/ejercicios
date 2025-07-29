@@ -1,241 +1,236 @@
-<body>
-  <form id="FormEditar" action="/recibo_inq_impreso" method="GET" class="row">
-    <input
-      type="hidden"
-      id="numrecibo"
-      name="numrecibo"
-      value="<%= recibo.numrecibo %>"
-    />
-    <input type="hidden" name="letra" value="<%= letra %>" />
 
-    <div class="receipt-container">
-      <!-- <div class="paid-stamp">PAGADO</div> -->
-      <div class="receipt-header">
-        <h1>RECIBO DE COBRO</h1>
-      </div>
-
-      <div class="receipt-details">
-        <div class="right">
-          <p>
-            <strong>Fecha:</strong>
-            <%= fechaActual %>
-          </p>
-        </div>
-      </div>
-      <div class="receipt-details1">
-        <div class="left">
-          <p>
-            <strong>Recibo Nº:</strong>
-            <span id="receiptNumber"> <%= recibo.numrecibo %> </span>
-          </p>
-        </div>
-
-        <div class="right">
-          <p>
-            <strong>Mes Cont:</strong>
-            <span id="ownerName"> <%= recibo.cuota %> </span>
-          </p>
-        </div>
-      </div>
-
-      <div class="receipt-item">
-        <p>
-          <strong>Recibí de:</strong>
-          <span id="apellidoinquilino"> <%= recibo.apellidoinquilino %> </span>
-          la suma de pesos <%= letra %>, ($ <%=
-          Number(recibo.total).toLocaleString("es-AR", {minimumFractionDigits:
-          2}) %> ) en concepto de pago de la locacion correspondiente a la
-          propiedad ubicada en la localidad de <%= propiedades.localidad %>, con
-          frente a la calle <%= propiedades.direccion %>, mes de <%=
-          mes_contrato %> con vencimiento el dia <%= vencimiento %> de <%=
-          mes_contrato %>.
-        </p>
-      </div>
-      <div class="form-row">
-        <label for="mensualidad" class="form-label">Mensualidad</label>
-        <span>$</span>
+    <form id="FormEditar" action="/recibo_inq_impreso" method="GET" class="row">
         <input
-          type="text"
-          name="mensualidad"
-          value="<%= recibo.importemensual %>"
+            type="hidden"
+            id="numrecibo"
+            name="numrecibo"
+            value="<%= recibo.numrecibo %>"
         />
-      </div>
-      <div class="form-row">
-        <label for="abl" class="form-label">ABL</label>
-        <span>$</span>
-        <input type="text" name="abl" value="<%= recibo.abl %>" />
-      </div>
-      <div class="form-row">
-        <label for="aysa" class="form-label">AYSA</label>
-        <span>$</span>
-        <input type="text" name="aysa" value="<%= recibo.aysa %>" />
-      </div>
-      <div class="form-row">
-        <label for="exp_comunes" class="form-label">EXPENSAS COMUNES</label>
-        <span>$</span>
-        <input
-          type="text"
-          name="exp_comunes"
-          value="<%= recibo.expcomunes %>"
-        />
-      </div>
-      <div class="form-row">
-        <label for="seguro" class="form-label">SEGURO</label>
-        <span>$</span>
+        <input type="hidden" name="letra" value="<%= letra %>" />
 
-        <input type="text" name="seguro" value="<%= recibo.seguro %>" />
-      </div>
-      <div class="form-row">
-        <label for="varios" class="form-label">VARIOS</label>
-        <span>$</span>
-        <input type="text" name="varios" value="<%= recibo.varios %>" />
-      </div>
+        <div class="receipt-container">
+            <!-- <div class="paid-stamp">PAGADO</div> -->
+            <div class="receipt-header">
+                <h1>RECIBO DE COBRO</h1>
+            </div>
 
-      <div class="receipt-total">
-        Total:
-        <span
-          >$<span id="totalAmount">
-            <%= Number(recibo.total).toLocaleString("es-AR",
-            {minimumFractionDigits: 2}) %>
-          </span>
-        </span>
-      </div>
+            <div class="receipt-details">
+                <div class="right">
+                    <p>
+                        <strong>Fecha:</strong>
+                        <%= fechaActual %>
+                    </p>
+                </div>
+            </div>
+            <div class="receipt-details1">
+                <div class="left">
+                    <p>
+                        <strong>Recibo Nº:</strong>
+                        <span id="receiptNumber"> <%= recibo.numrecibo %> </span>
+                    </p>
+                </div>
 
-      <div class="receipt-signature">
-        <div class="signature-line"></div>
-        <p>Firma y Aclaración</p>
-      </div>
-    </div>
+                <div class="right">
+                    <p>
+                        <strong>Mes Cont:</strong>
+                        <span id="ownerName"> <%= recibo.cuota %> </span>
+                    </p>
+                </div>
+            </div>
 
-    <div class="button-container">
-      <button type="button" id="btnImprimir" class="btn-imprimir">
-        Imprimir Ahora
-      </button>
-      <button type="button" id="btnGuardar" class="btn-guardar">
-        Guardar para Imprimir Más Tarde
-      </button>
-      <button type="button" id="btnImprimirDia" class="btn-imprimir-dia">
-        Imprimir Todos los Recibos del Día
-      </button>
-    </div>
-  </form>
-  <script>
-    // 🔧 Función para obtener los datos del recibo
-    const getReceiptData = () => ({
-      numrecibo: document.querySelector('[name="numrecibo"]').value,
-      fechaActual: new Date().toLocaleDateString("es-AR"),
-      apellidoinquilino: document
-        .getElementById("apellidoinquilino")
-        .textContent.trim(),
-      total: parseFloat(
-        document
-          .getElementById("totalAmount")
-          .textContent.replace(/\./g, "")
-          .replace(",", ".")
-      ),
-      importemensual: parseFloat(
-        document.querySelector('[name="mensualidad"]').value
-      ),
-      letra: document.querySelector('[name="letra"]').value,
+            <div class="receipt-item">
+                <p>
+                    <strong>Recibí de:</strong>
+                    <span id="apellidoinquilino"> <%= recibo.apellidoinquilino %> </span>
+                    la suma de pesos <%= letra %>, ($ <%=
+                    Number(recibo.total).toLocaleString("es-AR", {minimumFractionDigits:
+                    2}) %> ) en concepto de pago de la locacion correspondiente a la
+                    propiedad ubicada en la localidad de <%= propiedades.localidad %>, con
+                    frente a la calle <%= propiedades.direccion %>, mes de <%=
+                    mes_contrato %> con vencimiento el dia <%= vencimiento %> de <%=
+                    mes_contrato %>.
+                </p>
+            </div>
+            <div class="form-row">
+                <label for="mensualidad" class="form-label">Mensualidad</label>
+                <span>$</span>
+                <input
+                    type="text"
+                    name="mensualidad"
+                    value="<%= recibo.importemensual %>"
+                />
+            </div>
+            <div class="form-row">
+                <label for="abl" class="form-label">ABL</label>
+                <span>$</span>
+                <input type="text" name="abl" value="<%= recibo.abl %>" />
+            </div>
+            <div class="form-row">
+                <label for="aysa" class="form-label">AYSA</label>
+                <span>$</span>
+                <input type="text" name="aysa" value="<%= recibo.aysa %>" />
+            </div>
+            <div class="form-row">
+                <label for="exp_comunes" class="form-label">EXPENSAS COMUNES</label>
+                <span>$</span>
+                <input
+                    type="text"
+                    name="exp_comunes"
+                    value="<%= recibo.expcomunes %>"
+                />
+            </div>
+            <div class="form-row">
+                <label for="seguro" class="form-label">SEGURO</label>
+                <span>$</span>
 
-      abl: parseFloat(document.querySelector('[name="abl"]').value),
-      aysa: parseFloat(document.querySelector('[name="aysa"]').value),
-      expcomunes: parseFloat(
-        document.querySelector('[name="exp_comunes"]').value
-      ),
-      seguro: parseFloat(document.querySelector('[name="seguro"]').value),
-      varios: parseFloat(document.querySelector('[name="varios"]').value),
-    });
+                <input type="text" name="seguro" value="<%= recibo.seguro %>" />
+            </div>
+            <div class="form-row">
+                <label for="varios" class="form-label">VARIOS</label>
+                <span>$</span>
+                <input type="text" name="varios" value="<%= recibo.varios %>" />
+            </div>
 
-    // 🧪 Validación de los datos recibidos
-    const validateData = (data) => {
-      return (
-        data.numrecibo &&
-        data.apellidoinquilino &&
-        !isNaN(data.total) &&
-        !Object.values(data).some((val) => val === undefined || val === null)
-      );
-    };
+            <div class="receipt-total">
+                Total:
+                <span
+                    >$<span id="totalAmount">
+                        <%= Number(recibo.total).toLocaleString("es-AR",
+                        {minimumFractionDigits: 2}) %>
+                    </span>
+                </span>
+            </div>
 
-    // 📤 Envío de solicitud y manejo de errores
-    const handleRequest = async (endpoint, successMsg, btn) => {
-      btn.disabled = true;
-      btn.textContent = "Procesando...";
+            <div class="receipt-signature">
+                <div class="signature-line"></div>
+                <p>Firma y Aclaración</p>
+            </div>
+        </div>
 
-      try {
-        const data = getReceiptData();
+        <div class="button-container">
+            <button type="button" id="btnImprimir" class="btn-imprimir">
+                Imprimir Ahora
+            </button>
+            <button type="button" id="btnGuardar" class="btn-guardar">
+                Guardar para Imprimir Más Tarde
+            </button>
+            <button type="button" id="btnImprimirDia" class="btn-imprimir-dia">
+                Imprimir Todos los Recibos del Día
+            </button>
+        </div>
+    </form>
+    <div
+        id="messageBox"
+        class="mt-4 p-3 rounded-md text-center hidden"
+        role="alert"
+    ></div>
 
-        if (!validateData(data)) {
-          throw new Error("Por favor complete todos los campos requeridos");
-        }
+    <script>
+        // 🔧 Función para obtener los datos del recibo
+        const getReceiptData = () => ({
+            numrecibo: document.querySelector('[name="numrecibo"]').value,
+            fechaActual: new Date().toLocaleDateString("es-AR"),
+            apellidoinquilino: document
+                .getElementById("apellidoinquilino")
+                .textContent.trim(),
+            total: parseFloat(
+                document
+                    .getElementById("totalAmount")
+                    .textContent.replace(/\./g, "")
+                    .replace(",", ".")
+            ),
+            importemensual: parseFloat(
+                document.querySelector('[name="mensualidad"]').value
+            ),
+            letra: document.querySelector('[name="letra"]').value,
 
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
+            abl: parseFloat(document.querySelector('[name="abl"]').value),
+            aysa: parseFloat(document.querySelector('[name="aysa"]').value),
+            expcomunes: parseFloat(
+                document.querySelector('[name="exp_comunes"]').value
+            ),
+            seguro: parseFloat(document.querySelector('[name="seguro"]').value),
+            varios: parseFloat(document.querySelector('[name="varios"]').value),
         });
 
-        const contentType = response.headers.get("content-type");
-
-        if (!response.ok) {
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            throw new Error(
-              errorData.message || "Error al procesar la solicitud"
+        // 🧪 Validación de los datos recibidos
+        const validateData = (data) => {
+            return (
+                data.numrecibo &&
+                data.apellidoinquilino &&
+                !isNaN(data.total) &&
+                !Object.values(data).some((val) => val === undefined || val === null)
             );
-          } else {
-            throw new Error("El servidor respondió con contenido inesperado");
-          }
+        };
+
+        // Función para mostrar mensajes en el cuadro de mensajes
+        function showMessage(message, type = "info") {
+            const messageBox = document.getElementById("messageBox");
+            messageBox.textContent = message;
+            messageBox.className = `mt-4 p-3 rounded-md text-center ${
+                type === "success" ? "bg-green-100 text-green-700" :
+                type === "error" ? "bg-red-100 text-red-700" :
+                "bg-blue-100 text-blue-700"
+            }`;
+            messageBox.style.display = "block";
+            // Opcional: ocultar el mensaje después de un tiempo
+            // setTimeout(() => { messageBox.style.display = "none"; }, 5000);
         }
 
-        alert(successMsg);
-      } catch (error) {
-        console.error("Error:", error);
-        alert(error.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent =
-          endpoint === "/print-receipt"
-            ? "Imprimir Ahora"
-            : "Guardar para Imprimir Más Tarde";
-      }
-    };
+        // 🧵 Asignación de eventos al cargar la página
+        document.addEventListener("DOMContentLoaded", () => {
+            // Botón "Imprimir Ahora" (descarga el recibo individual)
+            document.getElementById("btnImprimir").addEventListener("click", function () {
+                const numrecibo = document.querySelector('[name="numrecibo"]').value;
+                if (numrecibo) {
+                    // Abre la URL en una nueva pestaña para forzar la descarga
+                    window.open(`/generar_pdf/${numrecibo}`, '_blank');
+                    showMessage("Descarga del recibo individual iniciada.", "info");
+                } else {
+                    showMessage("Error: No se encontró el número de recibo para descargar.", "error");
+                }
+            });
 
-    // 🧵 Asignación de eventos al cargar la página
-    document.addEventListener("DOMContentLoaded", () => {
-      document
-        .getElementById("btnImprimir")
-        .addEventListener("click", function () {
-          handleRequest("/print-receipt", "Recibo impreso correctamente", this);
+            // Botón "Guardar para Imprimir Más Tarde"
+            document.getElementById("btnGuardar").addEventListener("click", async function () {
+                this.disabled = true;
+                this.textContent = "Procesando...";
+                try {
+                    const data = getReceiptData();
+                    if (!validateData(data)) {
+                        throw new Error("Por favor complete todos los campos requeridos");
+                    }
+
+                    const response = await fetch("/save-receipt", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || "Error al procesar la solicitud");
+                    }
+
+                    showMessage("Recibo guardado exitosamente", "success");
+                } catch (error) {
+                    console.error("Error al guardar recibo:", error);
+                    showMessage(error.message, "error");
+                } finally {
+                    this.disabled = false;
+                    this.textContent = "Guardar para Imprimir Más Tarde";
+                }
+            });
+
+            // Botón "Imprimir Todos los Recibos del Día" (descarga el PDF diario)
+            document.getElementById("btnImprimirDia").addEventListener("click", async () => {
+                const today = new Date().toISOString().split("T")[0];
+                // Abre la URL en una nueva pestaña para forzar la descarga del PDF diario
+                window.open(`/generar_pdfs_dia?fecha=${today}`, '_blank');
+                showMessage("Descarga de los recibos diarios iniciada.", "info");
+            });
         });
+    </script>
 
-      document
-        .getElementById("btnGuardar")
-        .addEventListener("click", function () {
-          handleRequest("/save-receipt", "Recibo guardado exitosamente", this);
-        });
-
-      document
-        .getElementById("btnImprimirDia")
-        .addEventListener("click", async () => {
-          try {
-            const today = new Date().toISOString().split("T")[0];
-            const response = await fetch(`/print-daily-receipts?date=${today}`);
-
-            if (response.ok) {
-              alert("Todos los recibos del día enviados a impresión");
-            } else {
-              throw new Error("Error al imprimir recibos del día");
-            }
-          } catch (error) {
-            console.error("Error:", error);
-            alert("Error al imprimir los recibos del día");
-          }
-        });
-    });
-  </script>
-
-  <link rel="stylesheet" href="/css/recibo_imprimir.css" />
+    <link rel="stylesheet" href="/css/recibo_imprimir.css" />
 </body>
