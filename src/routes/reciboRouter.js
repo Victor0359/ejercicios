@@ -1,4 +1,5 @@
 // routes/reciboRouter.js
+// routes/reciboRouter.js
 const express = require("express");
 const router = express.Router();
 const path = require("path");
@@ -7,10 +8,10 @@ const fs = require("fs").promises; // Usar .promises para funciones asíncronas 
 // Importa las funciones de tu dailyReceiptsManager.js
 const dailyReceiptsManager = require("../dailyReceiptsManager");
 
-// --- Rutas para la gestión de recibos ---
+// --- Funciones de Lógica Central ---
 
-// Ruta POST para guardar un recibo (llamada desde btnGuardar en el EJS y alias para /guardar-recibo)
-router.post("/save-receipt", async (req, res) => {
+// Lógica para guardar un recibo
+async function handleSaveReceiptLogic(req, res) {
   try {
     const receiptData = req.body;
     if (!receiptData) {
@@ -18,7 +19,7 @@ router.post("/save-receipt", async (req, res) => {
         .status(400)
         .json({ message: "Datos del recibo no proporcionados." });
     }
-    console.log("Datos recibidos en POST /save-receipt:", receiptData);
+    console.log("Datos recibidos para guardar recibo:", receiptData);
 
     const result = await dailyReceiptsManager.saveReceipt(receiptData);
     res.status(200).json({
@@ -27,30 +28,25 @@ router.post("/save-receipt", async (req, res) => {
       path: result.path,
     });
   } catch (error) {
-    console.error("Error en POST /save-receipt:", error);
+    console.error("Error al guardar recibo:", error);
     res.status(500).json({
       success: false,
       message: "Error al guardar el recibo",
       details: error.message,
     });
   }
-});
+}
 
-// ALIAS para la ruta de guardar recibo (si alguna parte del frontend aún llama a /guardar-recibo)
-router.post("/guardar-recibo", async (req, res) => {
-  console.log(
-    "Alias POST /guardar-recibo llamado. Redirigiendo a /save-receipt logic."
-  );
-  // Reutiliza la lógica de /save-receipt
-  return await router.handle(req, res, () => {
-    /* no next() */
-  }); // Llama al manejador de /save-receipt
-});
-
-// Ruta GET para generar y descargar un recibo individual (llamada desde btnImprimir en el EJS)
-router.get("/generar_pdf/:numrecibo", async (req, res) => {
+// Lógica para generar y descargar un recibo individual
+async function handleGenerateIndividualPdfLogic(req, res) {
   try {
-    const numrecibo = req.params.numrecibo;
+    const numrecibo = req.params.numrecibo || req.body.numrecibo; // Puede venir de params (GET) o body (POST)
+    if (!numrecibo) {
+      return res
+        .status(400)
+        .json({ message: "Número de recibo no proporcionado." });
+    }
+
     const receiptPath = path.join(
       __dirname,
       "../src/receipts",
@@ -70,74 +66,38 @@ router.get("/generar_pdf/:numrecibo", async (req, res) => {
       });
     } catch (err) {
       console.warn(
-        `PDF para recibo ${numrecibo} no encontrado en ${receiptPath}.`
+        `PDF para recibo ${numrecibo} no encontrado en ${receiptPath}. Intentando generar al vuelo.`
       );
+      // Si el PDF no existe, intenta generarlo al vuelo si tienes los datos
+      // Aquí necesitarías una forma de obtener los 'receiptData' completos por 'numrecibo'
+      // desde tu base de datos o donde los almacenes.
+      // Por ejemplo: const receiptData = await yourDbFunction.getReceiptDataByNum(numrecibo);
+      // if (receiptData) {
+      //     const pdfBytes = await dailyReceiptsManager.generateReceiptPDF(receiptData);
+      //     const tempFilePath = path.join("/tmp", `recibo_${numrecibo}_${Date.now()}.pdf`);
+      //     await fs.writeFile(tempFilePath, pdfBytes);
+      //     res.download(tempFilePath, `recibo_${numrecibo}.pdf`, async (downloadErr) => {
+      //         if (downloadErr) console.error("Error al descargar PDF generado al vuelo:", downloadErr);
+      //         try { await fs.unlink(tempFilePath); } catch (unlinkErr) { console.warn("Error al eliminar temp file:", unlinkErr); }
+      //     });
+      // } else {
       return res.status(404).json({
         message:
-          "PDF del recibo individual no encontrado o no se pudo generar.",
+          "PDF del recibo individual no encontrado o no se pudo generar (datos no disponibles).",
       });
+      // }
     }
   } catch (error) {
-    console.error("Error en GET /generar_pdf/:numrecibo:", error);
+    console.error("Error al procesar el recibo individual:", error);
     res.status(500).json({
       message: "Error al procesar el recibo individual",
       details: error.message,
     });
   }
-});
+}
 
-// ALIAS para la ruta de imprimir recibo individual (si alguna parte del frontend aún llama a /imprimir recibo con POST)
-// Nota: Tu EJS llama a /generar_pdf/:numrecibo con GET. Este alias es para llamadas POST.
-router.post("/imprimir-recibo", async (req, res) => {
-  console.log(
-    "Alias POST /imprimir-recibo llamado. Intentando generar y descargar PDF."
-  );
-  try {
-    // Asumo que los datos del recibo vienen en el cuerpo de la solicitud (req.body)
-    const receiptData = req.body;
-    if (!receiptData || !receiptData.numrecibo) {
-      return res.status(400).json({
-        message: "Datos del recibo o número de recibo no proporcionados.",
-      });
-    }
-
-    // Generar el PDF individual al vuelo (ya que no se encontró en la ruta GET)
-    const pdfBytes = await dailyReceiptsManager.generateReceiptPDF(receiptData);
-    const tempFilePath = path.join(
-      "/tmp",
-      `recibo_individual_${receiptData.numrecibo}_${Date.now()}.pdf`
-    );
-    await fs.writeFile(tempFilePath, pdfBytes);
-
-    res.download(
-      tempFilePath,
-      `recibo_${receiptData.numrecibo}.pdf`,
-      async (err) => {
-        if (err) {
-          console.error("Error al descargar PDF generado al vuelo:", err);
-          res.status(500).json({
-            message: "Error al descargar el recibo",
-            details: err.message,
-          });
-        }
-        try {
-          await fs.unlink(tempFilePath);
-        } catch (unlinkErr) {
-          console.warn("Error al eliminar temp file:", unlinkErr);
-        }
-      }
-    );
-  } catch (error) {
-    console.error("Error en ALIAS POST /imprimir-recibo:", error);
-    res.status(500).json({
-      message: "Error al procesar el recibo para impresión/descarga",
-      details: error.message,
-    });
-  }
-});
-
-// Ruta GET para generar y descargar todos los recibos del día (llamada desde btnImprimirDia en el EJS)
-router.get("/generar_pdfs_dia", async (req, res) => {
+// Lógica para generar y descargar todos los recibos del día
+async function handleGenerateDailyPdfsLogic(req, res) {
   try {
     const date = req.query.fecha || new Date().toISOString().split("T")[0]; // Obtener la fecha de la query string o la actual
     const dailyPdfPath = await dailyReceiptsManager.getDailyReceipts(date);
@@ -158,23 +118,30 @@ router.get("/generar_pdfs_dia", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error en GET /generar_pdfs_dia:", error);
+    console.error("Error al obtener los recibos diarios:", error);
     res.status(500).json({
       message: "Error al obtener los recibos diarios",
       details: error.message,
     });
   }
-});
+}
 
-// ALIAS para la ruta de imprimir todos los recibos del día (si alguna parte del frontend aún llama a /imprimir-recibos-diarios)
-router.get("/imprimir-recibos-diarios", async (req, res) => {
-  console.log(
-    "Alias GET /imprimir-recibos-diarios llamado. Redirigiendo a /generar_pdfs_dia logic."
-  );
-  // Reutiliza la lógica de /generar_pdfs_dia
-  return await router.handle(req, res, () => {
-    /* no next() */
-  }); // Llama al manejador de /generar_pdfs_dia
-});
+// --- Definición de Rutas y Aliases ---
+
+// Ruta principal para guardar un recibo (POST)
+router.post("/save-receipt", handleSaveReceiptLogic);
+// Alias para la ruta de guardar recibo (si el frontend aún llama a /guardar-recibo)
+router.post("/guardar-recibo", handleSaveReceiptLogic);
+
+// Ruta principal para generar y descargar un recibo individual (GET)
+router.get("/generar_pdf/:numrecibo", handleGenerateIndividualPdfLogic);
+// Alias para la ruta de imprimir recibo individual (si el frontend aún llama a /imprimir recibo con POST)
+// Nota: Este alias maneja POST y generará el PDF al vuelo si no existe previamente.
+router.post("/imprimir-recibo", handleGenerateIndividualPdfLogic);
+
+// Ruta principal para generar y descargar todos los recibos del día (GET)
+router.get("/generar_pdfs_dia", handleGenerateDailyPdfsLogic);
+// Alias para la ruta de imprimir todos los recibos del día (si el frontend aún llama a /imprimir-recibos-diarios)
+router.get("/imprimir-recibos-diarios", handleGenerateDailyPdfsLogic);
 
 module.exports = router;
