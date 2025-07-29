@@ -5,80 +5,78 @@ const path = require("path");
 const fs = require("fs").promises; // Usar .promises para funciones asíncronas de fs
 
 // Importa las funciones de tu dailyReceiptsManager.js
-// Asegúrate de que la ruta sea correcta según la ubicación de este archivo
 const dailyReceiptsManager = require("../dailyReceiptsManager");
-
-// Middleware para parsear el cuerpo de las solicitudes POST como JSON
-// Asegúrate de que esto también esté en tu index.js para que funcione globalmente
-// router.use(express.json());
-// router.use(express.urlencoded({ extended: true }));
 
 // --- Rutas para la gestión de recibos ---
 
-// Ruta POST para guardar un recibo
-router.post("/guardar-recibo", async (req, res) => {
+// Ruta POST para guardar un recibo (llamada desde btnGuardar en el EJS y alias para /guardar-recibo)
+router.post("/save-receipt", async (req, res) => {
   try {
-    // Asumo que los datos del recibo vienen en el cuerpo de la solicitud (req.body)
     const receiptData = req.body;
     if (!receiptData) {
       return res
         .status(400)
         .json({ message: "Datos del recibo no proporcionados." });
     }
-    console.log("Datos recibidos en POST /guardar-recibo:", receiptData);
+    console.log("Datos recibidos en POST /save-receipt:", receiptData);
 
     const result = await dailyReceiptsManager.saveReceipt(receiptData);
-    res
-      .status(200)
-      .json({ message: "Recibo guardado con éxito", path: result.path });
+    res.status(200).json({
+      success: true,
+      message: "Recibo guardado con éxito",
+      path: result.path,
+    });
   } catch (error) {
-    console.error("Error en POST /guardar-recibo:", error);
-    res
-      .status(500)
-      .json({ message: "Error al guardar el recibo", details: error.message });
+    console.error("Error en POST /save-receipt:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error al guardar el recibo",
+      details: error.message,
+    });
   }
 });
 
-// Ruta GET para generar y descargar un recibo individual (llamada desde btnImprimirUno)
+// ALIAS para la ruta de guardar recibo (si alguna parte del frontend aún llama a /guardar-recibo)
+router.post("/guardar-recibo", async (req, res) => {
+  console.log(
+    "Alias POST /guardar-recibo llamado. Redirigiendo a /save-receipt logic."
+  );
+  // Reutiliza la lógica de /save-receipt
+  return await router.handle(req, res, () => {
+    /* no next() */
+  }); // Llama al manejador de /save-receipt
+});
+
+// Ruta GET para generar y descargar un recibo individual (llamada desde btnImprimir en el EJS)
 router.get("/generar_pdf/:numrecibo", async (req, res) => {
   try {
     const numrecibo = req.params.numrecibo;
-    // Aquí necesitas obtener los datos del recibo por su número para generar el PDF.
-    // Esto es una suposición, tu lógica real podría ser diferente.
-    // Por ejemplo, podrías tener una función en dailyReceiptsManager para obtener datos por numrecibo.
-    // const receiptData = await dailyReceiptsManager.getReceiptDataByNum(numrecibo);
-    // if (!receiptData) {
-    //     return res.status(404).json({ message: "Datos del recibo no encontrados." });
-    // }
-
-    // Si el PDF ya está guardado y quieres servirlo directamente:
     const receiptPath = path.join(
       __dirname,
       "../src/receipts",
       `receipt_${numrecibo}.pdf`
-    ); // Ajusta la ruta si es diferente
+    );
 
-    // Asegúrate de que el archivo exista antes de intentar descargarlo
     try {
-      await fs.access(receiptPath);
+      await fs.access(receiptPath); // Verifica si el archivo existe
+      res.download(receiptPath, `recibo_${numrecibo}.pdf`, (err) => {
+        if (err) {
+          console.error("Error al descargar el recibo individual:", err);
+          res.status(500).json({
+            message: "Error al descargar el recibo",
+            details: err.message,
+          });
+        }
+      });
     } catch (err) {
-      console.error(`Archivo de recibo no encontrado en ${receiptPath}:`, err);
-      // Si el archivo no existe, puedes intentar generarlo al vuelo si tienes los datos
-      // Por ahora, si no existe, devolvemos 404
-      return res
-        .status(404)
-        .json({ message: "PDF del recibo individual no encontrado." });
+      console.warn(
+        `PDF para recibo ${numrecibo} no encontrado en ${receiptPath}.`
+      );
+      return res.status(404).json({
+        message:
+          "PDF del recibo individual no encontrado o no se pudo generar.",
+      });
     }
-
-    res.download(receiptPath, `recibo_${numrecibo}.pdf`, (err) => {
-      if (err) {
-        console.error("Error al descargar el recibo individual:", err);
-        res.status(500).json({
-          message: "Error al descargar el recibo",
-          details: err.message,
-        });
-      }
-    });
   } catch (error) {
     console.error("Error en GET /generar_pdf/:numrecibo:", error);
     res.status(500).json({
@@ -88,11 +86,61 @@ router.get("/generar_pdf/:numrecibo", async (req, res) => {
   }
 });
 
-// Ruta GET para generar y descargar todos los recibos del día (llamada desde btnImprimirTodos)
+// ALIAS para la ruta de imprimir recibo individual (si alguna parte del frontend aún llama a /imprimir recibo con POST)
+// Nota: Tu EJS llama a /generar_pdf/:numrecibo con GET. Este alias es para llamadas POST.
+router.post("/imprimir-recibo", async (req, res) => {
+  console.log(
+    "Alias POST /imprimir-recibo llamado. Intentando generar y descargar PDF."
+  );
+  try {
+    // Asumo que los datos del recibo vienen en el cuerpo de la solicitud (req.body)
+    const receiptData = req.body;
+    if (!receiptData || !receiptData.numrecibo) {
+      return res.status(400).json({
+        message: "Datos del recibo o número de recibo no proporcionados.",
+      });
+    }
+
+    // Generar el PDF individual al vuelo (ya que no se encontró en la ruta GET)
+    const pdfBytes = await dailyReceiptsManager.generateReceiptPDF(receiptData);
+    const tempFilePath = path.join(
+      "/tmp",
+      `recibo_individual_${receiptData.numrecibo}_${Date.now()}.pdf`
+    );
+    await fs.writeFile(tempFilePath, pdfBytes);
+
+    res.download(
+      tempFilePath,
+      `recibo_${receiptData.numrecibo}.pdf`,
+      async (err) => {
+        if (err) {
+          console.error("Error al descargar PDF generado al vuelo:", err);
+          res.status(500).json({
+            message: "Error al descargar el recibo",
+            details: err.message,
+          });
+        }
+        try {
+          await fs.unlink(tempFilePath);
+        } catch (unlinkErr) {
+          console.warn("Error al eliminar temp file:", unlinkErr);
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error en ALIAS POST /imprimir-recibo:", error);
+    res.status(500).json({
+      message: "Error al procesar el recibo para impresión/descarga",
+      details: error.message,
+    });
+  }
+});
+
+// Ruta GET para generar y descargar todos los recibos del día (llamada desde btnImprimirDia en el EJS)
 router.get("/generar_pdfs_dia", async (req, res) => {
   try {
     const date = req.query.fecha || new Date().toISOString().split("T")[0]; // Obtener la fecha de la query string o la actual
-    const dailyPdfPath = await dailyReceiptsManager.getDailyReceipts(date); // Obtiene la ruta del PDF diario
+    const dailyPdfPath = await dailyReceiptsManager.getDailyReceipts(date);
 
     if (dailyPdfPath) {
       res.download(dailyPdfPath, `recibos_diarios_${date}.pdf`, (err) => {
@@ -118,8 +166,15 @@ router.get("/generar_pdfs_dia", async (req, res) => {
   }
 });
 
-// Nota: La ruta POST /imprimir recibo que aparece en tus logs no está definida aquí,
-// ya que el script EJS que proporcionaste hace llamadas GET.
-// Si esa ruta POST es utilizada por otra parte de tu frontend, deberás definirla.
+// ALIAS para la ruta de imprimir todos los recibos del día (si alguna parte del frontend aún llama a /imprimir-recibos-diarios)
+router.get("/imprimir-recibos-diarios", async (req, res) => {
+  console.log(
+    "Alias GET /imprimir-recibos-diarios llamado. Redirigiendo a /generar_pdfs_dia logic."
+  );
+  // Reutiliza la lógica de /generar_pdfs_dia
+  return await router.handle(req, res, () => {
+    /* no next() */
+  }); // Llama al manejador de /generar_pdfs_dia
+});
 
 module.exports = router;
