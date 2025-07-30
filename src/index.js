@@ -2,13 +2,15 @@
 const express = require("express");
 const path = require("path");
 const session = require("express-session");
-const PgSession = require("connect-pg-simple")(session);
-const flash = require("connect-flash");
-const expressEjsLayouts = require("express-ejs-layouts");
-const cors = require("cors");
-const morgan = require("morgan");
-const helmet = require("helmet");
+const PgSession = require("connect-pg-simple")(session); // Para sesiones en PostgreSQL
+const flash = require("connect-flash"); // Para mensajes flash
+const expressEjsLayouts = require("express-ejs-layouts"); // Para layouts de EJS
+const cors = require("cors"); // Para Cross-Origin Resource Sharing
+const morgan = require("morgan"); // Para logging de solicitudes HTTP
+const helmet = require("helmet"); // Para seguridad HTTP
 const bcrypt = require("bcrypt");
+
+// Módulos de base de datos y lógica de negocio
 const database = require("./datadb"); // Asegúrate de que esta ruta sea correcta desde src/
 const inquilinos = require("./inquilinos"); // Asegúrate de que esta ruta sea correcta desde src/
 const propietarios = require("./propietarios"); // Asegúrate de que esta ruta sea correcta desde src/
@@ -16,12 +18,20 @@ const propiedades = require("./propiedades"); // Asegúrate de que esta ruta sea
 const impuestos = require("./impuestos"); // Asegúrate de que esta ruta sea correcta desde src/
 const contratos = require("./contratos"); // Asegúrate de que esta ruta sea correcta desde src/
 const recibo_contrato = require("./recibo_contrato"); // Asegúrate de que esta ruta sea correcta desde src/
-const puppeteer = require("puppeteer-core"); // Usa puppeteer-core
-const chromium = require("@sparticuz/chromium"); // Importa chromium
 const recibo_prop = require("./recRecPropietario"); // Asegúrate de que esta ruta sea correcta desde src/
 const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea correcta desde src/
-const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager");
-const generateReceiptPDF = require("./receiptPDFGenerator");
+
+// Módulos para generación de PDFs
+const puppeteer = require("puppeteer-core"); // Usa puppeteer-core
+const chromium = require("@sparticuz/chromium"); // Importa chromium
+const cron = require("node-cron"); // Para tareas programadas
+
+// Módulos específicos de recibos
+const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager"); // Funciones de dailyReceiptsManager
+const generateReceiptPDF = require("./receiptPDFGenerator"); // Función de receiptPDFGenerator
+
+// Importa tu router principal de recibos
+const reciboRouter = require("./routes/reciboRouter");
 
 const app = express();
 // Configuración básica
@@ -29,11 +39,29 @@ require("dotenv").config();
 const PORT = process.env.PORT || 8000; // Usar el puerto de .env o 8000
 
 // --- Middlewares Esenciales (Orden Importa) ---
-app.use(express.json()); // Para parsear cuerpos de solicitud JSON
-app.use(express.urlencoded({ extended: true })); // Para parsear cuerpos de solicitud URL-encoded
-app.use(cors()); // Habilita CORS
-app.use(morgan("dev")); // Logging de solicitudes HTTP
+app.use(helmet());
 
+// Habilita CORS para todas las solicitudes
+app.use(cors());
+
+// Logging de solicitudes HTTP con Morgan
+app.use(morgan("dev"));
+
+// Para parsear cuerpos de solicitud JSON
+
+app.use(express.json()); // Para parsear cuerpos de solicitud JSON
+
+app.use(express.urlencoded({ extended: true })); // Para parsear cuerpos de solicitud URL-encoded
+
+app.use(expressEjsLayouts);
+app.set("layout", "./layouts/main"); // Ruta a tu layout principal
+
+// Configuración de la carpeta de vistas para EJS
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
+// Configuración de archivos estáticos (CSS, JS, imágenes, etc.)
+app.use(express.static(path.join(__dirname, "public")));
 // Configurar rutas
 
 // --- Configuración de Sesión (si es necesaria y está descomentada) ---
@@ -76,14 +104,6 @@ app.use(
     },
   })
 );
-
-// --- Configuración de Vistas EJS ---
-// Si index.js está en 'src', y las vistas están en 'src/views',
-// entonces __dirname ya es 'src', por lo que solo necesitas 'views'.
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "ejs");
-app.use(expressEjsLayouts); // Si estás usando layouts de EJS
-app.set("layout", "layout"); // Define el layout por defecto si usas express-ejs-layouts
 
 // --- Archivos Estáticos ---
 // Si tu carpeta 'public' está en la RAÍZ del proyecto (fuera de 'src'),
@@ -2017,7 +2037,7 @@ app.get("/buscar_recProp", async (req, res) => {
 app.get("/.well-known/appspecific/com.chrome.devtools.json", (req, res) => {
   res.status(204).send(); // No Content
 });
-const reciboRouter = require("./routes/reciboRouter");
+
 // --- Uso del Router ---
 // ¡Importante! Aquí es donde se conectan las rutas de reciboRouter.js a tu aplicación Express.
 // Todas las rutas definidas en reciboRouter.js estarán disponibles a partir de aquí.
@@ -2027,7 +2047,6 @@ app.use("/", reciboRouter);
 // La ruta /generar_pdfs_dia y la función obtenerRecibosDelDia
 // han sido movidas o centralizadas en reciboRouter.js y dailyReceiptsManager.js.
 // Por lo tanto, se eliminan de aquí para evitar duplicados.
-const cron = require("node-cron");
 // Tarea cron para limpiar carpetas de recibos antiguos
 cron.schedule("0 0 * * *", () => {
   const baseDir = path.join("/tmp", "recibos_pdf");
