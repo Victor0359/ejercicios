@@ -83,7 +83,7 @@ app.use(
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(expressEjsLayouts); // Si estás usando layouts de EJS
-app.set("layout", "layout"); // Define el layout por defecto si usas express-ejs-layouts
+app.set("layout", "layout.ejs"); // Define el layout por defecto si usas express-ejs-layouts
 
 // --- Archivos Estáticos ---
 // Si tu carpeta 'public' está en la RAÍZ del proyecto (fuera de 'src'),
