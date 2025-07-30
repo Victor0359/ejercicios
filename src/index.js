@@ -26,7 +26,7 @@ const generateReceiptPDF = require("./receiptPDFGenerator");
 const app = express();
 // Configuración básica
 require("dotenv").config();
-const PORT = process.env.PORT || 8000; // Usar el puerto de .env o 8000
+const PORT = process.env.PORT || 10000; // Usar el puerto de .env o 8000
 
 // --- Middlewares Esenciales (Orden Importa) ---
 app.use(express.json()); // Para parsear cuerpos de solicitud JSON
