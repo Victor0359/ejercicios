@@ -1,27 +1,25 @@
 // src/dailyReceiptsManager.js
-// pdfService.js (antes agruparPdf.js)
-
 // Importaciones CommonJS
-const fs = require("fs").promises; // Usar .promises para funciones asíncronas de fs
+const fs = require("fs").promises;
 const path = require("path");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
-const { generateReceiptPDF } = require("./receiptPDFGenerator");
-const printer = require("./printer"); // Asegúrate de que este módulo sea CommonJS o maneja ESM
+
+// 🔧 CORREGIDO: Importar generateTenantReceiptPDF (o generateOwnerReceiptPDF si es el caso)
+const {
+  generateTenantReceiptPDF,
+  generateOwnerReceiptPDF,
+} = require("./receiptPDFGenerator");
 
 // Función para obtener el módulo PDFMerger de forma asíncrona
-// Esto es necesario porque 'pdf-merger-js' es un ES Module
 async function getPDFMerger() {
   const { default: PDFMerger } = await import("pdf-merger-js");
   return PDFMerger;
 }
 
-// Configuración
-const A5_WIDTH = 148 * 2.83465;
-const A5_HEIGHT = 210 * 2.83465;
-// __dirname está disponible en módulos CommonJS
-const receiptsFolder = path.join(__dirname, "receipts");
-const dailyFolder = path.join(__dirname, "daily");
-const tempFolder = path.join(__dirname, "temp");
+// Configuración de carpetas
+const receiptsFolder = path.join(__dirname, "receipts"); // src/receipts
+const dailyFolder = path.join(__dirname, "daily"); // src/daily
+const tempFolder = path.join(__dirname, "temp"); // src/temp
 
 async function limpiarRecibosDelDia() {
   const hoy = new Date().toISOString().split("T")[0];
@@ -62,30 +60,15 @@ async function ensureFoldersExist() {
   await fs.mkdir(tempFolder, { recursive: true });
 }
 
-async function printPDF(pathToFile, printerName) {
-  // Nota: El error "Sistema operativo no compatible" para la impresión
-  // podría persistir si 'pdf-to-printer' no es compatible con el entorno de Render.
-  // Esta función solo se ha adaptado a la sintaxis, no a la compatibilidad del SO.
-  await printer.print(pathToFile, {
-    printer: printerName,
-    paperSize: "A5",
-  });
-}
-
-// Generar PDF (esta función parece incompleta, pero la mantengo como está)
-async function dailyReceiptsManager(receiptData) {
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([A5_WIDTH, A5_HEIGHT]);
-
-  return await pdfDoc.save();
-}
-
 // Guardar recibo individual y agregar al PDF diario
 async function saveReceipt(receiptData) {
   try {
     await ensureFoldersExist();
 
-    const pdfBytes = await generateReceiptPDF(receiptData);
+    // 🔧 CORREGIDO: Usar la función de generación de PDF correcta (Tenant o Owner)
+    // Asumiendo que esta función es para recibos de inquilinos.
+    const pdfBytes = await generateTenantReceiptPDF(receiptData);
+
     if (!receiptData.numrecibo) {
       throw new Error("Falta el número de recibo");
     }
@@ -94,26 +77,29 @@ async function saveReceipt(receiptData) {
       `receipt_${String(receiptData.numrecibo)}.pdf`
     );
     console.log("Datos recibidos en saveReceipt:", receiptData);
-    await fs.writeFile(receiptPath, pdfBytes);
+    await fs.writeFile(receiptPath, pdfBytes); // Guarda el PDF individual
 
     const today = new Date().toISOString().split("T")[0];
-    const dailyPath = path.join(dailyFolder, `${today}.pdf`);
+    const dailyPath = path.join(dailyFolder, `${today}.pdf`); // Ruta del PDF diario
 
-    // Obtener la clase PDFMerger de forma asíncrona
     const MyPDFMerger = await getPDFMerger();
-    const mergerInstance = new MyPDFMerger(); // Instancia el merger aquí
+    const mergerInstance = new MyPDFMerger();
 
     try {
-      // Intenta leer el PDF diario existente
+      // Intenta leer el PDF diario existente para añadirle el nuevo
       const existingPdf = await fs.readFile(dailyPath);
       await mergerInstance.add(existingPdf);
     } catch (err) {
-      // Si el archivo no existe, no hay problema, simplemente no se añade
-      // console.log("No existe PDF diario previo, creando uno nuevo.");
+      // Si el archivo diario no existe, no hay problema, se creará uno nuevo al guardar
+      console.log(
+        `No existe PDF diario previo para ${today}, se creará uno nuevo.`
+      );
     }
 
-    await mergerInstance.add(pdfBytes); // Añade el nuevo recibo
+    await mergerInstance.add(pdfBytes); // Añade el PDF individual al PDF diario
     await mergerInstance.save(dailyPath); // Guarda el PDF diario actualizado
+
+    console.log(`PDF diario para ${today} actualizado en: ${dailyPath}`);
 
     return { success: true, path: receiptPath };
   } catch (error) {
@@ -122,66 +108,28 @@ async function saveReceipt(receiptData) {
   }
 }
 
-// Obtener recibos del día
+// Obtener recibos del día (solo devuelve la ruta al PDF diario si existe)
 async function getDailyReceipts(date) {
   const dateStr = date || new Date().toISOString().split("T")[0];
   const dailyPath = path.join(dailyFolder, `${dateStr}.pdf`);
-  console.log("Ruta PDF diario:", dailyPath);
+  console.log("Ruta PDF diario solicitada:", dailyPath);
 
   try {
-    await fs.access(dailyPath);
-    return dailyPath;
+    await fs.access(dailyPath); // Verifica si el archivo existe
+    return dailyPath; // Si existe, devuelve la ruta
   } catch (error) {
-    return null;
+    console.log(
+      `PDF diario para la fecha ${dateStr} no encontrado en ${dailyPath}.`
+    );
+    return null; // Si no existe, devuelve null
   }
-}
-
-// Imprimir recibo
-async function printReceipt(receiptData) {
-  try {
-    await ensureFoldersExist();
-
-    const pdfBytes = await generateReceiptPDF(receiptData);
-    const tempPath = path.join(tempFolder, `receipt_${Date.now()}.pdf`);
-
-    await fs.writeFile(tempPath, pdfBytes);
-
-    // Nota: Si getDefaultPrinter() usa 'printer.getPrinters()',
-    // y 'printer' es 'pdf-to-printer', esto podría fallar en Render.
-    const printerName = process.env.PRINTER_NAME || (await getDefaultPrinter());
-    await printer.print(tempPath, {
-      printer: printerName,
-      paperSize: "A5",
-    });
-    console.log("Datos recibidos:", receiptData);
-    console.log("Generando PDF...");
-    console.log("Impresora:", printerName);
-    console.log("Ruta temporal del archivo:", tempPath);
-    console.log("Bytes generados:", pdfBytes.length);
-
-    await fs.unlink(tempPath);
-    return { success: true };
-  } catch (error) {
-    console.error("Error al imprimir:", error);
-    throw error;
-  }
-}
-
-// Obtener impresora por defecto
-async function getDefaultPrinter() {
-  // Esto dependerá de la compatibilidad de 'pdf-to-printer' con el SO de Render.
-  // Si falla, es posible que necesites un enfoque diferente para la impresión en la nube.
-  const printers = await printer.getPrinters();
-  return printers.find((p) => p.isDefault)?.name || "Microsoft Print to PDF";
 }
 
 // Exporta las funciones que se usarán en otros módulos CommonJS
 module.exports = {
-  generateReceiptPDF,
   saveReceipt,
   getDailyReceipts,
-  printReceipt,
-  printPDF,
-  getDefaultPrinter,
+  // Puedes exportar otras funciones si las necesitas en otros lugares
+  // generateTenantReceiptPDF, // No es necesario exportar desde aquí si ya se importa
   limpiarRecibosDelDia,
 };

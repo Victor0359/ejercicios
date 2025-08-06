@@ -33,7 +33,7 @@
         <div class="right">
           <p>
             <strong>Mes Cont:</strong>
-            <span id="ownerName"> <%= recibo.cuota %> </span>
+            <span id="mesContratoNumber"> <%= recibo.cuota %> </span>
           </p>
         </div>
       </div>
@@ -45,10 +45,13 @@
           la suma de pesos <%= letra %>, ($ <%=
           Number(recibo.total).toLocaleString("es-AR", {minimumFractionDigits:
           2}) %> ) en concepto de pago de la locacion correspondiente a la
-          propiedad ubicada en la localidad de <%= propiedades.localidad %>, con
-          frente a la calle <%= propiedades.direccion %>, mes de <%=
-          mes_contrato %> con vencimiento el dia <%= vencimiento %> de <%=
-          mes_contrato %>.
+          propiedad ubicada en la localidad de
+          <span id="propiedadLocalidad"><%= propiedades.localidad %></span>, con
+          frente a la calle
+          <span id="propiedadDireccion"><%= propiedades.direccion %></span>, mes
+          de <span id="mesContrato"><%= mes_contrato %></span> con vencimiento
+          el dia <span id="vencimientoDia"><%= vencimiento %></span> de
+          <span id="mesContrato2"><%= mes_contrato %></span>.
         </p>
       </div>
       <div class="form-row">
@@ -119,33 +122,53 @@
       </button>
     </div>
   </form>
+  <div
+    id="messageBox"
+    class="mt-4 p-3 rounded-md text-center hidden"
+    role="alert"
+  ></div>
+
   <script>
     // 🔧 Función para obtener los datos del recibo
-    const getReceiptData = () => ({
-      numrecibo: document.querySelector('[name="numrecibo"]').value,
-      fechaActual: new Date().toLocaleDateString("es-AR"),
-      apellidoinquilino: document
-        .getElementById("apellidoinquilino")
-        .textContent.trim(),
-      total: parseFloat(
-        document
-          .getElementById("totalAmount")
-          .textContent.replace(/\./g, "")
-          .replace(",", ".")
-      ),
-      importemensual: parseFloat(
-        document.querySelector('[name="mensualidad"]').value
-      ),
-      letra: document.querySelector('[name="letra"]').value,
+    const getReceiptData = () => {
+      const data = {
+        numrecibo: document.querySelector('[name="numrecibo"]').value,
+        fechaActual: new Date().toLocaleDateString("es-AR"),
+        apellidoinquilino: document
+          .getElementById("apellidoinquilino")
+          .textContent.trim(),
+        total: parseFloat(
+          document
+            .getElementById("totalAmount")
+            .textContent.replace(/\./g, "")
+            .replace(",", ".")
+        ),
+        importemensual: parseFloat(
+          document.querySelector('[name="mensualidad"]').value
+        ),
+        letra: document.querySelector('[name="letra"]').value,
+        abl: parseFloat(document.querySelector('[name="abl"]').value),
+        aysa: parseFloat(document.querySelector('[name="aysa"]').value),
+        expcomunes: parseFloat(
+          document.querySelector('[name="exp_comunes"]').value
+        ),
+        seguro: parseFloat(document.querySelector('[name="seguro"]').value),
+        varios: parseFloat(document.querySelector('[name="varios"]').value),
 
-      abl: parseFloat(document.querySelector('[name="abl"]').value),
-      aysa: parseFloat(document.querySelector('[name="aysa"]').value),
-      expcomunes: parseFloat(
-        document.querySelector('[name="exp_comunes"]').value
-      ),
-      seguro: parseFloat(document.querySelector('[name="seguro"]').value),
-      varios: parseFloat(document.querySelector('[name="varios"]').value),
-    });
+        localidad: document
+          .getElementById("propiedadLocalidad")
+          .textContent.trim(),
+        direccion: document
+          .getElementById("propiedadDireccion")
+          .textContent.trim(),
+        cuota: document.getElementById("mesContratoNumber").textContent.trim(),
+        vencimiento: document
+          .getElementById("vencimientoDia")
+          .textContent.trim(),
+      };
+      console.log("Datos de recibo a enviar:", data);
+      return data;
+    };
 
     // 🧪 Validación de los datos recibidos
     const validateData = (data) => {
@@ -153,86 +176,86 @@
         data.numrecibo &&
         data.apellidoinquilino &&
         !isNaN(data.total) &&
+        data.localidad &&
+        data.direccion &&
+        data.cuota &&
+        data.vencimiento &&
         !Object.values(data).some((val) => val === undefined || val === null)
       );
     };
 
-    // 📤 Envío de solicitud y manejo de errores
-    const handleRequest = async (endpoint, successMsg, btn) => {
-      btn.disabled = true;
-      btn.textContent = "Procesando...";
-
-      try {
-        const data = getReceiptData();
-
-        if (!validateData(data)) {
-          throw new Error("Por favor complete todos los campos requeridos");
-        }
-
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-
-        const contentType = response.headers.get("content-type");
-
-        if (!response.ok) {
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            throw new Error(
-              errorData.message || "Error al procesar la solicitud"
-            );
-          } else {
-            throw new Error("El servidor respondió con contenido inesperado");
-          }
-        }
-
-        alert(successMsg);
-      } catch (error) {
-        console.error("Error:", error);
-        alert(error.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent =
-          endpoint === "/print-receipt"
-            ? "Imprimir Ahora"
-            : "Guardar para Imprimir Más Tarde";
-      }
-    };
+    // Función para mostrar mensajes en el cuadro de mensajes
+    function showMessage(message, type = "info") {
+      const messageBox = document.getElementById("messageBox");
+      messageBox.textContent = message;
+      messageBox.className = `mt-4 p-3 rounded-md text-center ${
+        type === "success"
+          ? "bg-green-100 text-green-700"
+          : type === "error"
+          ? "bg-red-100 text-red-700"
+          : "bg-blue-100 text-blue-700"
+      }`;
+      messageBox.style.display = "block";
+    }
 
     // 🧵 Asignación de eventos al cargar la página
     document.addEventListener("DOMContentLoaded", () => {
       document
         .getElementById("btnImprimir")
         .addEventListener("click", function () {
-          handleRequest("/print-receipt", "Recibo impreso correctamente", this);
+          const numrecibo = document.querySelector('[name="numrecibo"]').value;
+          if (numrecibo) {
+            window.open(`/generar_pdf/${numrecibo}`, "_blank");
+            showMessage("Descarga del recibo individual iniciada.", "info");
+          } else {
+            showMessage(
+              "Error: No se encontró el número de recibo para descargar.",
+              "error"
+            );
+          }
         });
 
+      // 🔧 LÍNEA CORREGIDA: Se cambió la ruta a '/guardar-recibo' para que coincida con el router
       document
         .getElementById("btnGuardar")
-        .addEventListener("click", function () {
-          handleRequest("/save-receipt", "Recibo guardado exitosamente", this);
+        .addEventListener("click", async function () {
+          this.disabled = true;
+          this.textContent = "Procesando...";
+          try {
+            const data = getReceiptData();
+            if (!validateData(data)) {
+              throw new Error("Por favor complete todos los campos requeridos");
+            }
+
+            const response = await fetch("/guardar-recibo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(
+                errorData.message || "Error al procesar la solicitud"
+              );
+            }
+
+            showMessage("Recibo guardado exitosamente", "success");
+          } catch (error) {
+            console.error("Error al guardar recibo:", error);
+            showMessage(error.message, "error");
+          } finally {
+            this.disabled = false;
+            this.textContent = "Guardar para Imprimir Más Tarde";
+          }
         });
 
       document
         .getElementById("btnImprimirDia")
         .addEventListener("click", async () => {
-          try {
-            const today = new Date().toISOString().split("T")[0];
-            const response = await fetch(`/print-daily-receipts?date=${today}`);
-
-            if (response.ok) {
-              alert("Todos los recibos del día enviados a impresión");
-            } else {
-              throw new Error("Error al imprimir recibos del día");
-            }
-          } catch (error) {
-            console.error("Error:", error);
-            alert("Error al imprimir los recibos del día");
-          }
+          const today = new Date().toISOString().split("T")[0];
+          window.open(`/generar_pdfs_dia?fecha=${today}`, "_blank");
+          showMessage("Descarga de los recibos diarios iniciada.", "info");
         });
     });
   </script>

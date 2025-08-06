@@ -19,35 +19,47 @@ const recibo_contrato = require("./recibo_contrato"); // Asegúrate de que esta 
 const puppeteer = require("puppeteer-core"); // Usa puppeteer-core
 const chromium = require("@sparticuz/chromium"); // Importa chromium
 const recibo_prop = require("./recRecPropietario"); // Asegúrate de que esta ruta sea correcta desde src/
-const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea correcta desde src/
+const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea
+// correcta desde src/
+const cron = require("node-cron");
 const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager");
 const generateReceiptPDF = require("./receiptPDFGenerator");
-
+const reciboRouter = require("./routes/reciboRouter"); // Router para recibos
+const authRouter = require("./routes/authRouter"); // Router para autenticación
 const app = express();
 // Configuración básica
 require("dotenv").config();
-const PORT = process.env.PORT || 10000; // Usar el puerto de .env o 8000
+const PORT = process.env.PORT || 8000; // Usar el puerto de .env o 8000
 
 // --- Middlewares Esenciales (Orden Importa) ---
-app.use(express.json()); // Para parsear cuerpos de solicitud JSON
-app.use(express.urlencoded({ extended: true })); // Para parsear cuerpos de solicitud URL-encoded
+
+app.use(helmet());
 app.use(cors()); // Habilita CORS
 app.use(morgan("dev")); // Logging de solicitudes HTTP
 
+app.use(express.json()); // Para parsear cuerpos de solicitud JSON
+app.use(express.urlencoded({ extended: true })); // Para parsear cuerpos de solicitud
 // Configurar rutas
+app.use(expressEjsLayouts); // Si estás usando layouts de EJS
+app.set("layout", "layout.ejs"); // Define el layout por defecto si usas express-ejs-layouts
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+app.use(express.static(path.join(__dirname, "..", "public")));
 
-// --- Configuración de Sesión (si es necesaria y está descomentada) ---
 // Asegúrate de que 'database.pool' esté configurado correctamente para PgSession
 app.use(
   session({
     store: new PgSession({
       pool: database, // Usa tu pool de conexión a la base de datos
       tableName: "session", // Nombre de la tabla para almacenar sesiones
+      createTableIfMissing: true, // Añade esta línea
     }),
     secret: process.env.SESSION_SECRET || "your_secret_key", // Usa una clave secreta fuerte de .env
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 días
+    secure: process.env.NODE_ENV === "production", // Importante para Render
+    sameSite: "lax",
   })
 );
 app.use(flash()); // Para mensajes flash (debe ir después de session si se usa)
@@ -76,22 +88,10 @@ app.use(
     },
   })
 );
-
-// --- Configuración de Vistas EJS ---
-// Si index.js está en 'src', y las vistas están en 'src/views',
-// entonces __dirname ya es 'src', por lo que solo necesitas 'views'.
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "ejs");
-app.use(expressEjsLayouts); // Si estás usando layouts de EJS
-app.set("layout", "layout.ejs"); // Define el layout por defecto si usas express-ejs-layouts
-
-// --- Archivos Estáticos ---
-// Si tu carpeta 'public' está en la RAÍZ del proyecto (fuera de 'src'),
-// necesitas retroceder un nivel desde 'src' para llegar a ella.
-app.use(express.static(path.join(__dirname, "..", "public")));
-// Si tu carpeta 'public' también está dentro de 'src' (ej. src/public),
-// entonces usarías:
-
+app.use("/", reciboRouter);
+app.use("/", authRouter);
+// Luego, monta el router de recibos. Esto evita cualquier conflicto.
+app.use("/", reciboRouter);
 // Middlewares personalizados (después de session y flash si se usan)
 app.use((req, res, next) => {
   // Variables disponibles en todas las vistas
@@ -112,6 +112,26 @@ app.use((req, res, next) => {
   console.log("Sesión actual:", req.session);
   next();
 });
+cron.schedule("0 0 * * *", () => {
+  const baseDir = path.join("/tmp", "recibos_pdf");
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  if (fs.existsSync(baseDir)) {
+    fs.readdirSync(baseDir).forEach((folder) => {
+      if (folder !== hoy) {
+        const folderPath = path.join(baseDir, folder);
+        try {
+          fs.rmSync(folderPath, { recursive: true, force: true });
+          console.log(`Carpeta eliminada: ${folder}`);
+        } catch (error) {
+          console.error(`Error al eliminar carpeta ${folder}:`, error);
+        }
+      }
+    });
+  } else {
+    console.log(`Directorio base ${baseDir} no encontrado para limpieza.`);
+  }
+});
 
 // Middleware para verificar sesión
 function verificarSesion(req, res, next) {
@@ -129,140 +149,17 @@ function verificarSesion(req, res, next) {
 }
 
 // Rutas
-app.get("/", (req, res) => {
-  console.log("Accediendo a ruta / - usuarioId:", req.session.usuarioId);
-  if (req.session.usuarioId) {
-    console.log("Usuario tiene sesión, redirigiendo a /inicio");
-    return res.redirect("/inicio");
-  }
-  console.log("Redirigiendo a login");
-  res.redirect("/login");
-});
+// app.get("/", (req, res) => {
+//   console.log("Accediendo a ruta / - usuarioId:", req.session.usuarioId);
+//   if (req.session.usuarioId) {
+//     console.log("Usuario tiene sesión, redirigiendo a /inicio");
+//     return res.redirect("/inicio");
+//   }
+//   console.log("Redirigiendo a login");
+//   res.redirect("/login");
+// });
 
 // Ruta de login (GET)
-app.get("/login", (req, res) => {
-  if (req.session.usuarioId) {
-    return res.redirect("/inicio");
-  }
-  res.render("login", {
-    mostrarNavbar: false,
-    error: null,
-  });
-});
-
-// Ruta de login (POST)
-app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  console.log("Intento de login con email:", email); // Debug
-
-  try {
-    const resultado = await database.query(
-      "SELECT * FROM login WHERE email = $1",
-      [email]
-    );
-
-    if (resultado.rows.length === 0) {
-      console.log("Usuario no encontrado para email:", email);
-      return res.render("login", {
-        error: "Usuario no encontrado",
-        mostrarNavbar: false,
-      });
-    }
-
-    const usuario = resultado.rows[0];
-    console.log("Usuario encontrado:", usuario); // Debug
-
-    // Comparación de contraseñas
-    const match = await bcrypt.compare(password, usuario.password);
-    console.log("Resultado comparación contraseña:", match); // Debug
-
-    if (!match) {
-      console.log("Contraseña incorrecta para usuario:", usuario.email);
-      return res.render("login", {
-        error: "Contraseña incorrecta",
-        mostrarNavbar: false,
-      });
-    }
-
-    // Establecer sesión
-    req.session.usuarioId = usuario.id_login;
-    req.session.email = usuario.email;
-    console.log("Sesión establecida para:", usuario.email); // Debug
-
-    // Guardar sesión antes de redirigir
-    req.session.save((err) => {
-      if (err) {
-        console.error("Error al guardar sesión:", err);
-        return res.render("login", {
-          error: "Error al iniciar sesión",
-          mostrarNavbar: false,
-        });
-      }
-
-      // Asegurar que la cookie se envía correctamente
-      res.setHeader(
-        "Set-Cookie",
-        `connect.sid=${req.sessionID}; Path=/; HttpOnly; SameSite=Lax`
-      );
-      console.log("Redirigiendo a /inicio con sesión:", req.session);
-      return res.redirect("/inicio");
-    });
-  } catch (error) {
-    console.error("Error en login:", error);
-    res.render("login", {
-      error: "Error del servidor",
-      mostrarNavbar: false,
-    });
-  }
-});
-// Ruta de inicio
-app.get("/inicio", verificarSesion, (req, res) => {
-  res.render("inicio", {
-    email: req.session.email,
-    mostrarNavbar: true,
-  });
-});
-
-// Ruta de logout
-app.get("/logout", (req, res) => {
-  console.log("Ejecutando logout");
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Error al destruir sesión:", err);
-      return res.redirect("/inicio");
-    }
-    res.clearCookie("connect.sid");
-    console.log("Sesión destruida, redirigiendo a /login");
-    res.redirect("/login");
-  });
-});
-
-// Ruta para debug de sesión
-app.get("/debug-session", (req, res) => {
-  res.send(`<pre>${JSON.stringify(req.session, null, 2)}</pre>`);
-});
-
-// Ruta de prueba API
-app.post("/api-test", async (req, res) => {
-  try {
-    const result = await testAPIIsWriting();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
-      hint: "Verifica COMMIT y SSL",
-    });
-  }
-});
-// Prueba esto en tu código temporalmente para verificar el hash
-const testHash = async () => {
-  const hash = await bcrypt.hash("tucontraseña", 10);
-  console.log("Hash generado:", hash);
-
-  const match = await bcrypt.compare("tucontraseña", hash);
-  console.log("¿Coincide?", match);
-};
-testHash();
 
 // Iniciar servidor
 
@@ -1557,7 +1454,7 @@ app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
       const mes = fecha.getMonth() + 1;
       return new Date(año, mes, 0).getDate();
     }
-    const fechaActual = new Date(resultado[0].fecha);
+    const fechaActual = fechaContrato;
 
     const vencimiento = ultimoDiaDelMes(fechaActual);
     console.log("Fecha de vencimiento:", vencimiento);
@@ -2009,18 +1906,11 @@ app.get("/buscar_recProp", async (req, res) => {
 
 // Importar una sola vez
 
-const reciboRouter = require("./routes/reciboRouter");
-
-app.use((err, req, res, next) => {
-  console.error("Error global:", err);
-  res.status(500).json({
-    message: "Error interno del servidor",
-    details: err.message,
-  });
-});
+// Ruta para la verificación de Chrome DevTools (si es necesaria)
 app.get("/.well-known/appspecific/com.chrome.devtools.json", (req, res) => {
-  res.status(204).send(); // No Content
+  res.status(204).send(); // Sin Contenido
 });
+
 app.use((err, req, res, next) => {
   console.error("Error global:", err);
   res.status(500).json({
@@ -2069,7 +1959,7 @@ app.get("/generar_pdfs_dia", async (req, res) => {
       await page.close();
       console.log(`PDF generado para recibo ${recibo.numrecibo} en ${ruta}`);
     }
-
+    app.use("/", reciboRouter);
     await browser.close();
     res.send(
       `✅ Todos los recibos del día fueron generados en PDF en ${carpeta}`
@@ -2082,31 +1972,7 @@ app.get("/generar_pdfs_dia", async (req, res) => {
     });
   }
 });
-const cron = require("node-cron");
-// Tarea cron para limpiar carpetas de recibos antiguos
-// Nota: __dirname está disponible en módulos CommonJS
-cron.schedule("0 0 * * *", () => {
-  // En un entorno de Render, /tmp es un buen lugar para archivos temporales
-  // que se limpian automáticamente. Si necesitas persistencia, considera un almacenamiento externo.
-  const baseDir = path.join("/tmp", "recibos_pdf");
-  const hoy = new Date().toISOString().slice(0, 10);
-
-  if (fs.existsSync(baseDir)) {
-    fs.readdirSync(baseDir).forEach((folder) => {
-      if (folder !== hoy) {
-        const folderPath = path.join(baseDir, folder);
-        try {
-          fs.rmSync(folderPath, { recursive: true, force: true });
-          console.log(`Carpeta eliminada: ${folder}`);
-        } catch (error) {
-          console.error(`Error al eliminar carpeta ${folder}:`, error);
-        }
-      }
-    });
-  } else {
-    console.log(`Directorio base ${baseDir} no encontrado para limpieza.`);
-  }
-});
+// __dirname está disponible en módulos CommonJS
 
 // Puerto en el que la aplicación escuchará
 app.listen(PORT, () => {

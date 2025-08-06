@@ -28,6 +28,7 @@
     "pdf-merger-js": "^5.1.2",
     "pdf-to-printer": "^5.6.0",
     "pg": "^8.16.0",
+    "puppeteer": "^24.15.0",
     "puppeteer-core": "^24.15.0"
   },
   "devDependencies": {
