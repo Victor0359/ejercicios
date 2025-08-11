@@ -2,79 +2,159 @@
 const express = require("express");
 const router = express.Router();
 const path = require("path");
+
+// ⚠️ Este 'const' es crucial. Asegúrate de que no se haya borrado.
 const fs = require("fs").promises;
 
-// 🔧 CORREGIDO: Ruta de importación de dailyReceiptsManager
+const PDFDocument = require("pdfkit");
+const { PassThrough } = require("stream");
+const pdfMerger = require("pdf-merger-js");
+
+// 🔧 Importamos todas las funciones necesarias desde los módulos
 const dailyReceiptsManager = require("../dailyReceiptsManager");
-const recibo_contrato = require("../recibo_contrato"); // Asegúrate de que esta ruta sea correcta
+const {
+  generateTenantReceiptPDF,
+  generateOwnerReceiptPDF,
+} = require("../receiptPDFGenerator");
 
-// --- Funciones de Lógica Central ---
+// 🆕 Importamos las funciones de la base de datos
+const recibo_prop = require("../recibosPropietarios");
+const propiedades = require("../propiedades");
+const funcion_letras = require("../funcion_letras");
+const recibo_form = require("../recibosFormulario");
 
-// Lógica para guardar un recibo
-async function handleSaveReceiptLogic(req, res) {
+/**
+ * 📂 Función auxiliar para obtener las rutas de los archivos PDF
+ * basadas en el tipo de recibo.
+ * @param {string} tipoRecibo - "propietario" o "formulario".
+ * @returns {object} - Un objeto con las rutas de las carpetas.
+ */
+function getReceiptPaths(tipoRecibo) {
+  const baseReceiptsDir = path.join(__dirname, "..", "receipts");
+  const baseDailyDir = path.join(__dirname, "..", "daily");
+
+  if (tipoRecibo === "propietario") {
+    return {
+      receiptsDir: path.join(baseReceiptsDir, "propietarios"),
+      dailyDir: path.join(baseDailyDir, "propietarios"),
+    };
+  } else if (tipoRecibo === "formulario") {
+    return {
+      receiptsDir: path.join(baseReceiptsDir, "formulario"),
+      dailyDir: path.join(baseDailyDir, "formulario"),
+    };
+  } else {
+    throw new Error("Tipo de recibo no válido.");
+  }
+}
+
+/**
+ * 🆕 Función auxiliar para obtener y formatear todos los datos del recibo
+ * desde la base de datos, ahora con soporte para ambos tipos.
+ * @param {string} numrecibo - El número del recibo a buscar.
+ * @param {string} tipoRecibo - "propietario" o "formulario".
+ * @returns {Promise<object | null>} - Un objeto con todos los datos o null si no se encuentra.
+ */
+async function fetchCompleteReceiptData(numrecibo, tipoRecibo) {
   try {
-    const receiptData = req.body;
-    if (!receiptData) {
-      return res
-        .status(400)
-        .json({ message: "Datos del recibo no proporcionados." });
+    let resultado;
+    if (tipoRecibo === "propietario") {
+      resultado = await recibo_prop.recibosPropietarios(numrecibo);
+    } else if (tipoRecibo === "formulario") {
+      resultado = await recibo_form.recibosFormulario(numrecibo);
+    } else {
+      console.error("Tipo de recibo no válido en fetchCompleteReceiptData.");
+      return null;
     }
-    console.log("Datos recibidos para guardar recibo:", receiptData);
 
-    const result = await dailyReceiptsManager.saveReceipt(receiptData);
-    res.status(200).json({
-      success: true,
-      message: "Recibo guardado con éxito",
-      path: result.path,
+    if (!Array.isArray(resultado) || resultado.length === 0) {
+      console.warn(`No se encontró recibo con numrecibo = ${numrecibo}`);
+      return null;
+    }
+    const reciboData = resultado[0];
+
+    const propiedadId = parseInt(reciboData.id_propiedad, 10);
+    const datosPropiedades = await propiedades.obtenerPropiedadesPorId(
+      propiedadId
+    );
+
+    let propiedadParaVista = {};
+    if (
+      datosPropiedades &&
+      typeof datosPropiedades === "object" &&
+      Object.keys(datosPropiedades).length > 0
+    ) {
+      propiedadParaVista = datosPropiedades;
+    }
+
+    const fechaDelRecibo = new Date(reciboData.fecha);
+    const fechaActual = fechaDelRecibo.toLocaleDateString("es-AR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     });
-  } catch (error) {
-    console.error("Error al guardar recibo:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error al guardar el recibo",
-      details: error.message,
-    });
+
+    const mesContrato = fechaDelRecibo
+      .toLocaleDateString("es-AR", { month: "long" })
+      .toUpperCase();
+
+    const ultimoDiaDelMes = (fecha) =>
+      new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+    const vencimiento = ultimoDiaDelMes(fechaDelRecibo);
+
+    const letra = funcion_letras.numeroALetras(reciboData.total);
+
+    return {
+      ...reciboData,
+      ...propiedadParaVista,
+      letra,
+      mes: mesContrato,
+      vencimiento,
+      fechaActual,
+    };
+  } catch (err) {
+    console.error("Error al obtener los datos del recibo:", err);
+    return null;
   }
 }
 
 // Lógica para generar y descargar un recibo individual
 async function handleGenerateIndividualPdfLogic(req, res) {
   try {
+    const tipoRecibo = req.params.tipoRecibo || req.body.tipoRecibo;
     const numrecibo = req.params.numrecibo || req.body.numrecibo;
-    if (!numrecibo) {
+
+    // ⚠️ Esta validación es la que dispara el error 400
+    if (!tipoRecibo || !numrecibo) {
       return res
         .status(400)
-        .json({ message: "Número de recibo no proporcionado." });
+        .json({ message: "Tipo o número de recibo no proporcionado." });
     }
 
-    // 🔧 CORREGIDO: Ruta para acceder a los recibos individuales
-    const receiptPath = path.join(
-      __dirname,
-      "..",
-      "receipts",
-      `receipt_${numrecibo}.pdf`
-    );
-    console.log(`Buscando PDF individual en la ruta: ${receiptPath}`);
+    const { receiptsDir } = getReceiptPaths(tipoRecibo);
+    await fs.mkdir(receiptsDir, { recursive: true });
+
+    const receiptPath = path.join(receiptsDir, `receipt_${numrecibo}.pdf`);
 
     try {
-      await fs.access(receiptPath); // Verifica si el archivo existe
-      res.download(receiptPath, `recibo_${numrecibo}.pdf`, (err) => {
-        if (err) {
-          console.error("Error al descargar el recibo individual:", err);
-          res.status(500).json({
-            message: "Error al descargar el recibo",
-            details: err.message,
-          });
-        }
-      });
+      await fs.access(receiptPath);
+      res.download(receiptPath, `recibo_${tipoRecibo}_${numrecibo}.pdf`);
     } catch (err) {
-      console.warn(
-        `PDF para recibo ${numrecibo} no encontrado en ${receiptPath}.`
-      );
-      return res.status(404).json({
-        message:
-          "PDF del recibo individual no encontrado o no se pudo generar (datos no disponibles).",
-      });
+      const receiptData = await fetchCompleteReceiptData(numrecibo, tipoRecibo);
+      if (!receiptData) {
+        return res.status(404).json({
+          message: "Datos del recibo no encontrados para generar el PDF.",
+        });
+      }
+
+      // Se usa la función de generación de PDF adecuada según el tipo de recibo
+      const pdfBytes =
+        tipoRecibo === "propietario"
+          ? await generateOwnerReceiptPDF(receiptData)
+          : await generateTenantReceiptPDF(receiptData);
+
+      await fs.writeFile(receiptPath, pdfBytes);
+      res.download(receiptPath, `recibo_${tipoRecibo}_${numrecibo}.pdf`);
     }
   } catch (error) {
     console.error("Error al procesar el recibo individual:", error);
@@ -88,149 +168,128 @@ async function handleGenerateIndividualPdfLogic(req, res) {
 // Lógica para generar y descargar todos los recibos del día
 async function handleGenerateDailyPdfsLogic(req, res) {
   try {
+    const tipoRecibo = req.params.tipoRecibo || req.query.tipoRecibo;
     const date = req.query.fecha || new Date().toISOString().split("T")[0];
-    const dailyPdfPath = await dailyReceiptsManager.getDailyReceipts(date);
 
-    if (dailyPdfPath) {
-      res.download(dailyPdfPath, `recibos_diarios_${date}.pdf`, (err) => {
-        if (err) {
-          console.error("Error al descargar el PDF diario:", err);
-          res.status(500).json({
-            message: "Error al descargar el PDF",
-            details: err.message,
-          });
-        }
-      });
-    } else {
-      res.status(404).json({
-        message: "No se encontró PDF diario para la fecha especificada.",
-      });
+    if (!tipoRecibo) {
+      return res
+        .status(400)
+        .json({ message: "Tipo de recibo no proporcionado." });
     }
+
+    const { dailyDir } = getReceiptPaths(tipoRecibo);
+    await fs.mkdir(dailyDir, { recursive: true });
+
+    const dailyPdfPath = path.join(dailyDir, `${date}.pdf`);
+
+    try {
+      await fs.access(dailyPdfPath);
+    } catch (err) {
+      let receiptNumbers;
+      if (tipoRecibo === "propietario") {
+        receiptNumbers = await recibo_prop.getRecibosPorFecha(date);
+      } else if (tipoRecibo === "formulario") {
+        receiptNumbers = await recibo_form.getRecibosPorFecha(date);
+      }
+
+      if (!receiptNumbers || receiptNumbers.length === 0) {
+        return res.status(404).json({
+          message: `No se encontraron recibos para la fecha ${date}.`,
+        });
+      }
+
+      const merger = new pdfMerger();
+      for (const numrecibo of receiptNumbers) {
+        const receiptData = await fetchCompleteReceiptData(
+          numrecibo,
+          tipoRecibo
+        );
+        if (receiptData) {
+          const pdfBytes =
+            tipoRecibo === "propietario"
+              ? await generateOwnerReceiptPDF(receiptData)
+              : await generateTenantReceiptPDF(receiptData);
+          merger.add(pdfBytes);
+        }
+      }
+
+      await merger.save(dailyPdfPath);
+    }
+
+    res.download(dailyPdfPath, `recibos_diarios_${tipoRecibo}_${date}.pdf`);
   } catch (error) {
-    console.error("Error al obtener los recibos diarios:", error);
+    console.error("Error al obtener o generar los recibos diarios:", error);
     res.status(500).json({
-      message: "Error al obtener los recibos diarios",
+      message: "Error al obtener o generar los recibos diarios",
       details: error.message,
     });
   }
 }
 
 /**
- * 📝 Función auxiliar para convertir el número del mes a su nombre en español.
- * @param {number} monthIndex - El índice del mes (0-11).
- * @returns {string} El nombre del mes.
+ * 🆕 Función para manejar la lógica de guardar un nuevo recibo.
+ * @param {object} req - Objeto de la solicitud HTTP.
+ * @param {object} res - Objeto de la respuesta HTTP.
  */
-function obtenerNombreDelMes(monthIndex) {
-  const months = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-  ];
-  // Cuota 9 corresponde a Septiembre (índice 8)
-  // Restamos 1 para ajustarlo a un array base 0
-  return months[monthIndex - 1] || "Mes no definido";
+async function handleSaveReceiptLogic(req, res) {
+  try {
+    const { tipoRecibo, ...receiptData } = req.body;
+
+    // ⚠️ Esta validación es la que causa el error 400 que viste en el log.
+    if (!tipoRecibo) {
+      return res
+        .status(400)
+        .json({ message: "Tipo de recibo no proporcionado." });
+    }
+
+    console.log(`Guardando nuevo recibo de tipo: ${tipoRecibo}`);
+    console.log("Datos recibidos:", receiptData);
+
+    let newReceiptId;
+
+    // ⚠️ ATENCIÓN: Aquí debes implementar la lógica para guardar en la base de datos.
+    // El nombre de la función y las tablas pueden variar.
+    if (tipoRecibo === "propietario") {
+      newReceiptId = await recibo_prop.saveRecibo(receiptData);
+    } else if (tipoRecibo === "formulario") {
+      // Asumiendo que tu archivo 'recibosFormulario' tiene una función para guardar.
+      newReceiptId = await recibo_form.saveRecibo(receiptData);
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Tipo de recibo no válido para guardar." });
+    }
+
+    res.status(200).json({
+      message: "Recibo guardado exitosamente.",
+      receiptId: newReceiptId,
+    });
+  } catch (error) {
+    console.error("Error al guardar el recibo:", error);
+    res.status(500).json({
+      message: "Error al guardar el recibo",
+      details: error.message,
+    });
+  }
 }
 
-// Ruta GET para renderizar la plantilla EJS con datos completos
-// router.get("/recibo_inq_impreso/:numrecibo", async (req, res) => {
-//   try {
-//     const numrecibo = parseInt(req.params.numrecibo);
-
-//     // 🔧 Obtener los datos del recibo desde la base de datos usando el número de recibo
-//     const [reciboDB] = await recibo_contrato.obtenerRecibo(numrecibo);
-//     if (!reciboDB) {
-//       return res.status(404).json({ message: "Recibo no encontrado." });
-//     }
-
-//     // Obtener datos de la propiedad y el contrato
-//     const [propiedadesDB] = await recibo_contrato.obtenerContratos_Id(
-//       reciboDB.id_propiedad
-//     );
-//     if (!propiedadesDB) {
-//       return res
-//         .status(404)
-//         .json({ message: "Datos de propiedad no encontrados para el recibo." });
-//     }
-
-//     // 🔧 Creando un objeto `recibo` con datos limpios y dinámicos
-//     const recibo = {
-//       numrecibo: reciboDB.numrecibo,
-//       apellidoinquilino: reciboDB.apellidoinquilino,
-//       apellidopropietario: reciboDB.apellidopropietario,
-//       cuota: reciboDB.cuota,
-//       importemensual: reciboDB.importemensual,
-//       abl: reciboDB.abl,
-//       aysa: reciboDB.aysa,
-//       expcomunes: reciboDB.expcomunes,
-//       seguro: reciboDB.seguro,
-//       varios: reciboDB.varios,
-//       total: reciboDB.total,
-//     };
-
-//     // 🔧 Creando un objeto `propiedades` con datos reales
-//     const propiedades = {
-//       localidad: propiedadesDB.localidad,
-//       direccion: propiedadesDB.direccion,
-//     };
-
-//     const fechaRecibo = new Date(reciboDB.fecha);
-//     const vencimiento = fechaRecibo.getDate(); // Extraer el día de vencimiento
-//     const mesContratoNombre = obtenerNombreDelMes(recibo.cuota - 1); // El mes viene como 1-12
-//     const anioContrato = fechaRecibo.getFullYear();
-//     const fechaActual = `${fechaRecibo.getDate()} de ${obtenerNombreDelMes(
-//       fechaRecibo.getMonth()
-//     )} de ${fechaRecibo.getFullYear()}`;
-
-//     // ⚠️ La función NumeroALetras no está implementada aquí. Debes crearla tú.
-//     // Si no existe, se mostrará un placeholder.
-//     const letra =
-//       typeof NumeroALetras === "function"
-//         ? NumeroALetras(recibo.total)
-//         : "Monto en letras no disponible";
-
-//     res.render("recibo_inq_impreso", {
-//       recibo,
-//       propiedades,
-//       vencimiento,
-//       fechaActual,
-//       letra,
-//       mostrarNavbar: false,
-//       mesContratoNombre, // Nueva variable para el nombre del mes
-//       anioContrato, // Nueva variable para el año
-//     });
-//   } catch (error) {
-//     console.error("Error al renderizar recibo_inq_impreso:", error);
-//     res.status(500).json({
-//       message: "Error al obtener los datos del recibo para imprimir.",
-//       details: error.message,
-//     });
-//   }
-// });
-
 // --- Definición de Rutas y Aliases ---
-
-// Ruta principal para guardar un recibo (POST)
-router.post("/save-receipt", handleSaveReceiptLogic);
-// Alias para la ruta de guardar recibo (si el frontend aún llama a /guardar-recibo)
-router.post("/guardar-recibo", handleSaveReceiptLogic);
-
-// Ruta principal para generar y descargar un recibo individual (GET)
-router.get("/generar_pdf/:numrecibo", handleGenerateIndividualPdfLogic);
-// Alias para la ruta de imprimir recibo individual (si el frontend aún llama a /imprimir recibo con POST)
+// Rutas de descarga de PDF individuales y diarios
+// La ruta espera un tipo de recibo y un número de recibo
+router.get(
+  "/generar_pdf/:tipoRecibo/:numrecibo",
+  handleGenerateIndividualPdfLogic
+);
 router.post("/imprimir-recibo", handleGenerateIndividualPdfLogic);
+router.get("/generar_pdfs_dia/:tipoRecibo", handleGenerateDailyPdfsLogic);
+router.get(
+  "/imprimir-recibos-diarios/:tipoRecibo",
+  handleGenerateDailyPdfsLogic
+);
 
-// Ruta principal para generar y descargar todos los recibos del día (GET)
-router.get("/generar_pdfs_dia", handleGenerateDailyPdfsLogic);
-// Alias para la ruta de imprimir todos los recibos del día (si el frontend aún llama a /imprimir-recibos-diarios)
-router.get("/imprimir-recibos-diarios", handleGenerateDailyPdfsLogic);
+// Rutas de guardado
+// La ruta espera un cuerpo de solicitud con el tipo de recibo y los datos
+router.post("/save-receipt", handleSaveReceiptLogic);
+router.post("/guardar-recibo", handleSaveReceiptLogic);
 
 module.exports = router;

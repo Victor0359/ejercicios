@@ -7,6 +7,8 @@
       value="<%= recibo.numrecibo %>"
     />
     <input type="hidden" name="letra" value="<%= letra %>" />
+    <!-- 🆕 AÑADIDO: Campo oculto para el tipo de recibo -->
+    <input type="hidden" id="tipoRecibo" name="tipoRecibo" value="formulario" />
 
     <div class="receipt-container">
       <!-- <div class="paid-stamp">PAGADO</div> -->
@@ -51,7 +53,7 @@
           <span id="propiedadDireccion"><%= propiedades.direccion %></span>, mes
           de <span id="mesContrato"><%= mes_contrato %></span> con vencimiento
           el dia <span id="vencimientoDia"><%= vencimiento %></span> de
-          <span id="mesContrato2"><%= mes_contrato %></span>.
+          <span id="mesContrato"><%= mes_contrato %></span>.
         </p>
       </div>
       <div class="form-row">
@@ -85,7 +87,6 @@
       <div class="form-row">
         <label for="seguro" class="form-label">SEGURO</label>
         <span>$</span>
-
         <input type="text" name="seguro" value="<%= recibo.seguro %>" />
       </div>
       <div class="form-row">
@@ -132,6 +133,8 @@
     // 🔧 Función para obtener los datos del recibo
     const getReceiptData = () => {
       const data = {
+        // 🆕 AÑADIDO: Incluye el tipo de recibo en los datos
+        tipoRecibo: document.getElementById("tipoRecibo").value,
         numrecibo: document.querySelector('[name="numrecibo"]').value,
         fechaActual: new Date().toLocaleDateString("es-AR"),
         apellidoinquilino: document
@@ -154,7 +157,6 @@
         ),
         seguro: parseFloat(document.querySelector('[name="seguro"]').value),
         varios: parseFloat(document.querySelector('[name="varios"]').value),
-
         localidad: document
           .getElementById("propiedadLocalidad")
           .textContent.trim(),
@@ -162,6 +164,7 @@
           .getElementById("propiedadDireccion")
           .textContent.trim(),
         cuota: document.getElementById("mesContratoNumber").textContent.trim(),
+        mes: document.getElementById("mesContrato").textContent.trim(),
         vencimiento: document
           .getElementById("vencimientoDia")
           .textContent.trim(),
@@ -174,12 +177,14 @@
     const validateData = (data) => {
       return (
         data.numrecibo &&
+        data.tipoRecibo &&
         data.apellidoinquilino &&
         !isNaN(data.total) &&
         data.localidad &&
         data.direccion &&
         data.cuota &&
         data.vencimiento &&
+        data.mes &&
         !Object.values(data).some((val) => val === undefined || val === null)
       );
     };
@@ -200,12 +205,15 @@
 
     // 🧵 Asignación de eventos al cargar la página
     document.addEventListener("DOMContentLoaded", () => {
+      const tipoRecibo = document.getElementById("tipoRecibo").value;
+
       document
         .getElementById("btnImprimir")
         .addEventListener("click", function () {
           const numrecibo = document.querySelector('[name="numrecibo"]').value;
           if (numrecibo) {
-            window.open(`/generar_pdf/${numrecibo}`, "_blank");
+            // 🆕 CORREGIDO: Se añadió el tipo de recibo a la URL
+            window.open(`/generar_pdf/${tipoRecibo}/${numrecibo}`, "_blank");
             showMessage("Descarga del recibo individual iniciada.", "info");
           } else {
             showMessage(
@@ -254,7 +262,11 @@
         .getElementById("btnImprimirDia")
         .addEventListener("click", async () => {
           const today = new Date().toISOString().split("T")[0];
-          window.open(`/generar_pdfs_dia?fecha=${today}`, "_blank");
+          // 🆕 CORREGIDO: Se añadió el tipo de recibo a la URL
+          window.open(
+            `/generar_pdfs_dia/${tipoRecibo}?fecha=${today}`,
+            "_blank"
+          );
           showMessage("Descarga de los recibos diarios iniciada.", "info");
         });
     });

@@ -24,61 +24,59 @@ async function generateTenantReceiptPDF(receiptData) {
   // 🔧 Se usan los nuevos márgenes de 1.5 cm
   const marginLeft = MARGIN_1_5_CM;
   const marginRight = MARGIN_1_5_CM;
-  let currentY = height - 40; // <-- Variable renombrada de 'yPosition' a 'currentY'
+  let currentY = height - 40;
 
-  // 🔷 Encabezado
+  // 🔷 Encabezado y Fecha en la misma línea
   page.drawText("RECIBO DE COBRO", {
     x: marginLeft,
-    y: currentY, // Usando currentY
+    y: currentY,
     size: 16,
     font: titleFont,
     color: rgb(0, 0.2, 0.6),
   });
 
-  // Fecha
-  page.drawText(`Fecha: ${receiptData.fechaActual || "N/D"}`, {
-    x: width - MARGIN_1_5_CM - 150,
-    y: currentY, // Usando currentY
+  const fechaText = `Fecha: ${receiptData.fechaActual || "N/D"}`;
+  const fechaWidth = bodyFont.widthOfTextAtSize(fechaText, fontSize);
+  page.drawText(fechaText, {
+    x: width - marginRight - fechaWidth,
+    y: currentY,
     size: fontSize,
     font: bodyFont,
     color: rgb(0, 0, 0),
   });
 
-  currentY -= 20; // Usando currentY
+  currentY -= 20;
   page.drawLine({
-    start: { x: marginLeft, y: currentY }, // Usando currentY
-    end: { x: width - marginRight, y: currentY }, // Usando currentY
+    start: { x: marginLeft, y: currentY },
+    end: { x: width - marginRight, y: currentY },
     thickness: 0.5,
     color: rgb(0.6, 0.6, 0.6),
   });
 
-  // 🔹 Detalles del recibo
-  currentY -= 30; // Usando currentY
+  // 🔹 Detalles del recibo: Nº y Mes Cont en la misma línea
+  currentY -= 30;
   page.drawText(`Recibo Nº: ${receiptData.numrecibo || "N/D"}`, {
     x: marginLeft,
-    y: currentY, // Usando currentY
+    y: currentY,
     size: fontSize + 1,
     font: bodyFont,
     color: rgb(0, 0, 0),
   });
 
-  page.drawText(`Mes Cont: ${receiptData.cuota || "N/D"}`, {
-    x: width - MARGIN_1_5_CM - 150,
-    y: currentY, // Usando currentY
+  const mesContText = `Mes Cont: ${receiptData.cuota || "N/D"}`;
+  const mesContWidth = bodyFont.widthOfTextAtSize(mesContText, fontSize + 1);
+  page.drawText(mesContText, {
+    x: width - marginRight - mesContWidth,
+    y: currentY,
     size: fontSize + 1,
     font: bodyFont,
     color: rgb(0, 0, 0),
   });
 
-  currentY -= 20; // Usando currentY
+  currentY -= 20;
 
-  /**
-   * 📝 Función auxiliar para justificar el texto entre los márgenes.
-   * La justificación no está integrada en pdf-lib, por lo que se implementa manualmente.
-   */
   function justifyText(lines, font, size, maxWidth) {
     return lines.map((line) => {
-      // Si la línea es corta o es la última, no la justificamos
       if (line.trim().length === 0 || line.split(" ").length <= 1) {
         return line;
       }
@@ -101,7 +99,6 @@ async function generateTenantReceiptPDF(receiptData) {
     });
   }
 
-  // Función auxiliar para ajustar el texto a varias líneas
   function wrapText(text, font, size, maxWidth) {
     const words = text.split(" ");
     let lines = [];
@@ -121,10 +118,9 @@ async function generateTenantReceiptPDF(receiptData) {
     return lines;
   }
 
-  // Descripción del recibo, ahora con manejo de datos faltantes
   const fullDescription =
     `Recibí de: ${receiptData.apellidoinquilino || "N/D"} ` +
-    `la suma de pesos ${receiptData.letra || "N/D"}, ` +
+    `, la suma de pesos ${receiptData.letra || "N/D"}, ` +
     `($${
       receiptData.total
         ? Number(receiptData.total).toLocaleString("es-AR", {
@@ -136,13 +132,12 @@ async function generateTenantReceiptPDF(receiptData) {
     `${receiptData.localidad || "N/D"}, con frente a la calle ${
       receiptData.direccion || "N/D"
     }, ` +
-    `mes de ${receiptData.cuota || "N/D"} con vencimiento el día ${
+    `mes de ${receiptData.mes || "N/D"} con vencimiento el día ${
       receiptData.vencimiento || "N/D"
-    } de ${receiptData.cuota || "N/D"}.`;
+    } de ${receiptData.mes || "N/D"}.`;
 
   const maxWidth = width - marginLeft - marginRight;
   const wrappedLines = wrapText(fullDescription, bodyFont, fontSize, maxWidth);
-  // 🆕 Se justifican las líneas para el párrafo
   const justifiedLines = justifyText(
     wrappedLines,
     bodyFont,
@@ -150,21 +145,20 @@ async function generateTenantReceiptPDF(receiptData) {
     maxWidth
   );
 
-  // Dibujar cada línea y actualizar la posición
   justifiedLines.forEach((line) => {
     page.drawText(line, {
       x: marginLeft,
-      y: currentY, // Usando currentY
+      y: currentY,
       size: fontSize,
       font: bodyFont,
       color: rgb(0, 0, 0),
       lineHeight: 14,
     });
-    currentY -= 14; // Usando currentY
+    currentY -= 14;
   });
 
   // 🔸 Conceptos
-  currentY -= 20; // Usando currentY // Espacio entre la descripción y los conceptos
+  currentY -= 20;
   const concepts = [
     { label: "Mensualidad", value: receiptData.importemensual },
     { label: "ABL", value: receiptData.abl },
@@ -175,68 +169,67 @@ async function generateTenantReceiptPDF(receiptData) {
   ];
 
   concepts.forEach(({ label, value }) => {
-    // 🔧 Ajuste para el nuevo margen
     if (value > 0) {
       page.drawText(`${label}:`, {
         x: marginLeft,
-        y: currentY, // Usando currentY
+        y: currentY,
         size: fontSize,
         font: bodyFont,
         color: rgb(0.4, 0.4, 0.4),
       });
 
-      page.drawText(
-        `$${Number(value).toLocaleString("es-AR", {
-          minimumFractionDigits: 2,
-        })}`,
-        {
-          x: width - marginRight - 100,
-          y: currentY, // Usando currentY
-          size: fontSize,
-          font: bodyFont,
-          color: rgb(0, 0, 0),
-        }
-      );
-      currentY -= 15; // Usando currentY
+      // 🔧 CORREGIDO: Alineación de los valores a la derecha
+      const valueText = `$${Number(value).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+      })}`;
+      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+      page.drawText(valueText, {
+        x: width - marginRight - valueWidth,
+        y: currentY,
+        size: fontSize,
+        font: bodyFont,
+        color: rgb(0, 0, 0),
+      });
+      currentY -= 15;
     }
   });
 
   // 🔻 Total
-  currentY -= 20; // Usando currentY
+  currentY -= 20;
   page.drawLine({
-    start: { x: marginLeft, y: currentY }, // Usando currentY
-    end: { x: width - marginRight, y: currentY }, // Usando currentY
+    start: { x: marginLeft, y: currentY },
+    end: { x: width - marginRight, y: currentY },
     thickness: 0.5,
     color: rgb(0.6, 0.6, 0.6),
   });
 
-  currentY -= 20; // Usando currentY
-  page.drawText(
-    `TOTAL: $${Number(receiptData.total).toLocaleString("es-AR", {
-      minimumFractionDigits: 2,
-    })}`,
-    {
-      x: width - marginRight - 180,
-      y: currentY, // Usando currentY
-      size: fontSize + 2,
-      font: titleFont,
-      color: rgb(0.1, 0.1, 0.1),
-    }
-  );
+  currentY -= 20;
+  const totalText = `TOTAL: $${Number(receiptData.total).toLocaleString(
+    "es-AR",
+    { minimumFractionDigits: 2 }
+  )}`;
+  const totalWidth = titleFont.widthOfTextAtSize(totalText, fontSize + 2);
+  page.drawText(totalText, {
+    x: width - marginRight - totalWidth,
+    y: currentY,
+    size: fontSize + 2,
+    font: titleFont,
+    color: rgb(0.1, 0.1, 0.1),
+  });
 
   // ✍️ Firma
-  currentY -= 50; // Usando currentY
+  currentY -= 50;
   page.drawLine({
-    start: { x: marginLeft, y: currentY }, // Usando currentY
-    end: { x: marginLeft + 200, y: currentY }, // Usando currentY
+    start: { x: marginLeft, y: currentY },
+    end: { x: marginLeft + 200, y: currentY },
     thickness: 1,
     color: rgb(0, 0, 0),
   });
 
-  currentY -= 15; // Usando currentY
+  currentY -= 15;
   page.drawText("Firma y Aclaración", {
     x: marginLeft,
-    y: currentY, // Usando currentY
+    y: currentY,
     size: fontSize,
     font: bodyFont,
     color: rgb(0.2, 0.2, 0.2),
@@ -258,11 +251,11 @@ async function generateOwnerReceiptPDF(receiptData) {
 
   const titleFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
   const bodyFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-  const marginLeft = 30;
-  const marginRight = 30;
+  const marginLeft = MARGIN_1_5_CM;
+  const marginRight = MARGIN_1_5_CM;
   let yPosition = height - 40;
 
-  // 🔷 Header with title
+  // 🔷 Header con título y fecha en la misma línea
   page.drawText("RECIBO PROPIETARIO", {
     x: marginLeft,
     y: yPosition,
@@ -271,9 +264,10 @@ async function generateOwnerReceiptPDF(receiptData) {
     color: rgb(0, 0.2, 0.6),
   });
 
-  // Date aligned to the right
-  page.drawText(`Fecha: ${receiptData.fechaActual || "N/D"}`, {
-    x: width - 150,
+  const fechaText = `Fecha: ${receiptData.fechaActual || "N/D"}`;
+  const fechaWidth = bodyFont.widthOfTextAtSize(fechaText, fontSize);
+  page.drawText(fechaText, {
+    x: width - marginRight - fechaWidth,
     y: yPosition,
     size: fontSize,
     font: bodyFont,
@@ -288,7 +282,7 @@ async function generateOwnerReceiptPDF(receiptData) {
     color: rgb(0.6, 0.6, 0.6),
   });
 
-  // 🔹 Receipt details
+  // 🔹 Detalles del recibo: Nº y Mes Cont en la misma línea
   yPosition -= 30;
   page.drawText(`Recibo Nº: ${receiptData.numrecibo || "N/D"}`, {
     x: marginLeft,
@@ -298,8 +292,10 @@ async function generateOwnerReceiptPDF(receiptData) {
     color: rgb(0, 0, 0),
   });
 
-  page.drawText(`Mes Cont: ${receiptData.cuota || "N/D"}`, {
-    x: width - 150,
+  const mesContText = `Mes Cont: ${receiptData.cuota || "N/D"}`;
+  const mesContWidth = bodyFont.widthOfTextAtSize(mesContText, fontSize + 1);
+  page.drawText(mesContText, {
+    x: width - marginRight - mesContWidth,
     y: yPosition,
     size: fontSize + 1,
     font: bodyFont,
@@ -341,9 +337,8 @@ async function generateOwnerReceiptPDF(receiptData) {
     return lines;
   }
 
-  // Receipt description with text wrapping
   const fullDescription =
-    `Recibí de: GARROTE PROPIEDADES la suma de pesos ${
+    `Recibí de GARROTE PROPIEDADES la suma de pesos ${
       receiptData.letra || "N/D"
     }, ` +
     `($${
@@ -353,13 +348,13 @@ async function generateOwnerReceiptPDF(receiptData) {
           })
         : "0.00"
     }) ` +
-    `en concepto de pago de la locación correspondiente a la propiedad ubicada en la localidad de ` +
+    `, en concepto de pago de la locación correspondiente a la propiedad ubicada en la localidad de ` +
     `${receiptData.localidad || "N/D"}, con frente a la calle ${
       receiptData.direccion || "N/D"
     }, ` +
-    `mes de ${receiptData.cuota || "N/D"} con vencimiento el dia ${
+    `, mes de ${receiptData.mes || "N/D"}, con vencimiento el dia ${
       receiptData.vencimiento || "N/D"
-    } de ${receiptData.cuota || "N/D"}.`;
+    } de ${receiptData.mes || "N/D"}.`;
 
   const descriptionLines = wrapText(
     fullDescription,
@@ -410,18 +405,18 @@ async function generateOwnerReceiptPDF(receiptData) {
         color: rgb(0.4, 0.4, 0.4),
       });
 
-      page.drawText(
-        `$${Number(value).toLocaleString("es-AR", {
-          minimumFractionDigits: 2,
-        })}`,
-        {
-          x: width - 100,
-          y: yPosition,
-          size: fontSize,
-          font: bodyFont,
-          color: rgb(0, 0, 0),
-        }
-      );
+      // 🔧 CORREGIDO: Alineación de los valores a la derecha
+      const valueText = `$${Number(value).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+      })}`;
+      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+      page.drawText(valueText, {
+        x: width - marginRight - valueWidth,
+        y: yPosition,
+        size: fontSize,
+        font: bodyFont,
+        color: rgb(0, 0, 0),
+      });
       yPosition -= 15;
     }
   });
@@ -436,18 +431,18 @@ async function generateOwnerReceiptPDF(receiptData) {
   });
 
   yPosition -= 20;
-  page.drawText(
-    `TOTAL: $${Number(receiptData.total).toLocaleString("es-AR", {
-      minimumFractionDigits: 2,
-    })}`,
-    {
-      x: width - 180,
-      y: yPosition,
-      size: fontSize + 2,
-      font: titleFont,
-      color: rgb(0.1, 0.1, 0.1),
-    }
-  );
+  const totalText = `TOTAL: $${Number(receiptData.total).toLocaleString(
+    "es-AR",
+    { minimumFractionDigits: 2 }
+  )}`;
+  const totalWidth = titleFont.widthOfTextAtSize(totalText, fontSize + 2);
+  page.drawText(totalText, {
+    x: width - marginRight - totalWidth,
+    y: yPosition,
+    size: fontSize + 2,
+    font: titleFont,
+    color: rgb(0.1, 0.1, 0.1),
+  });
 
   // ✍️ Firma
   yPosition -= 50;

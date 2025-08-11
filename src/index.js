@@ -1797,7 +1797,12 @@ app.get("/recibo_prop_impreso/:numrecibo", async (req, res) => {
       return res.status(404).send("Recibo no encontrado");
     }
     let reciboProp = resultado[0];
+    const fecha = new Date();
+    const dia = fecha.getDate();
+    const mes = fecha.getMonth() + 1; // Los meses van de 0 a 11
+    const año = fecha.getFullYear();
 
+    const fechaFormateada = `${dia}/${mes}/${año}`;
     const propiedadId = parseInt(reciboProp.id_propiedad, 10);
     if (isNaN(propiedadId)) {
       console.error(
@@ -1850,6 +1855,7 @@ app.get("/recibo_prop_impreso/:numrecibo", async (req, res) => {
       letra: letra,
       mes_contrato,
       vencimiento,
+      fechaFormateada,
       fechaActual: new Date(resultado[0].fecha).toLocaleDateString("es-AR", {
         day: "numeric",
         month: "long",
