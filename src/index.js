@@ -33,7 +33,7 @@ import funcion_letras from "./funcion_letras.js";
 import reciboRouter from "./routes/reciboRouter.js";
 
 // ✅ Importación simplificada de authRouter, asumiendo que usa 'export default'.
-import authRouter from "./routes/authRouter.js";
+import router from "./routes/authRouter.js";
 
 // 🆕 Importación para variables de entorno
 import "dotenv/config";
@@ -112,7 +112,7 @@ app.use(
 );
 
 app.use("/", reciboRouter);
-app.use("/", authRouter);
+app.use("/", router);
 
 app.get("/", (req, res) => {
   res.render("index");
