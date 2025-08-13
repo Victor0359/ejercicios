@@ -1577,11 +1577,12 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     }
 
     // 2) Consultas paralelas
-    const [contrato, propietario, fechas] = await Promise.all([
+    const [contrato, propietario, fechas, expensas] = await Promise.all([
       // devuelve datos del inquilino
       recibo_prop.obtenerContratos_Id(id),
       recibo_prop.obtenerPropietario_Id(id),
       recibo_prop.fechaReciboInquilino(id),
+      recibo_prop.obtenerExpExtraordinarias(id),
       // devuelve datos del propietario
     ]);
 
@@ -1596,7 +1597,7 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     const cuota = num(contrato?.[0]?.cuota) || 0;
     const numrecibo = num(contrato?.[0]?.numrecibo) || 0; // 4) Parseo seguro de valores
     const importemensual = num(contrato?.[0]?.importemensual);
-    const exp_extraor = num(contrato?.[0]?.exp_ext);
+    const exp_extraor = num(expensas?.[0]?.exp_ext);
     const seguro = num(contrato?.[0]?.seguro);
     const varios = num(contrato?.[0]?.varios);
     const honorarios = num(propietario?.[0]?.honorarios);

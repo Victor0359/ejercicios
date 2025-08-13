@@ -1,5 +1,17 @@
 import pool from "./datadb.js";
 
+async function obtenerExpExtraordinarias(id_propiedades) {
+  try {
+    const resultado = await pool.query(
+      "SELECT  exp_ext from impuestos where id_propiedades=$1 order by fecha desc limit 1",
+      [id_propiedades]
+    );
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al obtener contratos:", err);
+    return [];
+  }
+}
 async function obtenerContratos_Id(id_propiedades) {
   try {
     const resultado = await pool.query(
@@ -107,4 +119,5 @@ export default {
   recibosPropietarios,
   rePropietarios,
   fechaReciboInquilino,
+  obtenerExpExtraordinarias,
 };

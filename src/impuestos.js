@@ -8,7 +8,7 @@ export async function obtenerImpuestosPorDireccion(idPropiedad) {
        FROM impuestos i 
        JOIN propiedades p ON i.id_propiedades = p.id_propiedades 
        WHERE i.id_propiedades = $1 
-       ORDER BY i.fecha DESC LIMIT 4`,
+       ORDER BY i.fecha DESC LIMIT 1`,
       [idPropiedad]
     );
     return resultado;
