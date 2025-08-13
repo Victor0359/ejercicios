@@ -1,7 +1,7 @@
 import database from "./datadb.js";
 import express from "express";
 
-async function obtenerImpuestosPorDireccion(idPropiedad) {
+export async function obtenerImpuestosPorDireccion(idPropiedad) {
   try {
     const resultado = await database.query(
       `SELECT i.*, p.direccion 
@@ -18,7 +18,7 @@ async function obtenerImpuestosPorDireccion(idPropiedad) {
   }
 }
 
-async function obtenerImpuestos() {
+export async function obtenerImpuestos() {
   try {
     const resultado = await database.query(
       "SELECT * FROM impuestos ORDER BY fecha DESC "

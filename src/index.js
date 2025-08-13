@@ -888,7 +888,7 @@ app.get("/impuestos", async (req, res) => {
       await propiedades.obtenerPropiedadesOrdenadasPorId();
     const hayFiltro = Boolean(idPropiedad);
 
-    /* let impuestosLista; */
+    let impuestosLista; // ✅ Declaración con alcance completo
 
     if (idPropiedad) {
       impuestosLista = await impuestos.obtenerImpuestosPorDireccion(
