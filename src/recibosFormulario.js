@@ -1,12 +1,12 @@
 // db/recibosFormulario.js
-const pool = require("./datadb.js");
+import pool from "./datadb.js";
 
 /**
  * Obtiene los números de recibo para una fecha específica desde la tabla de recibos de formulario.
  * @param {string} date - La fecha en formato 'YYYY-MM-DD'.
  * @returns {Promise<Array<number>>} - Un array de números de recibo.
  */
-async function getRecibosPorFecha(date) {
+export async function getRecibosPorFecha(date) {
   const query = `
     SELECT numrecibo
     FROM recibo_inquilinos
@@ -24,13 +24,21 @@ async function getRecibosPorFecha(date) {
     throw error;
   }
 }
+import PDFDocument from "pdfkit";
+import { PassThrough } from "stream";
+
+/**
+ * Genera el PDF para un recibo de inquilino (formulario).
+ * @param {object} data - Datos completos del recibo.
+ * @returns {Promise<Buffer>} - PDF en formato Buffer.
+ */
 
 /**
  * Obtiene un recibo de formulario por su número.
  * @param {number} numrecibo - El número de recibo.
  * @returns {Promise<Array<Object>>} - El resultado de la consulta.
  */
-async function recibosFormulario(numrecibo) {
+export async function recibosFormulario(numrecibo) {
   const query = `
     SELECT *
     FROM recibo_inquilinos
@@ -50,7 +58,7 @@ async function recibosFormulario(numrecibo) {
   }
 }
 
-module.exports = {
+exports = {
   getRecibosPorFecha,
   recibosFormulario,
 };

@@ -1,10 +1,10 @@
-const database = require("./datadb");
-const express = require("express");
+import pool from "./datadb.js";
+import express from "express";
 const router = express.Router();
 async function obtenerPropiedad(datos) {
   try {
     if (datos && datos.trim() !== "") {
-      const resultado = await database.query(
+      const resultado = await pool.query(
         "SELECT * FROM propiedades WHERE direccion ILIKE '%' || $1 || '%'",
         [datos]
       );
@@ -19,7 +19,7 @@ async function obtenerPropiedad(datos) {
 
 async function obtenerPropiedadOrdenados() {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "SELECT * FROM propiedades ORDER BY direccion ASC"
     );
     return resultado.rows; // Devuelve los registros correctamente
@@ -32,7 +32,7 @@ async function obtenerPropiedadOrdenados() {
 }
 async function obtenerPropiedadesOrdenadasPorId() {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "SELECT id_propiedades, direccion, localidad FROM propiedades ORDER BY direccion ASC"
     );
     return resultado.rows;
@@ -51,7 +51,7 @@ async function agregarPropiedades(datos) {
     const id_propietario = parseInt(datos.id_propietario) || null;
     const id_impuestos = parseInt(datos.id_impuestos) || 0;
 
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "INSERT INTO propiedades (direccion, localidad, id_propietario, id_impuestos) VALUES ($1, $2, $3, $4)",
       [direccion, localidad, id_propietario, id_impuestos]
     );
@@ -66,7 +66,7 @@ async function agregarPropiedades(datos) {
 async function eliminarPropiedad({ id }) {
   try {
     const sql = "DELETE FROM propiedades WHERE id_propiedades = $1 RETURNING *";
-    const resultado = await database.query(sql, [id]);
+    const resultado = await pool.query(sql, [id]);
 
     console.log("🔍 SQL DELETE resultado:", resultado);
 
@@ -82,7 +82,7 @@ async function modificarPropiedades(datos) {
   try {
     const sql =
       "UPDATE propiedades SET direccion = $1,localidad = $2,id_propietario = $3,id_impuestos = $4 WHERE id_propiedades = $5";
-    const resultado = await database.query(sql, [
+    const resultado = await pool.query(sql, [
       datos.direccion,
       datos.localidad,
       parseInt(datos.id_propietario),
@@ -108,7 +108,7 @@ async function modificarPropiedades(datos) {
 async function obtenerPropiedadesPorId(id_propiedades) {
   try {
     const sql = "SELECT * FROM propiedades WHERE id_propiedades = $1";
-    const resultado = await database.query(sql, [id_propiedades]);
+    const resultado = await pool.query(sql, [id_propiedades]);
     return resultado.rows[0];
   } catch (err) {
     console.error("Error al obtener la propiedad por ID:", err);
@@ -117,7 +117,7 @@ async function obtenerPropiedadesPorId(id_propiedades) {
 }
 async function obtenerPropietarioSql() {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "SELECT id_propietarios, TRIM(apellido) AS apellido, TRIM(nombre) AS nombre FROM propietarios ORDER BY apellido ASC"
     );
     return resultado.rows;
@@ -128,11 +128,11 @@ async function obtenerPropietarioSql() {
 }
 async function obtenerImpuestosSql() {
   const sql = "SELECT * FROM impuestos";
-  const resultado = await database.query(sql);
+  const resultado = await pool.query(sql);
   return resultado.rows;
 }
 
-module.exports = {
+export default {
   obtenerImpuestosSql,
   obtenerPropiedad,
   agregarPropiedades,

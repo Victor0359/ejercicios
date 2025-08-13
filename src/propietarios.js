@@ -1,12 +1,10 @@
-const database = require("./datadb");
-const express = require("express");
-
-
+import pool from "./datadb.js";
+import express from "express";
 
 async function obtenerPropietarios(datos) {
   try {
     if (datos && datos.trim() !== "") {
-      const resultado = await database.query(
+      const resultado = await pool.query(
         "SELECT * FROM propietarios WHERE apellido ILIKE '%' || $1 || '%'",
         [datos]
       );
@@ -19,11 +17,11 @@ async function obtenerPropietarios(datos) {
   }
 }
 
-
 async function agregarPropietarios(datos) {
   try {
-    const sql = "INSERT INTO propietarios (nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)";
-    const resultado = await database.query(sql, [
+    const sql =
+      "INSERT INTO propietarios (nombre, apellido, dni, cuil, direccion, telefono, celular, correo_elec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)";
+    const resultado = await pool.query(sql, [
       datos.nombre,
       datos.apellido,
       datos.dni,
@@ -31,9 +29,9 @@ async function agregarPropietarios(datos) {
       datos.direccion,
       datos.telefono,
       datos.celular,
-      datos.correo_elec
+      datos.correo_elec,
     ]);
-    
+
     console.log("✅ Propietario agregado correctamente.");
     return resultado;
   } catch (err) {
@@ -43,23 +41,20 @@ async function agregarPropietarios(datos) {
 }
 
 async function eliminarPropietarios({ id }) {
-    try {
-        const sql = "DELETE FROM propietarios WHERE id_propietarios = $1 RETURNING *";
-        const resultado = await database.query(sql, [id]);
+  try {
+    const sql =
+      "DELETE FROM propietarios WHERE id_propietarios = $1 RETURNING *";
+    const resultado = await pool.query(sql, [id]);
 
-        console.log("🔍 SQL DELETE resultado:", resultado);
+    console.log("🔍 SQL DELETE resultado:", resultado);
 
-        // Nos aseguramos de retornar un array vacío si no hay coincidencia
-        return resultado?.rows || [];
-    } catch (err) {
-        console.error("❌ Error en eliminarPropietarios:", err);
-        throw err;
-    }
+    // Nos aseguramos de retornar un array vacío si no hay coincidencia
+    return resultado?.rows || [];
+  } catch (err) {
+    console.error("❌ Error en eliminarPropietarios:", err);
+    throw err;
+  }
 }
-
-
-
-
 
 async function modificarPropietarios(datos) {
   try {
@@ -88,16 +83,19 @@ async function modificarPropietarios(datos) {
       datos.telefono,
       datos.celular,
       datos.correo_elec,
-      id
+      id,
     ];
 
-    const resultado = await database.query(sql, valores);
+    const resultado = await pool.query(sql, valores);
 
-    console.log(`✅ Propietario ID ${id} — Filas afectadas:`, resultado.rowCount);
+    console.log(
+      `✅ Propietario ID ${id} — Filas afectadas:`,
+      resultado.rowCount
+    );
 
     return {
       rowCount: resultado.rowCount,
-      rows: resultado.rows
+      rows: resultado.rows,
     };
   } catch (err) {
     console.error("❌ Error al modificar propietario:", err);
@@ -105,10 +103,12 @@ async function modificarPropietarios(datos) {
   }
 }
 
-
 async function obtenerPropietariosPorId(id_propietarios) {
-    try {
-    const resultado = await database.query("SELECT * FROM propietarios WHERE id_propietarios = $1", [id_propietarios]);
+  try {
+    const resultado = await pool.query(
+      "SELECT * FROM propietarios WHERE id_propietarios = $1",
+      [id_propietarios]
+    );
     return resultado.rows[0];
   } catch (err) {
     console.error("Error al obtener el propietario por ID:", err);
@@ -116,34 +116,35 @@ async function obtenerPropietariosPorId(id_propietarios) {
   }
 }
 async function obtenerPropietariosPorDni(dni) {
-   try {
- const resultado= await database.query("SELECT * FROM propietarios WHERE dni = $1", [dni]);
- return resultado[0]; // Devuelve los registros encontrados
-} catch (err) {
+  try {
+    const resultado = await pool.query(
+      "SELECT * FROM propietarios WHERE dni = $1",
+      [dni]
+    );
+    return resultado[0]; // Devuelve los registros encontrados
+  } catch (err) {
     console.error("Error al buscar propietario por DNI:", err);
     return [];
-  } 
+  }
 }
 async function obtenerTodosLosPropietarios() {
   try {
-    const resultado = await database.query("SELECT * FROM propietarios ORDER BY apellido");
+    const resultado = await pool.query(
+      "SELECT * FROM propietarios ORDER BY apellido"
+    );
     return resultado.rows; // Devuelve todos los registros encontrados
-    
-
   } catch (err) {
     console.error("❌ Error al obtener todos los propietarios:", err);
     return [];
   }
 }
 
-
-module.exports = {
-   obtenerPropietarios,
+export default {
+  obtenerPropietarios,
   agregarPropietarios,
   eliminarPropietarios,
   modificarPropietarios,
   obtenerPorId: obtenerPropietariosPorId,
   obtenerTodosLosPropietarios,
-  obtenerPropietariosPorDni, 
- 
+  obtenerPropietariosPorDni,
 };

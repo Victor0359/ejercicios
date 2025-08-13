@@ -1,5 +1,5 @@
 // src/receiptPDFGenerator.js
-const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const A5_WIDTH = 148 * 2.83465; // Ancho de A5 en puntos (1mm = 2.83465 puntos)
 const A5_HEIGHT = 210 * 2.83465; // Alto de A5 en puntos
@@ -12,7 +12,7 @@ const MARGIN_1_5_CM = 1.5 * 10 * 2.83465;
  * @param {object} receiptData - Objeto con los datos del recibo.
  * @returns {Promise<Uint8Array>} - Los bytes del PDF generado.
  */
-async function generateTenantReceiptPDF(receiptData) {
+export async function generateTenantReceiptPDF(receiptData) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A5_WIDTH, A5_HEIGHT]);
   const { width, height } = page.getSize();
@@ -243,7 +243,7 @@ async function generateTenantReceiptPDF(receiptData) {
  * @param {object} receiptData - Object with the receipt data.
  * @returns {Promise<Uint8Array>} - The generated PDF bytes.
  */
-async function generateOwnerReceiptPDF(receiptData) {
+export async function generateOwnerReceiptPDF(receiptData) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A5_WIDTH, A5_HEIGHT]);
   const { width, height } = page.getSize();
@@ -466,4 +466,4 @@ async function generateOwnerReceiptPDF(receiptData) {
 }
 
 // Exporta ambas funciones
-module.exports = { generateTenantReceiptPDF, generateOwnerReceiptPDF };
+export default { generateTenantReceiptPDF, generateOwnerReceiptPDF };

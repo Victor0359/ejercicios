@@ -1,68 +1,90 @@
-// Importa las librerías necesarias
-const express = require("express");
-const path = require("path");
-const session = require("express-session");
-const PgSession = require("connect-pg-simple")(session);
-const flash = require("connect-flash");
-const expressEjsLayouts = require("express-ejs-layouts");
-const cors = require("cors");
-const morgan = require("morgan");
-const helmet = require("helmet");
-const bcrypt = require("bcrypt");
-const database = require("./datadb"); // Asegúrate de que esta ruta sea correcta desde src/
-const inquilinos = require("./inquilinos"); // Asegúrate de que esta ruta sea correcta desde src/
-const propietarios = require("./propietarios"); // Asegúrate de que esta ruta sea correcta desde src/
-const propiedades = require("./propiedades"); // Asegúrate de que esta ruta sea correcta desde src/
-const impuestos = require("./impuestos"); // Asegúrate de que esta ruta sea correcta desde src/
-const contratos = require("./contratos"); // Asegúrate de que esta ruta sea correcta desde src/
-const recibo_contrato = require("./recibo_contrato"); // Asegúrate de que esta ruta sea correcta desde src/
-const puppeteer = require("puppeteer-core"); // Usa puppeteer-core
-const chromium = require("@sparticuz/chromium"); // Importa chromium
-const recibo_prop = require("./recRecPropietario"); // Asegúrate de que esta ruta sea correcta desde src/
-const funcion_letras = require("./funcion_letras"); // Asegúrate de que esta ruta sea
-// correcta desde src/
-const cron = require("node-cron");
-const { saveReceipt, getDailyReceipts } = require("./dailyReceiptsManager");
-const generateReceiptPDF = require("./receiptPDFGenerator");
-const reciboRouter = require("./routes/reciboRouter"); // Router para recibos
-const authRouter = require("./routes/authRouter"); // Router para autenticación
+// src/index.js
+
+// 🆕 Importaciones corregidas para ES Modules.
+import express from "express";
+import path from "path";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import flash from "connect-flash";
+import expressEjsLayouts from "express-ejs-layouts";
+import cors from "cors";
+import morgan from "morgan";
+import helmet from "helmet";
+import bcrypt from "bcrypt";
+import pg from "pg";
+import cron from "node-cron";
+import fs from "fs";
+
+// 🆕 Importación de archivos locales.
+// Se ha eliminado la importación duplicada e incorrecta de reciboRouter.
+import database from "./datadb.js";
+import inquilinos from "./inquilinos.js";
+import propietarios from "./propietarios.js";
+import propiedades from "./propiedades.js";
+import impuestos from "./impuestos.js";
+import contratos from "./contratos.js";
+import * as recibo_contrato from "./recibo_contrato.js";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
+import recibo_prop from "./recRecPropietario.js";
+import funcion_letras from "./funcion_letras.js";
+
+// ✅ Importación CORRECTA del router.
+import reciboRouter from "./routes/reciboRouter.js";
+
+// ✅ Importación simplificada de authRouter, asumiendo que usa 'export default'.
+import authRouter from "./routes/authRouter.js";
+
+// 🆕 Importación para variables de entorno
+import "dotenv/config";
+
+// 🆕 Corregir la definición de __dirname y __filename en ES Modules
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+// ... El resto de tu código es correcto y no necesita cambios.
+
 // Configuración básica
-require("dotenv").config();
-const PORT = process.env.PORT || 8000; // Usar el puerto de .env o 8000
+const PORT = process.env.PORT || 8000;
 
 // --- Middlewares Esenciales (Orden Importa) ---
-
 app.use(helmet());
-app.use(cors()); // Habilita CORS
-app.use(morgan("dev")); // Logging de solicitudes HTTP
+app.use(cors());
+app.use(morgan("dev"));
 
-app.use(express.json()); // Para parsear cuerpos de solicitud JSON
-app.use(express.urlencoded({ extended: true })); // Para parsear cuerpos de solicitud
-// Configurar rutas
-app.use(expressEjsLayouts); // Si estás usando layouts de EJS
-app.set("layout", "layout.ejs"); // Define el layout por defecto si usas express-ejs-layouts
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configurar EJS
+app.use(expressEjsLayouts);
+app.set("layout", "layout.ejs");
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "..", "public")));
 
+// 🆕 Instanciar PgSession correctamente
+const PgStore = connectPgSimple(session);
+
 // Asegúrate de que 'database.pool' esté configurado correctamente para PgSession
 app.use(
   session({
-    store: new PgSession({
-      pool: database, // Usa tu pool de conexión a la base de datos
-      tableName: "session", // Nombre de la tabla para almacenar sesiones
-      createTableIfMissing: true, // Añade esta línea
+    // Asumimos que el módulo `database` exporta el pool directamente
+    store: new PgStore({
+      pool: database,
+      tableName: "session",
+      createTableIfMissing: true,
     }),
-    secret: process.env.SESSION_SECRET || "your_secret_key", // Usa una clave secreta fuerte de .env
+    secret: process.env.SESSION_SECRET || "your_secret_key",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 días
-    secure: process.env.NODE_ENV === "production", // Importante para Render
+    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true },
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
   })
 );
-app.use(flash()); // Para mensajes flash (debe ir después de session si se usa)
+app.use(flash());
 
 // --- Configuración de Seguridad ---
 app.use(
@@ -74,34 +96,36 @@ app.use(
         "https://cdn.jsdelivr.net",
         "https://fonts.googleapis.com",
         "https://www.gstatic.com",
-        "'unsafe-inline'", // Necesario para Tailwind CSS si no usas PostCSS
+        "'unsafe-inline'",
       ],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: [
         "'self'",
         "https://translate.google.com",
         "https://cdn.jsdelivr.net",
-        "'unsafe-inline'", // Necesario para scripts inline en EJS
+        "'unsafe-inline'",
       ],
-      imgSrc: ["'self'", "data:", "https://placehold.co"], // Para imágenes, si las usas
-      connectSrc: ["'self'", "https://generativelanguage.googleapis.com"], // Necesario para llamadas a la API de Gemini
+      imgSrc: ["'self'", "data:", "https://placehold.co"],
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
     },
   })
 );
+
 app.use("/", reciboRouter);
 app.use("/", authRouter);
-// Luego, monta el router de recibos. Esto evita cualquier conflicto.
-app.use("/", reciboRouter);
+
+app.get("/", (req, res) => {
+  res.render("index");
+});
+
 // Middlewares personalizados (después de session y flash si se usan)
 app.use((req, res, next) => {
-  // Variables disponibles en todas las vistas
-  res.locals.mostrarNavbar = !!req.session?.usuarioId; // Usar optional chaining
+  res.locals.mostrarNavbar = !!req.session?.usuarioId;
   res.locals.insertado = false;
   res.locals.eliminado = false;
   res.locals.mensaje = null;
   res.locals.lista = [];
 
-  // Control de caché
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -112,6 +136,8 @@ app.use((req, res, next) => {
   console.log("Sesión actual:", req.session);
   next();
 });
+
+// Cron job para limpiar recibos antiguos
 cron.schedule("0 0 * * *", () => {
   const baseDir = path.join("/tmp", "recibos_pdf");
   const hoy = new Date().toISOString().slice(0, 10);
@@ -147,19 +173,6 @@ function verificarSesion(req, res, next) {
   }
   next();
 }
-
-// Rutas
-// app.get("/", (req, res) => {
-//   console.log("Accediendo a ruta / - usuarioId:", req.session.usuarioId);
-//   if (req.session.usuarioId) {
-//     console.log("Usuario tiene sesión, redirigiendo a /inicio");
-//     return res.redirect("/inicio");
-//   }
-//   console.log("Redirigiendo a login");
-//   res.redirect("/login");
-// });
-
-// Ruta de login (GET)
 
 // Iniciar servidor
 

@@ -1,6 +1,5 @@
-const database= require('./datadb.js');
-const express=require("express");
-
+import database from "./datadb.js";
+import express from "express";
 
 async function obtenerImpuestosPorDireccion(idPropiedad) {
   try {
@@ -19,45 +18,41 @@ async function obtenerImpuestosPorDireccion(idPropiedad) {
   }
 }
 
-
-
 async function obtenerImpuestos() {
-  
   try {
-    
-    const resultado = await database.query("SELECT * FROM impuestos ORDER BY fecha DESC ");
+    const resultado = await database.query(
+      "SELECT * FROM impuestos ORDER BY fecha DESC "
+    );
     return resultado;
   } catch (err) {
     console.error("Error al obtener impuestos:", err);
     return [];
-  } 
+  }
 }
 
 async function insertarImpuestos(datos) {
-  
   try {
-    
-    const sql = "INSERT INTO impuestos (abl,aysa,exp_com,exp_ext,seguro,varios,id_propiedades) VALUES ($1, $2, $3, $4, $5, $6,$7)"; 
-    const resultado= await database.query (sql,[ 
-        datos.abl || 0, 
-        datos.aysa || 0,  
-        datos.exp_com || 0,
-        datos.exp_ext || 0,
-        datos.seguro || 0,
-        datos.varios || 0,
-        datos.id_propiedades || 0
-      ]);
-       
+    const sql =
+      "INSERT INTO impuestos (abl,aysa,exp_com,exp_ext,seguro,varios,id_propiedades) VALUES ($1, $2, $3, $4, $5, $6,$7)";
+    const resultado = await database.query(sql, [
+      datos.abl || 0,
+      datos.aysa || 0,
+      datos.exp_com || 0,
+      datos.exp_ext || 0,
+      datos.seguro || 0,
+      datos.varios || 0,
+      datos.id_propiedades || 0,
+    ]);
+
     return resultado;
   } catch (err) {
     console.error("Error al insertar impuestos:", err);
     return null;
-  } 
+  }
 }
 
-module.exports = {
+export default {
   obtenerImpuestos,
   insertarImpuestos,
-  obtenerImpuestosPorDireccion
-    
+  obtenerImpuestosPorDireccion,
 };

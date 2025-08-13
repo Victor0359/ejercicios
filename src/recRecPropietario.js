@@ -1,8 +1,8 @@
-const database = require("./datadb");
+import pool from "./datadb.js";
 
 async function obtenerContratos_Id(id_propiedades) {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "SELECT a.id_reciboimpuestos, a.id_propiedad, a.numrecibo,a.cuota,a.importemensual,a.seguro,a.varios,b.honorarios, c.exp_ext, a.fecha FROM  recibo_inquilinos as a inner join contratos as b on a.id_propiedad=b.id_propiedades inner join impuestos as c on c.id_propiedades=a.id_propiedad where id_propiedad=$1 order by numrecibo desc limit 1",
       [id_propiedades]
     );
@@ -15,7 +15,7 @@ async function obtenerContratos_Id(id_propiedades) {
 
 async function obtenerPropietario_Id(id_propiedades) {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "SELECT trim(prop.apellido)|| ' ' || trim(prop.nombre) as apellido, honorarios as honorarios FROM contratos as cont inner join propietarios as prop on prop.id_propietarios = cont.id_propietarios where cont.id_propiedades=$1 ",
       [id_propiedades]
     );
@@ -25,7 +25,7 @@ async function obtenerPropietario_Id(id_propiedades) {
     return [];
   }
 }
-async function insertarReciboPropietario_Id(datos) {
+export async function insertarReciboPropietario_Id(datos) {
   try {
     const sql = `
       INSERT INTO recibo_propietario (
@@ -36,7 +36,7 @@ async function insertarReciboPropietario_Id(datos) {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
      RETURNING *
     `;
-    const resultado = await database.query(sql, [
+    const resultado = await pool.query(sql, [
       datos.fecha || new Date().toISOString().slice(0, 10),
       datos.id_propiedad || "0",
       datos.apellidopropietario || "",
@@ -60,7 +60,7 @@ async function insertarReciboPropietario_Id(datos) {
 
 async function recibosPropietarios(numrecibo) {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "select * from recibo_propietario where numrecibo=$1",
       [numrecibo]
     );
@@ -74,7 +74,7 @@ async function recibosPropietarios(numrecibo) {
 
 async function rePropietarios(id) {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "select * from recibo_propietario where id_propiedad=$1 order by numrecibo desc limit 5",
       [id]
     );
@@ -88,7 +88,7 @@ async function rePropietarios(id) {
 
 async function fechaReciboInquilino(id) {
   try {
-    const resultado = await database.query(
+    const resultado = await pool.query(
       "select * from recibo_inquilinos where id_propiedad=$1 order by fecha desc limit 1",
       [id]
     );
@@ -100,7 +100,7 @@ async function fechaReciboInquilino(id) {
   }
 }
 
-module.exports = {
+export default {
   obtenerContratos_Id,
   insertarReciboPropietario_Id,
   obtenerPropietario_Id,

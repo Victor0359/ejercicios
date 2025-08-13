@@ -1,7 +1,7 @@
 // src/dailyOwnerReceiptsManager.js
-const fs = require("fs").promises;
-const path = require("path");
-const { generateOwnerReceiptPDF } = require("./receiptPDFGenerator");
+import fs from "fs/promises";
+import path from "path";
+import { generateOwnerReceiptPDF } from "./receiptPDFGenerator.js";
 
 // This function now uses the pdf-lib PDF generator
 async function saveReceipt(receiptData) {
@@ -39,6 +39,6 @@ async function saveReceipt(receiptData) {
   }
 }
 
-module.exports = {
+export default {
   saveReceipt,
 };

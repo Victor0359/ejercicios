@@ -1,5 +1,5 @@
 // db/recibosPropietarios.js
-const pool = require("./datadb.js");
+import pool from "./datadb.js";
 
 /**
  * Obtiene los números de recibo para una fecha específica.
@@ -45,7 +45,7 @@ async function recibosPropietarios(numrecibo) {
   }
 }
 
-module.exports = {
+export default {
   getRecibosPorFecha,
   recibosPropietarios,
 };

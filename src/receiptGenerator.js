@@ -1,106 +1,55 @@
-// receiptGenerator.js
-const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
+// src/receiptPDFGenerator.js
+import PDFDocument from "pdfkit";
+import { PassThrough } from "stream";
 
-const A5_WIDTH = 148 * 2.83465;
-const A5_HEIGHT = 210 * 2.83465;
+/**
+ * 🆕 Función auxiliar para crear un nuevo documento PDF con encabezado y pie de página.
+ * @param {object} doc - La instancia del documento PDF.
+ * @param {object} receiptData - Los datos del recibo.
+ * @param {string} tipoRecibo - El tipo de recibo ("propietario" o "formulario").
+ */
+function createPDFHeader(doc, receiptData, tipoRecibo) {
+  doc.fontSize(16).text("RECIBO DE COBRO", { align: "center" });
+  doc
+    .fontSize(10)
+    .text(`Fecha: ${receiptData.fechaActual}`, { align: "right" });
+  doc.moveDown();
+  doc.text(`Recibo Nº: ${receiptData.numrecibo}`, { align: "left" });
+  doc.text(`Tipo de Recibo: ${tipoRecibo.toUpperCase()}`, { align: "left" });
+  doc.moveDown();
+}
 
-const express = require("express");
-const router = express.Router();
-
-// tu ruta
-router.post("/print-receipt", async (req, res) => {
-  try {
-    const pdfBytes = await generateReceiptPDF(req.body);
-    console.log("Datos recibidos en /print-receipt:", req.body);
-
-    // lógica para guardar o imprimir
-    res.status(200).json({ message: "Recibo impreso correctamente" });
-  } catch (err) {
-    console.error("Error en /print-receipt:", err);
-    res.status(500).json({ message: "Error interno en impresión" });
-  }
-});
-
-async function generateReceiptPDF(receiptData) {
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([A5_WIDTH, A5_HEIGHT]);
-  const { width, height } = page.getSize();
-  const fontSize = 10;
-
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-  // Margen izquierdo para mejor legibilidad
-  const marginLeft = 30;
-
-  // Encabezado
-  page.drawText("RECIBO DE COBRO", {
-    x: marginLeft,
-    y: height - 40,
-    size: 16,
-    font,
-    color: rgb(0, 0, 0),
+/**
+ * 🆕 Genera un PDF para un recibo de inquilino.
+ * @param {object} receiptData - Los datos del recibo.
+ * @returns {Promise<Buffer>} - Un Buffer con los bytes del PDF.
+ */
+export async function generateTenantReceiptPDF(receiptData) {
+  const doc = new PDFDocument({
+    size: "A5",
+    margins: {
+      top: 40,
+      bottom: 40,
+      left: 30,
+      right: 30,
+    },
   });
 
-  // Fecha y número de recibo
-  page.drawText(`Fecha: ${receiptData.fechaActual}`, {
-    x: width - 150,
-    y: height - 40,
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
-  page.drawText(`La suma de pesos: ${receiptData.letra || "----"}`, {
-    x: marginLeft,
-    y: yPosition,
-  });
+  const stream = new PassThrough();
+  doc.pipe(stream);
 
-  page.drawText(`Recibo Nº: ${receiptData.numrecibo}`, {
-    x: marginLeft,
-    y: height - 70,
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
+  createPDFHeader(doc, receiptData, "formulario");
 
-  // Cuerpo del recibo
-  let yPosition = height - 100;
-
-  page.drawText(`Recibí de: ${receiptData.apellidoinquilino}`, {
-    x: marginLeft,
-    y: yPosition,
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
-
-  yPosition -= 20;
-
-  page.drawText(`La suma de pesos: ${receiptData.letra}`, {
-    x: marginLeft,
-    y: yPosition,
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
-
-  yPosition -= 20;
-
-  page.drawText(
+  doc.fontSize(12).text(`Recibí de: ${receiptData.apellidoinquilino}`);
+  doc.text(`La suma de pesos: ${receiptData.letra || "----"}`);
+  doc.text(
     `($${receiptData.total.toLocaleString("es-AR", {
       minimumFractionDigits: 2,
-    })})`,
-    {
-      x: marginLeft,
-      y: yPosition,
-      size: fontSize,
-      font,
-      color: rgb(0, 0, 0),
-    }
+    })})`
   );
+  doc.moveDown();
 
-  yPosition -= 30;
-
-  // Detalles de los conceptos
+  doc.fontSize(10).text("Conceptos:", { underline: true });
   const concepts = [
     { label: "Mensualidad", value: receiptData.importemensual },
     { label: "ABL", value: receiptData.abl },
@@ -111,56 +60,91 @@ async function generateReceiptPDF(receiptData) {
   ];
 
   concepts.forEach((concept) => {
-    if (concept.value > 0) {
-      page.drawText(
-        `${concept.label}: $${concept.value.toLocaleString("es-AR", {
+    if (concept.value && concept.value > 0) {
+      doc.text(
+        `  ${concept.label}: $${concept.value.toLocaleString("es-AR", {
           minimumFractionDigits: 2,
-        })}`,
-        {
-          x: marginLeft,
-          y: yPosition,
-          size: fontSize,
-          font,
-          color: rgb(0, 0, 0),
-        }
+        })}`
       );
-      yPosition -= 20;
     }
   });
 
-  // Total
-  yPosition -= 20;
-  page.drawText(
+  doc.moveDown();
+  doc.fontSize(12).text(
     `TOTAL: $${receiptData.total.toLocaleString("es-AR", {
       minimumFractionDigits: 2,
-    })}`,
-    {
-      x: marginLeft,
-      y: yPosition,
-      size: fontSize + 2,
-      font,
-      color: rgb(0, 0, 0),
-    }
+    })}`
   );
 
-  // Firma
-  yPosition -= 50;
-  page.drawLine({
-    start: { x: marginLeft, y: yPosition },
-    end: { x: marginLeft + 200, y: yPosition },
-    thickness: 1,
-    color: rgb(0, 0, 0),
-  });
+  doc.end();
 
-  yPosition -= 15;
-  page.drawText("Firma y Aclaración", {
-    x: marginLeft,
-    y: yPosition,
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
+  return new Promise((resolve) => {
+    const chunks = [];
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
   });
-
-  return await pdfDoc.save();
 }
-module.exports = router;
+
+/**
+ * 🆕 Genera un PDF para un recibo de propietario.
+ * @param {object} receiptData - Los datos del recibo.
+ * @returns {Promise<Buffer>} - Un Buffer con los bytes del PDF.
+ */
+export async function generateOwnerReceiptPDF(receiptData) {
+  const doc = new PDFDocument({
+    size: "A5",
+    margins: {
+      top: 40,
+      bottom: 40,
+      left: 30,
+      right: 30,
+    },
+  });
+
+  const stream = new PassThrough();
+  doc.pipe(stream);
+
+  createPDFHeader(doc, receiptData, "propietario");
+
+  doc.fontSize(12).text(`PAGADO a: ${receiptData.apellido_propietario}`);
+  doc.text(`La suma de pesos: ${receiptData.letra || "----"}`);
+  doc.text(
+    `($${receiptData.total.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+    })})`
+  );
+  doc.moveDown();
+
+  doc.fontSize(10).text("Detalle de liquidación:", { underline: true });
+  // Asumiendo que los datos de propietario tienen un formato similar
+  const concepts = [
+    { label: "Total Recaudado", value: receiptData.total_recaudado },
+    { label: "Gastos", value: receiptData.gastos },
+    { label: "Comisión", value: receiptData.comision },
+  ];
+
+  concepts.forEach((concept) => {
+    if (concept.value && concept.value > 0) {
+      doc.text(
+        `  ${concept.label}: $${concept.value.toLocaleString("es-AR", {
+          minimumFractionDigits: 2,
+        })}`
+      );
+    }
+  });
+
+  doc.moveDown();
+  doc.fontSize(12).text(
+    `Total a pagar: $${receiptData.total.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+    })}`
+  );
+
+  doc.end();
+
+  return new Promise((resolve) => {
+    const chunks = [];
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
+  });
+}

@@ -2,10 +2,16 @@
   class="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100"
 >
   <form>
-    <input type="hidden" name="numrecibo" value="<%= numrecibo %>" />
+    <!-- 🆕 AÑADIDO: Los campos ocultos para los datos del recibo -->
+    <input type="hidden" name="numrecibo" value="<%= reciboProp.numrecibo %>" />
+    <input type="hidden" name="id_propiedad" value="<%= reciboProp.id_propiedad %>" />
     <input type="hidden" name="letra" value="<%= letra %>" />
-    <!-- 🆕 AÑADIDO: Este campo oculto asegura que el tipo de recibo siempre se envíe -->
     <input type="hidden" id="tipoRecibo" name="tipoRecibo" value="propietario" />
+    <input
+      type="hidden"
+      name="fecha"
+      value="<%= new Date(reciboProp.fecha).toISOString() %>"
+    />
 
     <div class="receipt-container">
       <div class="receipt-header">
@@ -24,7 +30,7 @@
         <div class="left">
           <p>
             <strong>Recibo Nº:</strong>
-            <span id="receiptNumber"> <%= reciboProp.numrecibo %> </span>
+            <span id="receiptNumber"><%= reciboProp.numrecibo %></span>
           </p>
         </div>
 
@@ -39,26 +45,54 @@
         <div class="right">
           <p>
             <strong>Mes Cont:</strong>
-            <span id="ownerName"> <%= reciboProp.cuota %> </span>
+            <span id="ownerName"><%= reciboProp.cuota %></span>
           </p>
         </div>
       </div>
 
       <div class="receipt-item">
         <p>
-          <strong>Recibí de:</strong> GARROTE PROPIEDADES la suma de pesos <%= letra %>, ($ <%= Number(reciboProp.total).toLocaleString("es-AR", {minimumFractionDigits: 2}) %>) en concepto de pago de la locación correspondiente a la propiedad ubicada en la localidad de <span id="propiedadLocalidad"><%= propiedades.localidad %></span>, con frente a la calle <span id="propiedadDireccion"><%= propiedades.direccion %></span>, mes de <span id="mesContrato"><%= mes_contrato %></span> con vencimiento el dia <span id="vencimientoDia"><%= vencimiento %> de <span id="mesContrato"><%= mes_contrato %></span>.
+          <strong>Recibí de:</strong> GARROTE PROPIEDADES la suma de pesos
+          <%= letra %>, ($ <%= Number(reciboProp.total).toLocaleString("es-AR", {minimumFractionDigits: 2}) %>) en concepto de pago de la locación correspondiente a la propiedad ubicada en la localidad de
+          <span id="propiedadLocalidad"><%= propiedades.localidad %></span>, con frente a la calle
+          <span id="propiedadDireccion"><%= propiedades.direccion %></span>, mes de
+          <span id="mesContrato"><%= mes_contrato %></span> con vencimiento el dia
+          <span id="vencimientoDia"><%= vencimiento %> de <span id="mesContrato"><%= mes_contrato %></span>.
         </p>
       </div>
+
       <div class="form-row">
         <label for="mensualidad" class="form-label">Mensualidad</label>
         <span>$</span>
         <input
           type="text"
-          name="mensualidad"
+          name="importemensual"
           value="<%= reciboProp.importemensual %>"
           readonly
         />
       </div>
+      <!-- 🆕 AÑADIDO: Campos faltantes para ABL y AYSA -->
+      <div class="form-row">
+        <label for="abl" class="form-label">ABL</label>
+        <span>$</span>
+        <input
+          type="text"
+          name="abl"
+          value="<%= reciboProp.abl || 0 %>"
+          readonly
+        />
+      </div>
+      <div class="form-row">
+        <label for="aysa" class="form-label">AYSA</label>
+        <span>$</span>
+        <input
+          type="text"
+          name="aysa"
+          value="<%= reciboProp.aysa || 0 %>"
+          readonly
+        />
+      </div>
+      <!-- 🆕 CORREGIDO: Usamos el nombre 'exp_extraor' que usa el modelo -->
       <div class="form-row">
         <label for="exp_extraor" class="form-label">EXPENSAS EXTRAORDINARIAS</label>
         <span>$</span>
@@ -105,8 +139,7 @@
         Total:
         <span id="totalAmount"
           ><span>$</span>
-          <%= Number(reciboProp.total).toLocaleString("es-AR",
-          {minimumFractionDigits: 2}) %>
+          <%= Number(reciboProp.total).toLocaleString("es-AR", {minimumFractionDigits: 2}) %>
         </span>
       </div>
 
@@ -136,46 +169,35 @@
   ></div>
 
   <script>
-    // 🔧 Función para obtener los datos del recibo
     const getReceiptData = () => {
-      const data = {
-        // 🆕 AÑADIDO: Incluye el tipo de recibo en los datos
-        tipoRecibo: document.getElementById("tipoRecibo").value,
-        numrecibo: document.querySelector('[name="numrecibo"]').value,
-        fechaDocumento: document.querySelector('[name="ownerFecha"]').value,
-        cuota: document.querySelector('[name="ownerName"]').value,
-        total: parseFloat(
-          document
-            .getElementById("totalAmount")
-            .textContent.replace(/\./g, "")
-            .replace(",", ".")
-        ),
-        importemensual: parseFloat(
-          document.querySelector('[name="mensualidad"]').value
-        ),
-        letra: document.querySelector('[name="letra"]').value,
-        abl: parseFloat(document.querySelector('[name="abl"]').value),
-        aysa: parseFloat(document.querySelector('[name="aysa"]').value),
-        expExtraor: parseFloat(
-          document.querySelector('[name="exp_extraor"]').value
-        ),
-        seguro: parseFloat(document.querySelector('[name="seguro"]').value),
-        varios: parseFloat(document.querySelector('[name="varios"]').value),
-        honorarios: parseFloat(
-          document.querySelector('[name="honorarios"]').value
-        ),
+      // 🆕 MEJORADO: Recopila los datos de todos los inputs y campos ocultos
+      const form = document.querySelector('form');
+      const data = {};
+      new FormData(form).forEach((value, key) => {
+        data[key] = value;
+      });
 
-        localidad: document.getElementById("propiedadLocalidad").textContent.trim(),
-        direccion: document.getElementById("propiedadDireccion").textContent.trim(),
-        cuota: document.getElementById("mesContratoNumber").textContent.trim(),
-        mes: document.getElementById("mesContrato").textContent.trim(),
-        vencimiento: document.getElementById("vencimientoDia").textContent.trim(),
-      };
+      // 🆕 AÑADIDO: Recopila los datos de los <span> y los procesa
+      data.total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));
+      data.localidad = document.getElementById("propiedadLocalidad").textContent.trim();
+      data.direccion = document.getElementById("propiedadDireccion").textContent.trim();
+      data.cuota = document.getElementById("ownerName").textContent.trim();
+      data.vencimiento = document.getElementById("vencimientoDia").textContent.trim();
+      data.mes = document.getElementById("mesContrato").textContent.trim();
+
+      // Convertir valores numéricos de texto a números
+      data.importemensual = parseFloat(document.querySelector('[name="importemensual"]').value);
+      data.abl = parseFloat(document.querySelector('[name="abl"]').value);
+      data.aysa = parseFloat(document.querySelector('[name="aysa"]').value);
+      data.exp_extraor = parseFloat(document.querySelector('[name="exp_extraor"]').value);
+      data.seguro = parseFloat(document.querySelector('[name="seguro"]').value);
+      data.varios = parseFloat(document.querySelector('[name="varios"]').value);
+      data.honorarios = parseFloat(document.querySelector('[name="honorarios"]').value);
+
       console.log("Datos de recibo a enviar:", data);
       return data;
     };
 
-    // 🧪 Validación de los datos recibidos
     const validateData = (data) => {
       return (
         data.numrecibo &&
@@ -190,7 +212,6 @@
       );
     };
 
-    // Función para mostrar mensajes en el cuadro de mensajes
     function showMessage(message, type = "info") {
       const messageBox = document.getElementById("messageBox");
       messageBox.textContent = message;
@@ -204,7 +225,6 @@
       messageBox.style.display = "block";
     }
 
-    // 🧵 Asignación de eventos al cargar la página
     document.addEventListener("DOMContentLoaded", () => {
       const tipoRecibo = document.getElementById("tipoRecibo").value;
 
@@ -213,7 +233,6 @@
         .addEventListener("click", function () {
           const numrecibo = document.querySelector('[name="numrecibo"]').value;
           if (numrecibo) {
-            // 🆕 CORREGIDO: Se añadió el tipo de recibo a la URL
             window.open(`/generar_pdf/${tipoRecibo}/${numrecibo}`, "_blank");
             showMessage("Descarga del recibo individual iniciada.", "info");
           } else {
@@ -224,7 +243,6 @@
           }
         });
 
-      // 🔧 LÍNEA CORREGIDA: Se cambió la ruta a '/guardar-recibo' para que coincida con el router
       document
         .getElementById("btnGuardar")
         .addEventListener("click", async function () {
@@ -263,7 +281,6 @@
         .getElementById("btnImprimirDia")
         .addEventListener("click", async () => {
           const today = new Date().toISOString().split("T")[0];
-          // 🆕 CORREGIDO: Se añadió el tipo de recibo a la URL
           window.open(`/generar_pdfs_dia/${tipoRecibo}?fecha=${today}`, "_blank");
           showMessage("Descarga de los recibos diarios iniciada.", "info");
         });
@@ -272,5 +289,6 @@
 
   <link rel="stylesheet" href="/css/recibo_imprimir.css" />
 </body>
+
 
 

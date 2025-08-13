@@ -1,7 +1,7 @@
 // routes/authRouter.js
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const bcrypt = require("bcrypt");
+import bcrypt from "bcrypt";
 
 // Ruta raíz, se encarga de la lógica de autenticación
 
@@ -152,4 +152,4 @@ const testHash = async () => {
 };
 testHash();
 
-module.exports = router;
+export default router;

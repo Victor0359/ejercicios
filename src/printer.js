@@ -1,5 +1,5 @@
 // src/printer.js
-const { print: printPDF, getPrinters } = require("pdf-to-printer");
+import { print: printPDF, getPrinters } from "pdf-to-printer";
 
 function print(filePath, options = {}) {
   return printPDF(filePath, {

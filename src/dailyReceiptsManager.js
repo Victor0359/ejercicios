@@ -1,14 +1,28 @@
 // src/dailyReceiptsManager.js
-// Importaciones CommonJS
-const fs = require("fs").promises;
-const path = require("path");
-const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// ... (resto de tu código)
+
+// Obtén la ruta del archivo actual usando import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+// A partir de la ruta del archivo, obtén el nombre del directorio
+const __dirname = dirname(__filename);
+
+const receiptsFolder = path.join(__dirname, "receipts");
+
+// ... (resto de tu código)
+
+import fs from "fs/promises"; // Importaciones CommonJS
+
+import path from "path";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 // 🔧 CORREGIDO: Importar generateTenantReceiptPDF (o generateOwnerReceiptPDF si es el caso)
-const {
+import {
   generateTenantReceiptPDF,
   generateOwnerReceiptPDF,
-} = require("./receiptPDFGenerator");
+} from "./receiptPDFGenerator.js";
 
 // Función para obtener el módulo PDFMerger de forma asíncrona
 async function getPDFMerger() {
@@ -17,7 +31,7 @@ async function getPDFMerger() {
 }
 
 // Configuración de carpetas
-const receiptsFolder = path.join(__dirname, "receipts"); // src/receipts
+
 const dailyFolder = path.join(__dirname, "daily"); // src/daily
 const tempFolder = path.join(__dirname, "temp"); // src/temp
 
@@ -126,7 +140,7 @@ async function getDailyReceipts(date) {
 }
 
 // Exporta las funciones que se usarán en otros módulos CommonJS
-module.exports = {
+export default {
   saveReceipt,
   getDailyReceipts,
   // Puedes exportar otras funciones si las necesitas en otros lugares
