@@ -170,12 +170,11 @@
 
   <script>
     const getReceiptData = () => {
-      // 🆕 MEJORADO: Recopila los datos de todos los inputs y campos ocultos
-      const form = document.querySelector('form');
-      const data = {};
-      new FormData(form).forEach((value, key) => {
-        data[key] = value;
-      });
+  // Sincroniza el input oculto con el número visible
+  const receiptNumber = document.getElementById('receiptNumber').textContent.trim();
+  document.querySelector('[name="numrecibo"]').value = receiptNumber;
+
+  
 
       // 🆕 AÑADIDO: Recopila los datos de los <span> y los procesa
       data.total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));

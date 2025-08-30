@@ -1,7 +1,5 @@
 // src/routes/reciboRouter.js
 
-// src/routes/reciboRouter.js
-
 import { Router } from "express";
 import path from "path";
 import fs from "fs/promises";
@@ -12,23 +10,18 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ CORRECCIÓN: Importa el objeto completo con un nombre (recibo_prop)
-// Ya no se necesita un alias para saveRecibo aquí.
 import recibo_prop from "../recibosPropietarios.js";
 import propiedades from "../propiedades.js";
 import funcion_letras from "../funcion_letras.js";
-// ✅ CORRECCIÓN: Importa el objeto completo con un nombre (recibo_contrato)
 import * as recibo_contrato from "../recibo_contrato.js";
 import {
   generateTenantReceiptPDF,
   generateOwnerReceiptPDF,
-} from "../receiptPDFGenerator.js"; // Ajustá la ruta si está en otra carpeta
+} from "../receiptPDFGenerator.js";
 import { insertarReciboPropietario_Id } from "../recRecPropietario.js";
 
 const reciboRouter = Router();
-async function saveRecibo(data) {
-  return await insertarReciboPropietario_Id(data);
-}
+
 /**
  * 📂 Función auxiliar para obtener las rutas de los archivos PDF
  * basadas en el tipo de recibo.
@@ -67,7 +60,6 @@ async function fetchCompleteReceiptData(numrecibo, tipoRecibo) {
     if (tipoRecibo === "propietario") {
       resultado = await recibo_prop.recibosPropietarios(numrecibo);
     } else if (tipoRecibo === "formulario") {
-      // ✅ CORRECCIÓN: Llama a la función a través del objeto recibo_contrato
       resultado = await recibo_contrato.obtenerRecibosPorNumrecibo(numrecibo);
     } else {
       console.error("Tipo de recibo no válido en fetchCompleteReceiptData.");
@@ -194,7 +186,6 @@ async function handleGenerateDailyPdfsLogic(req, res) {
       if (tipoRecibo === "propietario") {
         receiptNumbers = await recibo_prop.getRecibosPorFecha(date);
       } else if (tipoRecibo === "formulario") {
-        // ✅ CORRECCIÓN: Llama a la función a través del objeto recibo_contrato
         receiptNumbers = await recibo_contrato.getRecibosPorFecha(date);
       }
 
@@ -233,7 +224,8 @@ async function handleGenerateDailyPdfsLogic(req, res) {
 }
 
 /**
- * 🆕 Función para manejar la lógica de guardar un nuevo recibo.
+ * ✅ CORREGIDO: Lógica para manejar la lógica de guardar un nuevo recibo.
+ * Ahora primero guarda en la base de datos, obtiene el ID y luego genera el PDF.
  * @param {object} req - Objeto de la solicitud HTTP.
  * @param {object} res - Objeto de la respuesta HTTP.
  */
@@ -250,10 +242,40 @@ async function handleSaveReceiptLogic(req, res) {
     console.log(`Guardando nuevo recibo de tipo: ${tipoRecibo}`);
     console.log("Datos recibidos:", receiptData);
 
+    let newReceiptId;
+
+    // 1️⃣ Primero, guarda el recibo en la base de datos para obtener el nuevo ID.
+    // Esto es crucial para que el recibo guardado sea el correcto.
+    if (tipoRecibo === "propietario") {
+      newReceiptId = await recibo_prop.insertarReciboPropietario_Id(
+        datosRecibo
+      );
+    } else if (tipoRecibo === "formulario") {
+      newReceiptId = await recibo_contrato.saveRecibo(receiptData);
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Tipo de recibo no válido para guardar." });
+    }
+
+    // 2️⃣ Luego, obtén todos los datos completos del recibo recién guardado
+    // para asegurarte de que el PDF se genera con la información correcta.
+    const completeReceiptData = await fetchCompleteReceiptData(
+      newReceiptId,
+      tipoRecibo
+    );
+
+    if (!completeReceiptData) {
+      return res.status(404).json({
+        message: "Datos del recibo recién guardado no encontrados.",
+      });
+    }
+
+    // 3️⃣ Ahora genera el PDF con los datos correctos y completos.
     const pdfBytes =
       tipoRecibo === "propietario"
-        ? await generateOwnerReceiptPDF(receiptData)
-        : await generateTenantReceiptPDF(receiptData);
+        ? await generateOwnerReceiptPDF(completeReceiptData)
+        : await generateTenantReceiptPDF(completeReceiptData);
 
     const { dailyDir } = getReceiptPaths(tipoRecibo);
     await fs.mkdir(dailyDir, { recursive: true });
@@ -273,8 +295,10 @@ async function handleSaveReceiptLogic(req, res) {
     await merger.add(pdfBytes);
     await merger.save(dailyPdfPath);
 
+    // 4️⃣ Envía una respuesta de éxito con el nuevo ID del recibo.
     res.status(200).json({
-      message: "Recibo generado y agregado al PDF diario.",
+      message: "Recibo guardado y PDF generado exitosamente.",
+      receiptId: newReceiptId,
     });
   } catch (error) {
     console.error("Error al guardar el recibo:", error);

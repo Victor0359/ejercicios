@@ -15,7 +15,7 @@ async function obtenerExpExtraordinarias(id_propiedades) {
 async function obtenerContratos_Id(id_propiedades) {
   try {
     const resultado = await pool.query(
-      "SELECT a.id_reciboimpuestos, a.id_propiedad, a.numrecibo,a.cuota,a.importemensual,a.seguro,a.varios,b.honorarios, c.exp_ext, a.fecha FROM  recibo_inquilinos as a inner join contratos as b on a.id_propiedad=b.id_propiedades inner join impuestos as c on c.id_propiedades=a.id_propiedad where id_propiedad=$1 order by numrecibo desc limit 1",
+      "SELECT a.id_reciboimpuestos, a.id_propiedad, a.numrecibo,a.cuota,a.importemensual,a.seguro,a.varios,b.honorarios,  a.fecha FROM  recibo_inquilinos as a inner join contratos as b on a.id_propiedad=b.id_propiedades where id_propiedad=$1 order by numrecibo desc limit 1",
       [id_propiedades]
     );
     return resultado.rows;
