@@ -121,6 +121,9 @@
       <button type="button" id="btnImprimirDia" class="btn-imprimir-dia">
         Imprimir Todos los Recibos del Día
       </button>
+      <button type="button" id="Volver a Rec.Inq." class="btn-imprimir-dia">
+        Volver a recibos
+      </button>
     </div>
   </form>
   <div
@@ -268,6 +271,11 @@
             "_blank"
           );
           showMessage("Descarga de los recibos diarios iniciada.", "info");
+        });
+      document
+        .getElementById("Volver a Rec.Inq.")
+        .addEventListener("click", () => {
+          window.location.href = "/recibo_inquilino";
         });
     });
   </script>

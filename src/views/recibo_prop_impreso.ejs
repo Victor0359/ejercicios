@@ -159,6 +159,9 @@
         <button type="button" id="btnImprimirDia" class="btn-imprimir-dia">
           Imprimir Todos los Recibos del Día
         </button>
+        <button type="button" id="Volver a Rec.Prop." class="btn-imprimir-dia">
+        Volver a recibos
+      </button>
       </div>
     </div>
   </form>
@@ -282,6 +285,11 @@
           const today = new Date().toISOString().split("T")[0];
           window.open(`/generar_pdfs_dia/${tipoRecibo}?fecha=${today}`, "_blank");
           showMessage("Descarga de los recibos diarios iniciada.", "info");
+        });
+        document
+        .getElementById("Volver a Rec.Prop.")
+        .addEventListener("click", () => {
+          window.location.href = "/recibo_propietario";
         });
     });
   </script>

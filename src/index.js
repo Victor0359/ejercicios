@@ -113,6 +113,7 @@ app.use(
 
 app.use("/", reciboRouter);
 app.use("/", router);
+app.use(express.static("public"));
 
 app.get("/", (req, res) => {
   res.render("index");
