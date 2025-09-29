@@ -2,18 +2,27 @@ import pool from "./datadb.js";
 import express from "express";
 const router = express.Router();
 
-async function obtenerInquilinos(datos) {
+async function obtenerInquilinos(filtro) {
   try {
-    if (datos && datos.trim() !== "") {
-      const resultado = await pool.query(
-        "SELECT * FROM inquilinos WHERE apellido ILIKE '%' || $1 || '%'",
-        [datos]
-      );
-      return resultado.rows; // Devuelve los registros correctamente
+    let query;
+    let params;
+
+    if (filtro === "") {
+      query = "SELECT * FROM inquilinos";
+      params = [];
+    } else {
+      query = `
+        SELECT *
+        FROM inquilinos
+        WHERE apellido ILIKE '%' || $1 || '%'
+      `;
+      params = [filtro];
     }
-    return [];
+
+    const resultado = await pool.query(query, params);
+    return resultado.rows;
   } catch (err) {
-    console.error("Error al buscar propietarios:", err);
+    console.error("Error al buscar inquilinos:", err);
     return [];
   }
 }

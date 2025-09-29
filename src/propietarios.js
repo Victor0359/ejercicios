@@ -1,16 +1,25 @@
 import pool from "./datadb.js";
 import express from "express";
 
-async function obtenerPropietarios(datos) {
+async function obtenerPropietarios(filtro) {
   try {
-    if (datos && datos.trim() !== "") {
-      const resultado = await pool.query(
-        "SELECT * FROM propietarios WHERE apellido ILIKE '%' || $1 || '%'",
-        [datos]
-      );
-      return resultado.rows; // Devuelve los registros correctamente
+    let query;
+    let params;
+
+    if (filtro === "") {
+      query = "SELECT * FROM propietarios";
+      params = [];
+    } else {
+      query = `
+        SELECT *
+        FROM propietarios
+        WHERE apellido ILIKE '%' || $1 || '%'
+      `;
+      params = [filtro];
     }
-    return [];
+
+    const resultado = await pool.query(query, params);
+    return resultado.rows;
   } catch (err) {
     console.error("Error al buscar propietarios:", err);
     return [];

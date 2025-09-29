@@ -654,12 +654,16 @@ app.get("/propietarios/editar/:id", async (req, res) => {
 });
 
 app.post("/propietarios/buscar", async (req, res) => {
-  const prop = req.body.prop;
-  console.log("Datos recibidos para buscar propietarios:", prop);
+  //const prop = req.body.prop;
+  //const filtro = req.body.prop || "";
+  const filtro = typeof req.body.prop === "string" ? req.body.prop.trim() : "";
+
+  console.log("Datos recibidos para buscar propietarios:", filtro);
   try {
     const propietariosEncontrados = await propietarios.obtenerPropietarios(
-      prop
+      filtro
     );
+    console.log("Propietarios encontrados:", propietariosEncontrados);
     const eliminado = req.query.eliminado === "1";
     res.render("propietarios", {
       propietarios: propietariosEncontrados,
