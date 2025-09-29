@@ -1,18 +1,27 @@
 import pool from "./datadb.js";
 import express from "express";
 const router = express.Router();
-async function obtenerPropiedad(datos) {
+async function obtenerPropiedad(filtro) {
   try {
-    if (datos && datos.trim() !== "") {
-      const resultado = await pool.query(
-        "SELECT * FROM propiedades WHERE direccion ILIKE '%' || $1 || '%'",
-        [datos]
-      );
-      return resultado.rows; // Devuelve los registros correctamente
+    let query;
+    let params;
+
+    if (filtro === "") {
+      query = "SELECT * FROM propiedades order BY direccion";
+      params = [];
+    } else {
+      query = `
+        SELECT *
+        FROM propiedades
+        WHERE direccion ILIKE '%' || $1 || '%' order BY direccion
+      `;
+      params = [filtro];
     }
-    return [];
+
+    const resultado = await pool.query(query, params);
+    return resultado.rows;
   } catch (err) {
-    console.error("Error al buscar propiedad:", err);
+    console.error("Error al buscar propiedades:", err);
     return [];
   }
 }

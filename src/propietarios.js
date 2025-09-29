@@ -7,13 +7,13 @@ async function obtenerPropietarios(filtro) {
     let params;
 
     if (filtro === "") {
-      query = "SELECT * FROM propietarios";
+      query = "SELECT * FROM propietarios order BY apellido";
       params = [];
     } else {
       query = `
         SELECT *
         FROM propietarios
-        WHERE apellido ILIKE '%' || $1 || '%'
+        WHERE apellido ILIKE '%' || $1 || '%' order BY apellido
       `;
       params = [filtro];
     }

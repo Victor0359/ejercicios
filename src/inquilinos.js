@@ -8,13 +8,13 @@ async function obtenerInquilinos(filtro) {
     let params;
 
     if (filtro === "") {
-      query = "SELECT * FROM inquilinos";
+      query = "SELECT * FROM inquilinos order by apellido";
       params = [];
     } else {
       query = `
         SELECT *
         FROM inquilinos
-        WHERE apellido ILIKE '%' || $1 || '%'
+        WHERE apellido ILIKE '%' || $1 || '%' order by apellido
       `;
       params = [filtro];
     }
