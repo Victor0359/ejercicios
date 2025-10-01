@@ -145,7 +145,8 @@
       document.getElementById('fecha_actual').value = data.fecha_actual || '';
       document.getElementById('apellidoinquilino').value = data.apellidoinquilino || '';
       document.getElementById('apellidopropietario').value = data.apellidopropietario || '';
-      document.getElementById('cuota').value = data.cuota || '';
+      //document.getElementById('cuota').value = data.cuota || '';
+      document.getElementById('cuota').value = (data.cuota !== undefined && data.cuota !== null) ? data.cuota : '';
       document.getElementById('importemensual').value = data.importemensual || '';
       document.getElementById('expcomunes').value = data.expcomunes || '';
       document.getElementById('abl').value = data.abl || '';

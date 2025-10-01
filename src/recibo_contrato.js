@@ -5,7 +5,7 @@ import pool from "./datadb.js";
 async function obtenerContratos_Id(id_propiedades) {
   try {
     const resultado = await pool.query(
-      "SELECT con.id_contratos,con.cuota,propi.direccion,prop.apellido ||' '||prop.nombre AS apellidoPropietario,inq.apellido ||' '||inq.nombre AS apellidoInquilino,con.precioactual,con.fecha_inicio,con.duracion_contrato FROM contratos con INNER JOIN inquilinos inq ON con.id_inquilinos = inq.id_inquilinos INNER JOIN propietarios prop ON con.id_propietarios = prop.id_propietarios INNER JOIN propiedades propi ON con.id_propiedades = propi.id_propiedades WHERE con.id_propiedades= $1",
+      "select* from vista_contratos as vis inner join propiedades as prop on vis.direccion=prop.direccion where prop.id_propiedades= $1",
       [id_propiedades]
     );
     return resultado.rows;

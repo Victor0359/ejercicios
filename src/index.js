@@ -1174,7 +1174,9 @@ app.get("/api/datos_propiedad", async (req, res) => {
     const contrato = await recibo_contrato.obtenerContratos_Id(id);
     const impuestos = await recibo_contrato.obtenerImpuestos(id);
     const ultimo = await recibo_contrato.obtenernumeroRecibo();
-
+    console.log("Datos de contrato:", contrato);
+    console.log("Datos de impuestos:", impuestos);
+    console.log("Datos de ultimo recibo:", ultimo);
     // 2) Extraigo valores (aseguro números por default)
     const apellidoinquilino = contrato[0]?.apellidoinquilino || "";
     const apellidopropietario = contrato[0]?.apellidopropietario || "";
@@ -1293,6 +1295,7 @@ app.post("/recibo_inquilino", async (req, res) => {
     const impuestosLista = await recibo_contrato.obtenerImpuestos(
       id_propiedades
     );
+    console.log(contrato);
     const numero = await recibo_contrato.obtenernumeroRecibo();
     const numero_recibo = (numero[0]?.numero_recibo || 0) + 1;
 
