@@ -38,7 +38,7 @@ async function obtenerPropiedadOrdenados() {
 async function agregarContratos(datos) {
   try {
     const sql =
-      "INSERT INTO contratos (id_propietarios,id_inquilinos,id_propiedades,fecha_inicio,precioinicial,precioactual,honorarios,duracion_contrato,cuota) VALUES ($1, $2, $3, $4, $5, $6, $7, $8,$9)";
+      "INSERT INTO contratos (id_propietarios,id_inquilinos,id_propiedades,fecha_inicio,precioinicial,precioactual,honorarios,duracion_contrato,cuota,frecuencia) VALUES ($1, $2, $3, $4, $5, $6, $7, $8,$9,$10)";
     const resultado = await pool.query(sql, [
       datos.id_propietarios,
       datos.id_inquilinos,
@@ -49,6 +49,7 @@ async function agregarContratos(datos) {
       datos.honorarios,
       datos.duracion_contrato,
       datos.cuota,
+      datos.frecuencia,
     ]);
 
     return resultado;
@@ -70,9 +71,10 @@ async function modificarContrato(datos) {
         precioactual = $6,
         honorarios = $7,
         duracion_contrato = $8,
-        cuota=$9
+        cuota=$9,
+        frecuencia=$10
         
-      WHERE id_contratos = $10
+      WHERE id_contratos = $11
     `;
     const resultado = await pool.query(sql, [
       datos.id_propietarios,
@@ -84,6 +86,7 @@ async function modificarContrato(datos) {
       datos.honorarios,
       datos.duracion_contrato,
       datos.cuota,
+      datos.frecuencia,
       datos.id_contratos,
     ]);
     return resultado;

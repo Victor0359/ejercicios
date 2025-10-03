@@ -28,6 +28,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import recibo_prop from "./recRecPropietario.js";
 import funcion_letras from "./funcion_letras.js";
+import actualizacion from "./actualizacion.js";
 
 // ✅ Importación CORRECTA del router.
 import reciboRouter from "./routes/reciboRouter.js";
@@ -748,7 +749,7 @@ app.post("/propiedades/porId", async (req, res) => {
 });
 
 app.post("/propiedades/modificar", async (req, res) => {
-  const { direccion, localidad, id_propietario, id_impuestos, id_propiedades } =
+  let { direccion, localidad, id_propietario, id_impuestos, id_propiedades } =
     req.body;
   if (id_impuestos === "" || id_impuestos === undefined) {
     id_impuestos = 0;
@@ -1057,6 +1058,7 @@ app.post("/contratos/modificar", async (req, res) => {
       precioactual,
       honorarios,
       duracion_contrato,
+      frecuencia,
       id_contratos,
     } = req.body;
 
@@ -1072,6 +1074,7 @@ app.post("/contratos/modificar", async (req, res) => {
       precioactual,
       honorarios,
       duracion_contrato,
+      frecuencia,
       id_contratos,
     });
 
@@ -2005,4 +2008,52 @@ app.get("/generar_pdfs_dia", async (req, res) => {
 // Puerto en el que la aplicación escuchará
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
+});
+// --------------------------------- actualizacion contrato ------------------------------------
+
+import dayjs from "dayjs";
+
+app.get("/actualizacion_contratos", async (req, res) => {
+  const contratos = await actualizacion.obtenerActualizaciones();
+
+  const year = parseInt(req.query.year) || dayjs().year();
+  const month = parseInt(req.query.month) || dayjs().month() + 1; // dayjs month es 0-indexado
+
+  function contratosDelMes(contratos, year, month) {
+    const fechaMes = dayjs(`${year}-${String(month).padStart(2, "0")}-01`);
+
+    return contratos.filter((c) => {
+      const inicio = dayjs(c.fecha_inicio);
+      const frecuencia = parseInt(c.frecuencia); // en meses
+      const mesesDesdeInicio = fechaMes.diff(inicio, "month");
+
+      return mesesDesdeInicio >= 0 && mesesDesdeInicio % frecuencia === 0;
+    });
+  }
+
+  const contratosMes = contratosDelMes(contratos, year, month);
+
+  let monthNames = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+  monthNames = monthNames[month - 1];
+
+  res.render("actualizacion_contratos", {
+    contratosMes,
+    year,
+    month,
+    // monthName,
+    monthNames,
+  });
 });

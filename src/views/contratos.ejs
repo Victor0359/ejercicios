@@ -73,6 +73,11 @@
         <input type="number" class="form-control" id="duracion_cont" name="duracion_contrato"
           placeholder="Duracion contrato">
       </div>
+      <div class="col-md-6 mb-3">
+        <label for="frecuencia" class="form-label">Frecuencia</label>
+        <input type="number" class="form-control" id="frecuencia" name="frecuencia"
+          placeholder="frecuencia">
+      </div>
 
       <div class="col-md-6 mb-3">
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -127,6 +132,7 @@
                   <th class="text-primary" scope="col">duracion</th>
                   <th class="text-primary" scope="col">fecha finalcontrato</th>
                   <th class="text-primary" scope="col">cuota</th>
+                  <th class="text-primary" scope="col">frecuencia</th>
                   <th class="text-primary" scope="col">Editar</th>
                 </tr>
               </thead>
@@ -182,6 +188,9 @@
                          <td>
                           <%= inquilino.cuota %>
                         </td>
+                         <td>
+                          <%= inquilino.frecuencia %>
+                        </td>
                         <td><a href="/contratos/editar/<%= inquilino.id_contratos %>"
                             class="btn btn-warning">Editar</a></td>
                       </tr>
@@ -219,7 +228,8 @@
       { id: 'precio_inicial', nombre: 'Precio inicial' },
       { id: 'precio_actual', nombre: 'Precio actual' },
       { id: 'honorarios', nombre: 'Honorarios' },
-      { id: 'duracion_cont', nombre: 'Duración del contrato' }
+      { id: 'duracion_cont', nombre: 'Duración del contrato' },
+      { id: 'frecuencia', nombre: 'frecuencia' },
     ];
 
     const vacios = campos.filter(c => {

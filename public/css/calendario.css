@@ -1,0 +1,22 @@
+.calendario {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+    .dia {
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-height: 100px;
+      background-color: #fdfdfd;
+    }
+    .dia h3 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+    .contrato {
+      background-color: #dff0d8;
+      margin: 5px 0;
+      padding: 4px;
+      border-radius: 4px;
+    }
+

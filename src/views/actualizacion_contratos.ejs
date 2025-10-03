@@ -1,0 +1,42 @@
+<body>
+ 
+
+  <h1>📅 Calendario de Actualización de Contratos</h1>
+
+ 
+   <form method="GET" action="/actualizacion_contratos">
+  <label for="month">Mes:</label>
+  <select name="month" id="month" style="font-size: 1.2rem; padding: 8px; width: 200px;">
+
+    <% for (let i = 1; i <= 12; i++) { %>
+      <option value="<%= i %>" <%= i === month ? "selected" : "" %>><%= monthNames[i - 1] %></option>
+    <% } %>
+  </select>
+
+  <label for="year">Año:</label>
+  <input type="number" name="year" id="year" value="<%= year %>" />
+
+  <button type="submit">Ver</button>
+</form>
+
+ <h2><%= monthNames %> <%= year %></h2>
+<h3>📋 Contratos a actualizar este mes</h3>
+
+<% if (contratosMes.length > 0) { %>
+  <ul>
+    <% contratosMes.forEach(c => { %>
+      <li>
+        <strong>ID:</strong> <%= c.id_contrato %> |
+        <strong>Propiedad:</strong> <%= c.direccion %> |
+        <strong>Inicio:</strong> <%= c.fecha_inicio %> |
+        <strong>Frecuencia:</strong> cada <%= c.frecuencia %> meses
+      </li>
+    <% }) %>
+  </ul>
+<% } else { %>
+  <p>No hay contratos que deban actualizarse este mes.</p>
+<% } %>
+
+
+  <link rel="stylesheet" href="/css/Actualización_contratos.css" />
+</body>
