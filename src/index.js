@@ -964,8 +964,10 @@ app.get("/contratos", async (req, res) => {
     const id_propiedad = req.query.id_propiedad;
     const hayFiltro = Boolean(id_propiedad);
     const contratosLista = id_propiedad
-      ? await contratos.obtenerContratosPorIdPropiedad(id_propiedad)
+      ? await contratos.obtenerContratos(id_propiedad)
       : await contratos.obtenerContratos();
+    let filtro = await contratos.obtenerContratos(id_propiedad);
+    console.log("filtro", filtro);
 
     const propietariosLista = await propietarios.obtenerTodosLosPropietarios();
     const inquilinosLista = await inquilinos.obtenerTodosLosInquilinos();
@@ -1062,7 +1064,7 @@ app.post("/contratos/modificar", async (req, res) => {
       id_contratos,
     } = req.body;
 
-    console.log("req.body:", req.body);
+    console.log("modificar:", req.body);
     console.log("🔎 Buscando contrato con ID:", id_contratos);
 
     const resultado = await contratos.modificarContrato({
@@ -1094,11 +1096,11 @@ app.post("/contratos/modificar", async (req, res) => {
 app.get("/contratos/editar/:id", async (req, res) => {
   const id_contratos = req.params.id;
   try {
-    const resultado = await contratos.obtenerContratoPorId(id_contratos);
-    console.log("Resultado obtenido:", resultado);
-    console.log("Primer contrato:", resultado[0]);
+    const contrato = await contratos.obtenerContratoDetalladoPorId(
+      id_contratos
+    );
 
-    if (!resultado || resultado.length === 0) {
+    if (!contrato) {
       return res.status(404).send("Contrato no encontrado");
     }
 
@@ -1107,7 +1109,7 @@ app.get("/contratos/editar/:id", async (req, res) => {
     const listaInquilinos = await inquilinos.obtenerTodosLosInquilinos();
 
     res.render("editarContratos", {
-      contrato: resultado[0],
+      contrato,
       propietarios: listaPropietarios,
       propiedades: listaPropiedades,
       inquilinos: listaInquilinos,

@@ -16,8 +16,8 @@
  
                         <select class="form-control" name="id_propietarios" required>
                             <% propietarios.forEach(function(p) { %>
-                                <option value="<%= p.id_propietarios %>" <%=p.id_propietarios===contrato.id_propietarios
-                                    ? 'selected' : '' %>>
+                               <option value="<%= p.id_propietarios %>" <%= String(p.id_propietarios) === String(contrato.id_propietarios) ? 'selected' : '' %>>
+
                                     <%= p.apellido %>
                                 </option>
                                 <% }) %>
@@ -30,8 +30,8 @@
                     
                     <select class="form-control" name="id_inquilinos" required>
                         <% inquilinos.forEach(function(i) { %>
-                            <option value="<%= i.id_inquilinos %>" <%=i.id_inquilinos===contrato.id_inquilinos
-                                ? 'selected' : '' %>>
+                            <option value="<%= i.id_inquilinos %>" <%= String(i.id_inquilinos) === String(contrato.id_inquilinos) ? 'selected' : '' %>>
+
                                 <%= i.apellido %>
                             </option>
                             <% }) %>
@@ -42,8 +42,8 @@
                     <label for="id_propiedades" class="form-label">Propiedad</label>
                     <select class="form-control" name="id_propiedades" required>
                         <% propiedades.forEach(function(prop) { %>
-                            <option value="<%= prop.id_propiedades %>" <%=prop.id_propiedades===contrato.id_propiedades
-                                ? 'selected' : '' %>>
+                            <option value="<%= prop.id_propiedades %>" <%= String(prop.id_propiedades) === String(contrato.id_propiedades) ? 'selected' : '' %>>
+
                                 <%= prop.direccion %>
                             </option>
                             <% }) %>

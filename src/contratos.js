@@ -1,20 +1,80 @@
 import pool from "./datadb.js";
 
-async function obtenerContratos() {
+async function obtenerContratosConfiltro() {
   try {
-    const resultado = await pool.query(
-      "SELECT * FROM contratos ORDER BY fecha_inicio DESC"
-    );
+    let query;
+    let params = [];
+
+    if (filtro === "") {
+      query = `
+        SELECT 
+          con.id_contratos,
+          prop.apellido AS apellido_propietario,
+          inq.apellido AS apellido_inquilino,
+          propi.direccion,
+          con.fecha_inicio,
+          con.precioinicial,
+          con.precioactual,
+          con.honorarios,
+          con.duracion_contrato,
+          con.fecha_finalcontrato,
+          con.cuota,
+          con.frecuencia
+        FROM contratos AS con
+        INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios
+        INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos
+        INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades
+        ORDER BY propi.direccion ASC
+      `;
+    } else {
+      query = `
+        SELECT 
+          con.id_contratos,
+          prop.apellido AS apellido_propietario,
+          inq.apellido AS apellido_inquilino,
+          propi.direccion,
+          con.fecha_inicio,
+          con.precioinicial,
+          con.precioactual,
+          con.honorarios,
+          con.duracion_contrato,
+          con.fecha_finalcontrato,
+          con.cuota,
+          con.frecuencia
+        FROM contratos AS con
+        INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios
+        INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos
+        INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades
+        WHERE propi.direccion ILIKE '%' || $1 || '%'
+        ORDER BY propi.direccion ASC
+      `;
+      params = [filtro];
+    }
+
+    const resultado = await pool.query(query, params);
     return resultado.rows;
   } catch (err) {
-    console.error("Error al obtener contratos:", err);
+    console.error("Error al buscar contratos:", err);
+    return [];
+  }
+}
+async function obtenerContratos(id_propiedades) {
+  try {
+    const query =
+      "SELECT con.id_contratos, prop.apellido AS apellido_propietario,inq.apellido AS apellido_inquilino,propi.direccion as direccion, con.fecha_inicio, con.precioinicial, con.precioactual, con.honorarios,con.duracion_contrato,con.fecha_finalcontrato,con.cuota,con.frecuencia FROM contratos AS con INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades where propi.id_propiedades= $1 oRDER BY propi.direccion ASC";
+
+    const resultado = await pool.query(query, [id_propiedades]);
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al obtener contrato por ID:", err);
     return [];
   }
 }
 
 async function obtenerContratoPorId(id_contratos) {
   try {
-    const query = `SELECT * FROM contratos WHERE id_contratos = $1`;
+    const query =
+      "SELECT con.id_contratos, prop.apellido AS apellido_propietario,inq.apellido AS apellido_inquilino,propi.direccion,        con.fecha_inicio, con.precioinicial, con.precioactual, con.honorarios,con.duracion_contrato,con.fecha_finalcontrato,con.cuota,con.frecuencia FROM contratos AS con INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades  WHERE id_contratos = $1 oRDER BY propi.direccion ASC";
     const resultado = await pool.query(query, [id_contratos]);
     return resultado.rows;
   } catch (err) {
@@ -113,8 +173,26 @@ async function obtenerContratosPorIdPropiedad(id_propiedad) {
     return [];
   }
 }
+async function obtenerContratoDetalladoPorId(id_contratos) {
+  const query = `
+    SELECT 
+      c.*,
+      p.apellido AS propietario_apellido,
+      i.apellido AS inquilino_apellido,
+      pr.direccion AS propiedad_direccion
+    FROM contratos c
+    JOIN propietarios p ON c.id_propietarios = p.id_propietarios
+    JOIN inquilinos i ON c.id_inquilinos = i.id_inquilinos
+    JOIN propiedades pr ON c.id_propiedades = pr.id_propiedades
+    WHERE c.id_contratos = $1
+  `;
+  const resultado = await pool.query(query, [id_contratos]);
+  return resultado.rows[0];
+}
 
 export default {
+  obtenerContratoDetalladoPorId,
+  obtenerContratosConfiltro,
   obtenerContratos,
   agregarContratos,
   modificarContrato,
