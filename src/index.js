@@ -23,7 +23,7 @@ import propietarios from "./propietarios.js";
 import propiedades from "./propiedades.js";
 import impuestos from "./impuestos.js";
 import contratos from "./contratos.js";
-import * as recibo_contrato from "./recibo_contrato.js";
+import recibo_contrato from "./recibo_contrato.js";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import recibo_prop from "./recRecPropietario.js";
@@ -1527,18 +1527,27 @@ app.post("/recibo_propietario", async (req, res) => {
     }
 
     // Obtener datos necesarios
-    const [listaDePropiedades, contratos, impuestos, datosContrato] =
-      await Promise.all([
-        propiedades.obtenerPropiedadOrdenados(),
-        contratos.obtenerContratoPorId(id_propiedades),
-        impuestos.obtenerImpuestosPorDireccion(id_propiedades),
-        recibo_prop.obtenerContratos_Id(id_propiedades),
-      ]);
+    let [
+      listaDePropiedades,
+      contratos,
+      recibo_contratos,
+      datosReciboInquilino,
+    ] = await Promise.all([
+      propiedades.obtenerPropiedadOrdenados(),
+      contrato.obtenerContratosPorIdPropiedad(id_propiedades),
+      recibo_contrato.obtenerRecibosPorPropiedadLimit1(id_propiedades),
+      recibo_prop.obtenerContratos_Id(id_propiedades),
+    ]);
 
     // Extraer datos con fallback
-    const contrato = datosContrato?.[0] || {};
-    const impuesto = impuestos?.[0] || {};
-    const honorarios = contratos?.[0]?.honorarios || "";
+    const propiedades = listaDePropiedades || [];
+    const contrato = contratos[0] || {};
+    const numero_recibo = recibo_contratos || [];
+    const datos = datosReciboInquilino?.[0] || {};
+
+    console.log("Datos del contrato:", contrato);
+    console.log("Datos del recibo del contrato:", recibo_contratos);
+    console.log("Datos del recibo del inquilino:", datosReciboInquilino);
 
     // Fecha formateada
     const hoy = new Date();
@@ -1565,17 +1574,17 @@ app.post("/recibo_propietario", async (req, res) => {
       propiedades: listaDePropiedades,
       numero_recibo,
       id_propiedad_seleccionada: id_propiedades,
-      apellidopropietario: contrato.apellidopropietario || "",
-      cuota: contrato.cuota || "",
+      apellidopropietario: datos.apellidopropietario || "",
+      cuota: datos.cuota || "",
       fecha_actual: fechaFormateada,
       fecha1: contrato.fecha_inicial || "",
-      importemensual: contrato.importemensual || "",
-      exp_extraor: impuestos.exp_extraor || "",
-      exp_ordinarias: impuestos.exp_ordinarias || "",
-      aysa: impuestos.aysa || "",
-      abl: impuestos.abl || "",
-      seguro: impuestos.seguro || "",
-      varios: impuestos.varios || "",
+      importemensual: datos.importemensual || "",
+      exp_extraor: contrato.exp_extraor || "",
+      exp_ordinarias: datos.exp_ordinarias || "",
+      aysa: datos.aysa || "",
+      abl: datos.abl || "",
+      seguro: datos.seguro || "",
+      varios: datos.varios || "",
       honorarios: contrato.honorarios || "",
       mensaje,
     });
@@ -1606,7 +1615,7 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     ]);
 
     console.log("Propietario obtenido:", propietario);
-
+    console.log("Contrato obtenido:", contrato);
     // 3) Calcular nuevo número de recibo
 
     const apellidoPropietario = propietario?.[0]?.apellido || ""; // 3) Extraigo el apellido del propietario
@@ -1617,6 +1626,9 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     const numrecibo = num(contrato?.[0]?.numrecibo) || 0; // 4) Parseo seguro de valores
     const importemensual = num(contrato?.[0]?.importemensual);
     const exp_extraor = num(expensas?.[0]?.exp_ext);
+    const exp_comunes = num(contrato?.[0]?.expcomunes);
+    const abl = num(contrato?.[0]?.abl);
+    const aysa = num(contrato?.[0]?.aysa);
     const seguro = num(contrato?.[0]?.seguro);
     const varios = num(contrato?.[0]?.varios);
     const honorarios = num(propietario?.[0]?.honorarios);
@@ -1642,9 +1654,17 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     const hoy = ahora.toISOString().split("T")[0];
     const honorario1 = (importemensual * honorarios) / 100;
     // 6) Total
-    const total = importemensual - exp_extraor + seguro + varios - honorario1;
+    const total =
+      importemensual +
+      exp_extraor +
+      seguro +
+      varios +
+      exp_comunes +
+      abl +
+      aysa -
+      honorario1;
     console.log("valores:", honorario1, total, fecha2);
-
+    console.log("Tipo de total:", typeof total);
     // 7) Respuesta JSON
     return res.json({
       numero_recibo: numrecibo,
@@ -1652,6 +1672,9 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
       cuota,
       importemensual,
       exp_extraor: exp_extraor || 0,
+      exp_comunes: exp_comunes || 0,
+      abl: abl || 0,
+      aysa: aysa || 0,
       seguro: seguro || 0,
       varios: varios || 0,
       honorarios: honorario1 || 0,
@@ -1700,6 +1723,9 @@ app.get("/recibo_propietario", async (req, res) => {
       fecha_rec: "",
       importemensual: "",
       exp_extraor: "",
+      exp_ordinarias: "",
+      aysa: "",
+      abl: "",
       seguro: "",
       varios: "",
       honorarios: "",

@@ -64,57 +64,37 @@
           </div>
 
           <div class="row mt-5">
-            <div class="col-md-4 mb-3">
-              <label for="importemensual" class="form-label"><b>Monto mensual</b></label>
-              <input type="number" name="importemensual" id="importemensual" value="<%= importemensual %>">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label for="exp_ext"><b>Expensas extraor</b></label>
-              <input type="number" name="exp_extraor" id="exp_extraor" value="<%= exp_extraor %>">
-            </div>
+  <% const campos = [
+    { id: 'importemensual', label: 'Monto mensual', valor: importemensual },
+    { id: 'exp_extraor', label: 'Expensas extraordinarias', valor: exp_extraor },
+    { id: 'exp_ordi', label: 'Expensas comunes', valor: exp_ordinarias },
+    { id: 'abl', label: 'ABL', valor: abl },
+    { id: 'aysa', label: 'Aysa', valor: aysa },
+    { id: 'seguro', label: 'Seguro', valor: seguro },
+    { id: 'varios', label: 'Varios', valor: varios },
+    { id: 'honorarios', label: 'Honorarios', valor: honorarios }
+  ]; %>
 
-            <div class="col-md-4 mb-3">
-              <label for="exp_ordi"><b>Expensas comunes</b></label>
-              <input type="number" name="exp_ordi" id="exp_ordi" value="<%= exp_extraor %>">
-            </div>
-          </div>
-          <div class="row mt-5">
+  <% campos.forEach(function(campo) { %>
+    <div class="col-md-4 mb-3">
+      <label for="<%= campo.id %>" class="form-label"><b><%= campo.label %></b></label>
+      <div class="input-group">
+        <div class="input-group-text">
+          <input type="checkbox" id="check_<%= campo.id %>" checked>
+        </div>
+        <input type="number" name="<%= campo.id %>" id="<%= campo.id %>" value="<%= campo.valor || 0 %>" class="form-control">
+      </div>
+    </div>
+  <% }); %>
 
-             <div class="col-md-4 mb-3">
-              <label for="abl" class="form-label"><b>Abl</b></label>
-              <input type="number" name="abl" id="aysa" value="<%= seguro %>">
-            </div>
-           
-            <div class="col-md-4 mb-3">
-              <label for="aysa" class="form-label"><b>Aysa</b></label>
-              <input type="number" name="aysa" id="aysa" value="<%= seguro %>">
-            </div>
+  <div class="col-md-4 mb-3">
+    <label for="total" class="form-label"><b>TOTAL</b></label>
+    <input type="number" name="total" id="total" readonly class="form-control">
+  </div>
+</div>
 
-            <div class="col-md-4 mb-3">
-              <label for="seguro" class="form-label"><b>Seguro</b></label>
-              <input type="number" name="seguro" id="seguro" value="<%= seguro %>">
-            </div>
-          </div>
-          <div class="row mt-5">
-           
           
-            <div class="col-md-4 mb-3">
-              <label for="varios"><b>Varios</b></label>
-              <input type="number" name="varios" id="varios" value="<%= varios || 0 %>">
-            </div>
-            
-           <div class="col-md-4 mb-3">
-              <label for="honorario"><b>Honorarios</b></label>
-              <input type="number" name="honorarios" id="honorarios" value="<%= honorarios %>">
-            </div>
-
-
-            <div class="col-md-4 mb-3">
-              <label for="total" class="form-label "><b>TOTAL</b></label>
-              <input type="number" name="total" id="total" readonly>
-            </div>
-          
-           </div>
+         
           <div class=" mt-5 mr-2 no-print">
             
 
@@ -142,37 +122,35 @@
 </div>
 <link rel="stylesheet" href="/css/propiedades.css">
 
+
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const sel = document.getElementById('id_propiedades');
-  const btn = document.getElementById('btn-generar-recibo');
-  const form = document.querySelector('form[action="/recibo_propietario/insertar"]');
+  const campos = [
+    'importemensual', 'exp_extraor', 'exp_ordi',
+    'abl', 'aysa', 'seguro', 'varios', 'honorarios'
+  ];
 
-  // ✅ Parsear números
   const toNumber = v => parseFloat(v) || 0;
 
-  // 🔢 Recalcular TOTAL
   function recalcularTotal() {
-    const m = toNumber(document.getElementById('importemensual')?.value);
-    const e = toNumber(document.getElementById('exp_extraor')?.value);
-    const i = toNumber(document.getElementById('exp_ordi')?.value);
-    const abl = toNumber(document.getElementById('abl')?.value);
-    const aysa = toNumber(document.getElementById('aysa')?.value);
-    const s = toNumber(document.getElementById('seguro')?.value);
-    const v = toNumber(document.getElementById('varios')?.value);
-    const a = toNumber(document.getElementById('honorarios')?.value);
-    document.getElementById('total').value = (m - e + s + v + i + abl + aysa - a).toFixed(2);
+    let total = 0;
+    campos.forEach(id => {
+      const input = document.getElementById(id);
+      const checkbox = document.getElementById(`check_${id}`);
+      const valor = toNumber(input?.value);
+      total += checkbox?.checked ? valor : -valor;
+    });
+    document.getElementById('total').value = total.toFixed(2);
   }
 
-  // 🖊️ Pintar campos desde API
   function actualizarCampos(data) {
-    const campos = [
-      'numero_recibo', 'fecha_actual', 'fecha_rec', 'apellidopropietario',
-      'cuota', 'importemensual', 'exp_extraor', 'exp_ordi','abl','aysa','seguro',
-      'varios', 'honorarios', 'total'
+    const camposFijos = [
+      'numero_recibo', 'fecha_actual', 'fecha_rec',
+      'apellidopropietario', 'cuota'
     ];
 
-    campos.forEach(id => {
+    camposFijos.concat(campos).forEach(id => {
       const input = document.getElementById(id);
       if (input) input.value = data[id] || '';
       else console.warn(`⚠️ Campo "${id}" no encontrado.`);
@@ -181,7 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
     recalcularTotal();
   }
 
-  // 🔄 Actualizar campos al cambiar propiedad
+  const sel = document.getElementById('id_propiedades');
+  const btn = document.getElementById('btn-generar-recibo');
+
   sel?.addEventListener('change', async () => {
     const id = sel.value;
     if (!id) return;
@@ -196,12 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✨ Inputs que modifican el total
-  ['importemensual', 'exp_extraor', 'exp_ordi', 'abl', 'aysa','seguro', 'varios', 'honorarios'].forEach(id => {
+  campos.forEach(id => {
     document.getElementById(id)?.addEventListener('input', recalcularTotal);
+    document.getElementById(`check_${id}`)?.addEventListener('change', recalcularTotal);
   });
 
-  // 🧾 Enviar el recibo con confirmación
   btn?.addEventListener('click', async (e) => {
     e.preventDefault();
     if (!confirm('¿Desea insertar el recibo?')) return;
@@ -210,20 +189,17 @@ document.addEventListener('DOMContentLoaded', () => {
       fecha: document.getElementById('fecha_actual')?.value,
       id_propiedad: document.getElementById('id_propiedades')?.value,
       apellidopropietario: document.getElementById('apellidopropietario')?.value,
-      apellidoinquilino: '', // si tenés el campo podés agregarlo
+      apellidoinquilino: '',
       numrecibo: document.getElementById('numero_recibo')?.value,
       cuota: document.getElementById('cuota')?.value,
-      importemensual: document.getElementById('importemensual')?.value,
-      exp_extraor: document.getElementById('exp_extraor')?.value,
-      exp_ordi: document.getElementById('exp_ordi')?.value,
-      abl: document.getElementById('abl')?.value,
-      aysa: document.getElementById('aysa')?.value,
-      seguro: document.getElementById('seguro')?.value,
-      varios: document.getElementById('varios')?.value,
-      honorarios: document.getElementById('honorarios')?.value,
-      total: document.getElementById('total')?.value,
-      fecha_rec: document.getElementById('fecha_rec')?.value
+      fecha_rec: document.getElementById('fecha_rec')?.value,
+      total: document.getElementById('total')?.value
     };
+
+    campos.forEach(id => {
+      datos[id] = document.getElementById(id)?.value;
+      datos[`check_${id}`] = document.getElementById(`check_${id}`)?.checked;
+    });
 
     try {
       const res = await fetch("/recibo_propietario/insertar", {
@@ -244,7 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("❌ Error al insertar el recibo");
     }
   });
+
+  recalcularTotal(); // inicial
 });
+
 </script>
 
 

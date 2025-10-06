@@ -15,7 +15,7 @@ async function obtenerExpExtraordinarias(id_propiedades) {
 async function obtenerContratos_Id(id_propiedades) {
   try {
     const resultado = await pool.query(
-      "SELECT a.id_reciboimpuestos, a.id_propiedad, a.numrecibo,a.cuota,a.importemensual,a.seguro,a.varios,b.honorarios,  a.fecha FROM  recibo_inquilinos as a inner join contratos as b on a.id_propiedad=b.id_propiedades where id_propiedad=$1 order by numrecibo desc limit 1",
+      "SELECT a.id_reciboimpuestos, a.id_propiedad, a.numrecibo,a.cuota,a.importemensual,a.seguro, a.expcomunes, a.abl,a.aysa,a.varios,b.honorarios, a.fecha FROM  recibo_inquilinos as a inner join contratos as b on a.id_propiedad=b.id_propiedades where a.id_propiedad=$1 order by numrecibo desc limit 1",
       [id_propiedades]
     );
     return resultado.rows;
@@ -43,9 +43,9 @@ export async function insertarReciboPropietario_Id(datos) {
       INSERT INTO recibo_propietario (
         fecha, id_propiedad, apellidopropietario, apellidoinquilino, numrecibo,
         cuota, importemensual, seguro, varios, total, exp_extraor,
-        honorarios, fecha_rec
+        honorarios, fecha_rec, expcomunes,abl,aysa
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING *
     `;
     const resultado = await pool.query(sql, [
@@ -62,6 +62,9 @@ export async function insertarReciboPropietario_Id(datos) {
       datos.exp_extraor || "0",
       datos.honorarios || "0",
       datos.fecha_rec?.trim() ? datos.fecha_rec : null,
+      datos.expcomunes || "0",
+      datos.abl || "0",
+      datos.aysa || "0",
     ]);
     return resultado.rows?.[0] || {};
   } catch (err) {
