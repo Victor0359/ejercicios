@@ -120,7 +120,7 @@ export async function obtenerRecibosPorNumrecibo(numrecibo) {
 }
 
 // 🆕 NUEVA FUNCIÓN: Obtiene todos los recibos para una fecha específica.
-async function getRecibosPorFecha(date) {
+export async function getRecibosPorFecha(date) {
   try {
     const resultado = await pool.query(
       "SELECT numrecibo FROM recibo_inquilinos WHERE DATE(fecha) = $1",
@@ -135,7 +135,7 @@ async function getRecibosPorFecha(date) {
 
 // 🆕 NUEVA FUNCIÓN: Guarda un nuevo recibo.
 // Se asume que los datos están en un objeto `receiptData`.
-async function saveRecibo(receiptData) {
+export async function saveRecibo(receiptData) {
   const {
     fecha,
     id_propiedad,
