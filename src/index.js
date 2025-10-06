@@ -1000,6 +1000,7 @@ app.post("/contratos/insertar", async (req, res) => {
       precioactual,
       honorarios,
       duracion_contrato,
+      frecuencia,
     } = req.body;
     console.log(req.body);
     function calcularCuota(fecha_inicio) {
@@ -1019,6 +1020,7 @@ app.post("/contratos/insertar", async (req, res) => {
     if (honorarios === "" || honorarios === undefined) honorarios = 0;
     if (duracion_contrato === "" || duracion_contrato === undefined)
       duracion_contrato = 0;
+    if (frecuencia === "" || frecuencia === undefined) frecuencia = 0;
 
     const resultado = await contratos.agregarContratos({
       id_propietarios,
@@ -1030,6 +1032,7 @@ app.post("/contratos/insertar", async (req, res) => {
       honorarios,
       duracion_contrato,
       cuota: calcularCuota(fecha_inicio),
+      frecuencia,
     });
 
     if (resultado && resultado.rowCount > 0) {
@@ -1568,6 +1571,9 @@ app.post("/recibo_propietario", async (req, res) => {
       fecha1: contrato.fecha_inicial || "",
       importemensual: contrato.importemensual || "",
       exp_extraor: impuestos.exp_extraor || "",
+      exp_ordinarias: impuestos.exp_ordinarias || "",
+      aysa: impuestos.aysa || "",
+      abl: impuestos.abl || "",
       seguro: impuestos.seguro || "",
       varios: impuestos.varios || "",
       honorarios: contrato.honorarios || "",

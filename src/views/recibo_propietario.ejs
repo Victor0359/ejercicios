@@ -74,18 +74,36 @@
             </div>
 
             <div class="col-md-4 mb-3">
+              <label for="exp_ordi"><b>Expensas comunes</b></label>
+              <input type="number" name="exp_ordi" id="exp_ordi" value="<%= exp_extraor %>">
+            </div>
+          </div>
+          <div class="row mt-5">
+
+             <div class="col-md-4 mb-3">
+              <label for="abl" class="form-label"><b>Abl</b></label>
+              <input type="number" name="abl" id="aysa" value="<%= seguro %>">
+            </div>
+           
+            <div class="col-md-4 mb-3">
+              <label for="aysa" class="form-label"><b>Aysa</b></label>
+              <input type="number" name="aysa" id="aysa" value="<%= seguro %>">
+            </div>
+
+            <div class="col-md-4 mb-3">
               <label for="seguro" class="form-label"><b>Seguro</b></label>
               <input type="number" name="seguro" id="seguro" value="<%= seguro %>">
             </div>
           </div>
-          <div class=" row mt-3">
+          <div class="row mt-5">
+           
+          
             <div class="col-md-4 mb-3">
               <label for="varios"><b>Varios</b></label>
               <input type="number" name="varios" id="varios" value="<%= varios || 0 %>">
             </div>
-
-
-            <div class="col-md-4 mb-3">
+            
+           <div class="col-md-4 mb-3">
               <label for="honorario"><b>Honorarios</b></label>
               <input type="number" name="honorarios" id="honorarios" value="<%= honorarios %>">
             </div>
@@ -95,7 +113,8 @@
               <label for="total" class="form-label "><b>TOTAL</b></label>
               <input type="number" name="total" id="total" readonly>
             </div>
-          </div>
+          
+           </div>
           <div class=" mt-5 mr-2 no-print">
             
 
@@ -136,17 +155,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function recalcularTotal() {
     const m = toNumber(document.getElementById('importemensual')?.value);
     const e = toNumber(document.getElementById('exp_extraor')?.value);
+    const i = toNumber(document.getElementById('exp_ordi')?.value);
+    const abl = toNumber(document.getElementById('abl')?.value);
+    const aysa = toNumber(document.getElementById('aysa')?.value);
     const s = toNumber(document.getElementById('seguro')?.value);
     const v = toNumber(document.getElementById('varios')?.value);
     const a = toNumber(document.getElementById('honorarios')?.value);
-    document.getElementById('total').value = (m - e + s + v - a).toFixed(2);
+    document.getElementById('total').value = (m - e + s + v + i + abl + aysa - a).toFixed(2);
   }
 
   // 🖊️ Pintar campos desde API
   function actualizarCampos(data) {
     const campos = [
       'numero_recibo', 'fecha_actual', 'fecha_rec', 'apellidopropietario',
-      'cuota', 'importemensual', 'exp_extraor', 'seguro',
+      'cuota', 'importemensual', 'exp_extraor', 'exp_ordi','abl','aysa','seguro',
       'varios', 'honorarios', 'total'
     ];
 
@@ -175,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ✨ Inputs que modifican el total
-  ['importemensual', 'exp_extraor', 'seguro', 'varios', 'honorarios'].forEach(id => {
+  ['importemensual', 'exp_extraor', 'exp_ordi', 'abl', 'aysa','seguro', 'varios', 'honorarios'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', recalcularTotal);
   });
 
@@ -193,6 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {
       cuota: document.getElementById('cuota')?.value,
       importemensual: document.getElementById('importemensual')?.value,
       exp_extraor: document.getElementById('exp_extraor')?.value,
+      exp_ordi: document.getElementById('exp_ordi')?.value,
+      abl: document.getElementById('abl')?.value,
+      aysa: document.getElementById('aysa')?.value,
       seguro: document.getElementById('seguro')?.value,
       varios: document.getElementById('varios')?.value,
       honorarios: document.getElementById('honorarios')?.value,

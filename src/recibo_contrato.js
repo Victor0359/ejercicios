@@ -177,15 +177,28 @@ async function saveRecibo(receiptData) {
     throw err;
   }
 }
+async function obtenerRecibosPorPropiedadLimit1(id_propiedad) {
+  try {
+    const resultado = await pool.query(
+      "SELECT * FROM recibo_inquilinos WHERE id_propiedad = $1 order by numrecibo DESC limit 5",
+      [id_propiedad]
+    );
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al buscar recibos:", err);
+    return [];
+  }
+}
 
 // 🆕 CORRECCIÓN: El archivo exporta un objeto por defecto.
-export {
+export default {
   obtenerContratos_Id,
   obtenerImpuestos,
   insertarRecibosInquilinos,
   obtenernumeroRecibo,
   existeReciboPorPropiedad,
   obtenerRecibosPorPropiedad,
+  obtenerRecibosPorPropiedadLimit1,
   obtenerRecibosPorNumrecibo,
   getRecibosPorFecha, // ✅ Añadida la nueva función a la exportación
   saveRecibo, // ✅ Añadida la función saveRecibo para que esté disponible
