@@ -105,7 +105,7 @@ async function obtenerRecibosPorPropiedad(id_propiedad) {
     return [];
   }
 }
-async function obtenerRecibosPorNumrecibo(numrecibo) {
+export async function obtenerRecibosPorNumrecibo(numrecibo) {
   try {
     const resultado = await pool.query(
       "select * from recibo_inquilinos where numrecibo=$1",

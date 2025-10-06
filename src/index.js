@@ -1752,6 +1752,9 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       seguro = "0",
       varios = "0",
       honorarios = "0",
+      expcomunes = "0",
+      abl = "0",
+      aysa = "0", //
       total = "0",
     } = req.body;
 
@@ -1769,6 +1772,9 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
     seguro = toNumber(seguro);
     varios = toNumber(varios);
     honorarios = toNumber(honorarios);
+    expcomunes = toNumber(expcomunes);
+    abl = toNumber(abl);
+    aysa = toNumber(aysa);
     total = toNumber(total);
 
     function parsearFechaISO(fecha) {
@@ -1805,6 +1811,9 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       exp_extraor,
       honorarios,
       fecha_rec,
+      expcomunes,
+      abl,
+      aysa,
     });
 
     // 5) Llamo al método de inserción pasando un OBJETO
@@ -1823,6 +1832,9 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
       exp_extraor,
       honorarios,
       fecha_rec,
+      expcomunes,
+      abl,
+      aysa,
     });
 
     console.log(resultado);
