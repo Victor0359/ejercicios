@@ -36,6 +36,42 @@ router.get("/login", (req, res) => {
     error: null,
   });
 });
+router.get("/recibo_prop_impreso", async (req, res) => {
+  const numrecibo = req.query.numrecibo;
+  if (!numrecibo) {
+    return res.status(400).send("Falta el número de recibo");
+  }
+
+  try {
+    const result = await datadb.query(
+      "SELECT * FROM recibos_propietario WHERE numrecibo = $1",
+      [numrecibo]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).send("Recibo no encontrado");
+    }
+
+    const recibo = result.rows[0];
+
+    const propiedad = await datadb.query(
+      "SELECT * FROM propiedades WHERE id = $1",
+      [recibo.id_propiedad]
+    );
+
+    res.render("recibo_impreso", {
+      reciboProp: recibo,
+      propiedades: propiedad.rows[0],
+      letra: convertirNumeroALetras(recibo.total), // si tenés esta función
+      fechaFormateada: new Date(recibo.fecha).toLocaleDateString("es-AR"),
+      mes_contrato: obtenerMes(recibo.fecha),
+      vencimiento: obtenerDiaVencimiento(recibo.fecha),
+    });
+  } catch (error) {
+    console.error("Error al renderizar recibo:", error);
+    res.status(500).send("Error interno del servidor");
+  }
+});
 
 // Login POST
 router.post("/login", async (req, res) => {

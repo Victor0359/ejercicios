@@ -390,6 +390,9 @@ export async function generateOwnerReceiptPDF(receiptData) {
   const concepts = [
     { label: "Mensualidad", value: receiptData.importemensual },
     { label: "EXPENSAS EXTRAORDINARIAS", value: receiptData.exp_extraor },
+    { label: "EXPENSAS COMUNES", value: receiptData.expcomunes },
+    { label: "ABL", value: receiptData.abl },
+    { label: "AYSA", value: receiptData.aysa },
     { label: "SEGURO", value: receiptData.seguro },
     { label: "VARIOS", value: receiptData.varios },
     { label: "HONORARIOS", value: receiptData.honorarios },

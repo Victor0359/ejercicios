@@ -180,7 +180,11 @@
   
 
       // 🆕 AÑADIDO: Recopila los datos de los <span> y los procesa
-      data.total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));
+      //data.total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));
+      const totalOriginal = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));
+        const honorarios = parseFloat(document.querySelector('[name="honorarios"]').value);
+      data.total = totalOriginal - honorarios;
+
       data.localidad = document.getElementById("propiedadLocalidad").textContent.trim();
       data.direccion = document.getElementById("propiedadDireccion").textContent.trim();
       data.cuota = document.getElementById("ownerName").textContent.trim();
