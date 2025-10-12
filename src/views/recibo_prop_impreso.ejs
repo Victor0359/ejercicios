@@ -104,6 +104,16 @@
         />
       </div>
       <div class="form-row">
+        <label for="expcomunes" class="form-label">EXPENSAS COMUNES</label>
+        <span>$</span>
+        <input
+          type="text"
+          name="expcomunes"
+          value="<%= reciboProp.expcomunes %>"
+          readonly
+        />
+      </div>
+      <div class="form-row">
         <label for="seguro" class="form-label">SEGURO</label>
         <span>$</span>
         <input
@@ -196,6 +206,7 @@
       data.abl = parseFloat(document.querySelector('[name="abl"]').value);
       data.aysa = parseFloat(document.querySelector('[name="aysa"]').value);
       data.exp_extraor = parseFloat(document.querySelector('[name="exp_extraor"]').value);
+      data.expcomunes = parseFloat(document.querySelector('[name="expcomunes"]').value);
       data.seguro = parseFloat(document.querySelector('[name="seguro"]').value);
       data.varios = parseFloat(document.querySelector('[name="varios"]').value);
       data.honorarios = parseFloat(document.querySelector('[name="honorarios"]').value);

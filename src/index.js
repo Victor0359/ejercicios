@@ -1580,7 +1580,7 @@ app.post("/recibo_propietario", async (req, res) => {
       fecha1: contrato.fecha_inicial || "",
       importemensual: datos.importemensual || "",
       exp_extraor: contrato.exp_extraor || "",
-      exp_ordinarias: datos.exp_ordinarias || "",
+      expcomunes: datos.expcomunes || "",
       aysa: datos.aysa || "",
       abl: datos.abl || "",
       seguro: datos.seguro || "",
@@ -1626,7 +1626,7 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
     const numrecibo = num(contrato?.[0]?.numrecibo) || 0; // 4) Parseo seguro de valores
     const importemensual = num(contrato?.[0]?.importemensual);
     const exp_extraor = num(expensas?.[0]?.exp_ext);
-    const exp_comunes = num(contrato?.[0]?.expcomunes);
+    const expcomunes = num(contrato?.[0]?.expcomunes);
     const abl = num(contrato?.[0]?.abl);
     const aysa = num(contrato?.[0]?.aysa);
     const seguro = num(contrato?.[0]?.seguro);
@@ -1659,12 +1659,11 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
       exp_extraor +
       seguro +
       varios +
-      exp_comunes +
+      expcomunes +
       abl +
       aysa -
       honorario1;
-    console.log("valores:", honorario1, total, fecha2);
-    console.log("Tipo de total:", typeof total);
+    console.log(expcomunes);
     // 7) Respuesta JSON
     return res.json({
       numero_recibo: numrecibo,
@@ -1672,7 +1671,7 @@ app.get("/api/datos_propiedad/propietario", async (req, res) => {
       cuota,
       importemensual,
       exp_extraor: exp_extraor || 0,
-      exp_comunes: exp_comunes || 0,
+      expcomunes: expcomunes || 0,
       abl: abl || 0,
       aysa: aysa || 0,
       seguro: seguro || 0,
@@ -1723,7 +1722,7 @@ app.get("/recibo_propietario", async (req, res) => {
       fecha_rec: "",
       importemensual: "",
       exp_extraor: "",
-      exp_ordinarias: "",
+      expcomunes: "",
       aysa: "",
       abl: "",
       seguro: "",
@@ -1797,24 +1796,6 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
     // 4) Preparo la fecha en formato YYYY-MM-DD para la BD
     const fechaPg = new Date().toISOString().slice(0, 10);
     fecha = fechaPg;
-    console.log("Objeto a insertar:", {
-      fecha,
-      id_propiedad,
-      apellidopropietario,
-      apellidoinquilino,
-      numrecibo,
-      cuota,
-      importemensual,
-      seguro,
-      varios,
-      total,
-      exp_extraor,
-      honorarios,
-      fecha_rec,
-      expcomunes,
-      abl,
-      aysa,
-    });
 
     // 5) Llamo al método de inserción pasando un OBJETO
 
@@ -1919,7 +1900,7 @@ app.get("/recibo_prop_impreso/:numrecibo", async (req, res) => {
     const vencimiento = ultimoDiaDelMes(fechaContrato);
 
     const letra = funcion_letras.numeroALetras(reciboProp.total);
-
+    console.log("recibo impreso", reciboProp);
     res.render("recibo_prop_impreso", {
       reciboProp,
       propiedades: propiedadParaVista,
@@ -1959,7 +1940,7 @@ app.post("/buscar_recProp", async (req, res) => {
 
     // ✅ Si pasó la validación, ahora sí busca los recibos:
     const recibos = await recibo_prop.rePropietarios(id_propiedades);
-    console.log("Recibos encontrados:", recibos);
+
     res.render("buscar_recProp", {
       propiedades: await propiedades.obtenerPropiedadOrdenados(),
       inquilinos: await inquilinos.obtenerTodosLosInquilinos(),

@@ -76,7 +76,7 @@ export async function insertarReciboPropietario_Id(datos) {
 async function recibosPropietarios(numrecibo) {
   try {
     const resultado = await pool.query(
-      "select * from recibo_propietario where numrecibo=$1",
+      "select * from recibo_propietario where numrecibo=$1 order by fecha desc limit 1",
       [numrecibo]
     );
 

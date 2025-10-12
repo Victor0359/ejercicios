@@ -399,7 +399,15 @@ export async function generateOwnerReceiptPDF(receiptData) {
   ];
 
   concepts.forEach(({ label, value }) => {
-    if (value > 0) {
+    if (value !== null && value !== undefined && value !== 0) {
+      const isNegative = value < 0;
+      const valueText = `${isNegative ? "- $" : "$"}${Math.abs(
+        value
+      ).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+      })}`;
+      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+
       page.drawText(`${label}:`, {
         x: marginLeft,
         y: yPosition,
@@ -408,18 +416,14 @@ export async function generateOwnerReceiptPDF(receiptData) {
         color: rgb(0.4, 0.4, 0.4),
       });
 
-      // 🔧 CORREGIDO: Alineación de los valores a la derecha
-      const valueText = `$${Number(value).toLocaleString("es-AR", {
-        minimumFractionDigits: 2,
-      })}`;
-      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
       page.drawText(valueText, {
         x: width - marginRight - valueWidth,
         y: yPosition,
         size: fontSize,
         font: bodyFont,
-        color: rgb(0, 0, 0),
+        color: isNegative ? rgb(0.8, 0, 0) : rgb(0, 0, 0),
       });
+
       yPosition -= 15;
     }
   });

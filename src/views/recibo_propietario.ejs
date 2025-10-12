@@ -67,7 +67,7 @@
   <% const campos = [
     { id: 'importemensual', label: 'Monto mensual', valor: importemensual },
     { id: 'exp_extraor', label: 'Expensas extraordinarias', valor: exp_extraor },
-    { id: 'exp_ordi', label: 'Expensas comunes', valor: exp_ordinarias },
+    { id: 'expcomunes', label: 'Expensas comunes', valor: expcomunes },
     { id: 'abl', label: 'ABL', valor: abl },
     { id: 'aysa', label: 'Aysa', valor: aysa },
     { id: 'seguro', label: 'Seguro', valor: seguro },
@@ -127,7 +127,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const campos = [
-    'importemensual', 'exp_extraor', 'exp_ordi',
+    'importemensual', 'exp_extraor', 'expcomunes',
     'abl', 'aysa', 'seguro', 'varios', 'honorarios'
   ];
 
@@ -225,13 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
-
-
-
-
-
-
-
 
 </body>
 
