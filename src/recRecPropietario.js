@@ -90,7 +90,7 @@ async function recibosPropietarios(numrecibo) {
 async function rePropietarios(id) {
   try {
     const resultado = await pool.query(
-      "select * from recibo_propietario where id_propiedad=$1 order by numrecibo desc limit 5",
+      "select * from recibo_propietario where id_propiedad=$1 order by fecha desc limit 5",
       [id]
     );
 

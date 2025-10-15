@@ -19,7 +19,7 @@
         <div class="row mb-3 mt-5">
           <div class="col-md-4 mb-3">
             <label for="numero_recibo" class="form-label"><b>Numero recibo</b></label>
-            <input type="text" class="auto-size form-control" id="numero_recibo" name="numrecibo"
+            <input type="number" class="auto-size form-control" id="numero_recibo" name="numrecibo"
               value="<%= numero_recibo %>" readonly>
           </div>
 
@@ -62,37 +62,59 @@
             <input type="date" id="fecha_rec" class="form-control auto-size" name="fecha_rec"
               value="<%= fecha_rec %>" readonly>
           </div>
-
-          <div class="row mt-5">
-  <% const campos = [
-    { id: 'importemensual', label: 'Monto mensual', valor: importemensual },
-    { id: 'exp_extraor', label: 'Expensas extraordinarias', valor: exp_extraor },
-    { id: 'expcomunes', label: 'Expensas comunes', valor: expcomunes },
-    { id: 'abl', label: 'ABL', valor: abl },
-    { id: 'aysa', label: 'Aysa', valor: aysa },
-    { id: 'seguro', label: 'Seguro', valor: seguro },
-    { id: 'varios', label: 'Varios', valor: varios },
-    { id: 'honorarios', label: 'Honorarios', valor: honorarios }
-  ]; %>
-
-  <% campos.forEach(function(campo) { %>
-    <div class="col-md-4 mb-3">
-      <label for="<%= campo.id %>" class="form-label"><b><%= campo.label %></b></label>
-      <div class="input-group">
-        <div class="input-group-text">
-          <input type="checkbox" id="check_<%= campo.id %>" checked>
         </div>
-        <input type="number" name="<%= campo.id %>" id="<%= campo.id %>" value="<%= campo.valor || 0 %>" class="form-control">
-      </div>
-    </div>
-  <% }); %>
 
-  <div class="col-md-4 mb-3">
-    <label for="total" class="form-label"><b>TOTAL</b></label>
-    <input type="number" name="total" id="total" readonly class="form-control">
-  </div>
+<div class="row mt-5">
+  <% 
+  const camposCompletos = [
+    { id: 'importemensual', label: 'Monto mensual', valor: importemensual, tipo: 'suma_sin_check' }, // Nuevo tipo
+    { id: 'exp_extraor', label: 'Expensas extraordinarias', valor: exp_extraor, tipo: 'con_check' },
+    { id: 'expcomunes', label: 'Expensas comunes', valor: expcomunes, tipo: 'con_check' },
+    { id: 'abl', label: 'ABL', valor: abl, tipo: 'con_check' },
+    { id: 'aysa', label: 'Aysa', valor: aysa, tipo: 'con_check' },
+    { id: 'seguro', label: 'Seguro', valor: seguro, tipo: 'con_check' },
+    { id: 'varios', label: 'Varios', valor: varios, tipo: 'con_check' },
+    { id: 'honorarios', label: 'Honorarios', valor: honorarios, tipo: 'resta_sin_check' } // Tipo que siempre resta
+  ]; 
+
+  // 1. Campos con Check (se suman o son cero)
+  const camposConCheck = camposCompletos.filter(c => c.tipo === 'con_check'); 
+
+  // 2. Campos sin Check que SUMAN (solo Monto Mensual)
+  const camposSumaSinCheck = camposCompletos.filter(c => c.tipo === 'suma_sin_check'); 
+
+  // 3. Campos sin Check que RESTAN (solo Honorarios)
+  const campoHonorarios = camposCompletos.find(c => c.tipo === 'resta_sin_check'); 
+
+  // Creamos una lista combinada para la iteración del HTML, manteniendo el orden
+  const camposParaRenderizar = [...camposSumaSinCheck, ...camposConCheck];
+  // Agregamos Honorarios al final de la lista si existe, para que se renderice
+  if(campoHonorarios) {
+    camposParaRenderizar.push(campoHonorarios);
+  }
+  %>
+
+  <% camposParaRenderizar.forEach(function(campo) { %>
+    <div class="col-md-4 mb-3">
+      <label for="<%= campo.id %>" class="form-label"><b><%= campo.label %></b></label>
+      <% if (campo.tipo === 'con_check') { %>
+                <div class="input-group">
+          <div class="input-group-text">
+            <input type="checkbox" id="check_<%= campo.id %>" checked>
+          </div>
+          <input type="number" name="<%= campo.id %>" id="<%= campo.id %>" value="<%= campo.valor || 0 %>" class="form-control">
+        </div>
+      <% } else { %>
+                <input type="number" name="<%= campo.id %>" id="<%= campo.id %>" value="<%= campo.valor || 0 %>" class="form-control">
+      <% } %>
+    </div>
+  <% }); %>
+
+  <div class="col-md-4 mb-3">
+    <label for="total" class="form-label"><b>TOTAL</b></label>
+    <input type="number" name="total" id="total" readonly class="form-control">
+  </div>
 </div>
-
           
          
           <div class=" mt-5 mr-2 no-print">
@@ -122,109 +144,9 @@
 </div>
 <link rel="stylesheet" href="/css/propiedades.css">
 
+<link rel="stylesheet" href="/css/recibo_propietario.css">
+<script src="/reciboPropscrip.js"></script>
 
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const campos = [
-    'importemensual', 'exp_extraor', 'expcomunes',
-    'abl', 'aysa', 'seguro', 'varios', 'honorarios'
-  ];
-
-  const toNumber = v => parseFloat(v) || 0;
-
-  function recalcularTotal() {
-    let total = 0;
-    campos.forEach(id => {
-      const input = document.getElementById(id);
-      const checkbox = document.getElementById(`check_${id}`);
-      const valor = toNumber(input?.value);
-      total += checkbox?.checked ? valor : -valor;
-    });
-    document.getElementById('total').value = total.toFixed(2);
-  }
-
-  function actualizarCampos(data) {
-    const camposFijos = [
-      'numero_recibo', 'fecha_actual', 'fecha_rec',
-      'apellidopropietario', 'cuota'
-    ];
-
-    camposFijos.concat(campos).forEach(id => {
-      const input = document.getElementById(id);
-      if (input) input.value = data[id] || '';
-      else console.warn(`⚠️ Campo "${id}" no encontrado.`);
-    });
-
-    recalcularTotal();
-  }
-
-  const sel = document.getElementById('id_propiedades');
-  const btn = document.getElementById('btn-generar-recibo');
-
-  sel?.addEventListener('change', async () => {
-    const id = sel.value;
-    if (!id) return;
-    try {
-      const res = await fetch(`/api/datos_propiedad/propietario?id_propiedades=${id}`);
-      const data = await res.json();
-      console.log('API ➞', data);
-      actualizarCampos(data);
-    } catch (err) {
-      console.error('Error al cargar datos de propiedad:', err);
-      alert('Error al obtener los datos del propietario');
-    }
-  });
-
-  campos.forEach(id => {
-    document.getElementById(id)?.addEventListener('input', recalcularTotal);
-    document.getElementById(`check_${id}`)?.addEventListener('change', recalcularTotal);
-  });
-
-  btn?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if (!confirm('¿Desea insertar el recibo?')) return;
-
-    const datos = {
-      fecha: document.getElementById('fecha_actual')?.value,
-      id_propiedad: document.getElementById('id_propiedades')?.value,
-      apellidopropietario: document.getElementById('apellidopropietario')?.value,
-      apellidoinquilino: '',
-      numrecibo: document.getElementById('numero_recibo')?.value,
-      cuota: document.getElementById('cuota')?.value,
-      fecha_rec: document.getElementById('fecha_rec')?.value,
-      total: document.getElementById('total')?.value
-    };
-
-    campos.forEach(id => {
-      datos[id] = document.getElementById(id)?.value;
-      datos[`check_${id}`] = document.getElementById(`check_${id}`)?.checked;
-    });
-
-    try {
-      const res = await fetch("/recibo_propietario/insertar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos)
-      });
-
-      const data = await res.json();
-      if (data.exito) {
-        alert(data.mensaje);
-        window.location.href = data.redireccion;
-      } else {
-        alert("⚠️ " + data.mensaje);
-      }
-    } catch (err) {
-      console.error("Error en el insert:", err);
-      alert("❌ Error al insertar el recibo");
-    }
-  });
-
-  recalcularTotal(); // inicial
-});
-
-</script>
 
 </body>
 

@@ -29,6 +29,7 @@ import chromium from "@sparticuz/chromium";
 import recibo_prop from "./recRecPropietario.js";
 import funcion_letras from "./funcion_letras.js";
 import actualizacion from "./actualizacion.js";
+import recibosPropietarios from "./recibosPropietarios.js";
 
 // ✅ Importación CORRECTA del router.
 import reciboRouter from "./routes/reciboRouter.js";
@@ -1837,6 +1838,29 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
   }
 });
 
+app.get("/eliminarReciboProp/:numrecibo", async (req, res) => {
+  const numRecibo = parseInt(req.params.numrecibo, 10);
+  if (isNaN(numRecibo)) {
+    return res.status(400).send("Número de recibo inválido");
+  }
+
+  try {
+    console.log("Eliminando recibo con numrecibo:", numRecibo);
+    const resultado = await recibosPropietarios.deleteRecibosPropietarios(
+      numRecibo
+    );
+
+    if (resultado > 0) {
+      res.redirect("/buscar_recProp");
+    } else {
+      res.status(404).json({ message: "Recibo no eliminado" });
+    }
+  } catch (err) {
+    console.error("Error al eliminar recibo:", err);
+    res.status(500).send("Error interno al eliminar recibo");
+  }
+});
+
 // --- RUTAS DE LA APLICACIÓN ---
 app.get("/recibo_prop_impreso/:numrecibo", async (req, res) => {
   try {
@@ -1959,6 +1983,7 @@ app.get("/buscar_recProp", async (req, res) => {
     recibos: [],
   });
 });
+
 // -----------------------------  impresion ----------------------------------
 // app.js
 

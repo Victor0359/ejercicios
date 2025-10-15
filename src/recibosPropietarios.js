@@ -45,7 +45,19 @@ async function recibosPropietarios(numrecibo) {
   }
 }
 
+async function deleteRecibosPropietarios(numrecibo) {
+  const query = "DELETE FROM recibo_propietario WHERE numrecibo = $1";
+  try {
+    const result = await pool.query(query, [numrecibo]);
+    return result.rowCount; // ✅ Esto es lo que necesitás
+  } catch (error) {
+    console.error("Error al eliminar el recibo propietario:", error);
+    throw error;
+  }
+}
+
 export default {
   getRecibosPorFecha,
   recibosPropietarios,
+  deleteRecibosPropietarios,
 };
