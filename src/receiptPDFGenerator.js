@@ -395,7 +395,7 @@ export async function generateOwnerReceiptPDF(receiptData) {
     { label: "AYSA", value: receiptData.aysa },
     { label: "SEGURO", value: receiptData.seguro },
     { label: "VARIOS", value: receiptData.varios },
-    { label: "HONORARIOS", value: receiptData.honorarios },
+    { label: "HONORARIOS", value: -Math.abs(receiptData.honorarios) },
   ];
 
   concepts.forEach(({ label, value }) => {

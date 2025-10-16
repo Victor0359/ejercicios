@@ -30,6 +30,7 @@ import recibo_prop from "./recRecPropietario.js";
 import funcion_letras from "./funcion_letras.js";
 import actualizacion from "./actualizacion.js";
 import recibosPropietarios from "./recibosPropietarios.js";
+import reciboFormulario from "./recibosFormulario.js";
 
 // ✅ Importación CORRECTA del router.
 import reciboRouter from "./routes/reciboRouter.js";
@@ -1456,6 +1457,28 @@ app.post("/recibo_inquilino/insertar", async (req, res) => {
     res.status(500).send("Error interno al insertar recibo_inquilino");
   }
 });
+
+app.get("/eliminarReciboInq/:numrecibo", async (req, res) => {
+  const numRecibo = parseInt(req.params.numrecibo, 10);
+  if (isNaN(numRecibo)) {
+    return res.status(400).send("Número de recibo inválido");
+  }
+
+  try {
+    console.log("Eliminando recibo con numrecibo:", numRecibo);
+    const resultado = await reciboFormulario.deleteRecibosInquilinos(numRecibo);
+
+    if (resultado > 0) {
+      res.redirect("/recibo_inquilino");
+    } else {
+      res.status(404).json({ message: "Recibo no eliminado" });
+    }
+  } catch (err) {
+    console.error("Error al eliminar recibo:", err);
+    res.status(500).send("Error interno al eliminar recibo");
+  }
+});
+
 // -------------------  recibo impreso inquilino ----------------------
 
 app.get("/recibo_inq_impreso/:numero_recibo", async (req, res) => {
@@ -1851,7 +1874,7 @@ app.get("/eliminarReciboProp/:numrecibo", async (req, res) => {
     );
 
     if (resultado > 0) {
-      res.redirect("/buscar_recProp");
+      res.redirect("/recibo_propietario");
     } else {
       res.status(404).json({ message: "Recibo no eliminado" });
     }

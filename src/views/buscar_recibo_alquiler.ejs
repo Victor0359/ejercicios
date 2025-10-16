@@ -48,6 +48,7 @@
           <th>varios</th>
           <th>Total</th>
           <th>Imprimir</th>
+          <th>Eliminar</th>
           <!-- Agrega más columnas si lo necesitas -->
         </tr>
       </thead>
@@ -97,6 +98,15 @@
              <a href="/recibo_inq_impreso/<%= r.numrecibo %>" class="btn btn-sm btn-primary" target="_blank">Imprimir</a>
 
             </td>
+            <td>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger eliminar-btn"
+              data-numrecibo="<%= r.numrecibo %>"
+            >
+              Eliminar
+            </button>
+          </td>
           </tr>
           <% }) %>
       </tbody>
@@ -108,3 +118,25 @@
     <a href="/recibo_inquilino" class="btn btn-secondary mt-5 w-30">Cancelar</a>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  document.querySelectorAll(".eliminar-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const numrecibo = btn.getAttribute("data-numrecibo");
+      Swal.fire({
+        title: "¿Eliminar recibo?",
+        text: `Estás por eliminar el recibo Propietario N° ${numrecibo}. Esta acción no se puede deshacer.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = `/eliminarReciboProp/${numrecibo}`;
+        }
+      });
+    });
+  });
+</script>
