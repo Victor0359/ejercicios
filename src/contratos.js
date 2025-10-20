@@ -94,6 +94,16 @@ async function obtenerPropiedadOrdenados() {
     return [];
   }
 }
+async function eliminarContratos(id_contratos) {
+  try {
+    const sql = "DELETE FROM contratos WHERE id_contratos = $1";
+    const resultado = await pool.query(sql, [id_contratos]);
+    return resultado.rowCount; // Devuelve cuántos contratos se eliminaron
+  } catch (err) {
+    console.error("Error al eliminar contrato:", err);
+    return 0; // 0 indica que no se eliminó nada
+  }
+}
 
 async function agregarContratos(datos) {
   try {
@@ -201,4 +211,5 @@ export default {
   obtenerContratoPorId,
   obtenerPropiedadOrdenados,
   obtenerContratosPorIdPropiedad,
+  eliminarContratos,
 };

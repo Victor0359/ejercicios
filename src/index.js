@@ -370,7 +370,8 @@ app.post("/inquilinos/insertar", async (req, res) => {
         insertado: false,
         eliminado: false,
 
-        mensaje: "No se pudo insertar el inquilino. Intente nuevamente.",
+        mensaje:
+          "No se pudo insertar el inquilino. Existe un inquilino con ese dni.",
       });
     }
   } catch (err) {
@@ -625,7 +626,7 @@ app.post("/propietarios/insertar", async (req, res) => {
       const lista = await propietarios.obtenerPropietarios();
       return res.render("propietarios", {
         propietarios: lista,
-        mensaje: "No se pudo insertar el propietario. Intente nuevamente.",
+        mensaje: "No se pudo insertar el propietario. ya existe ese DNI.",
       });
     }
   } catch (err) {
@@ -640,7 +641,6 @@ app.post("/propietarios/insertar", async (req, res) => {
 
 app.get("/propietarios/editar/:id", async (req, res) => {
   const { id } = req.params;
-  const mensaje = req.query.mensaje || null;
 
   try {
     const propietario = await propietarios.obtenerPorId(id);
@@ -977,6 +977,7 @@ app.get("/contratos", async (req, res) => {
     console.log("req.query completo:", req.query);
     console.log("Valor recibido en filtro:", id_propiedad);
     res.set("Cache-Control", "no-store");
+
     res.render("contratos", {
       contratos: contratosLista,
       propietarios: propietariosLista,
@@ -984,10 +985,34 @@ app.get("/contratos", async (req, res) => {
       propiedades: propiedadesLista,
       hayFiltro,
       id_propiedad,
+      insertado: req.query.insertado === "1",
+      eliminado: req.query.eliminado === "1",
+      mensaje: req.query.mensaje || null,
     });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error al cargar contratos");
+  }
+});
+app.get("/contratos/eliminar/:id_contrato", async (req, res) => {
+  const contrato = parseInt(req.params.id_contrato, 10);
+  if (isNaN(contrato)) {
+    return res.status(400).send("Contrato inválido");
+  }
+
+  try {
+    console.log("Eliminando contrato:", contrato);
+
+    const resultado = await contratos.eliminarContratos(contrato);
+
+    if (resultado > 0) {
+      res.redirect("/contratos?eliminado=1");
+    } else {
+      res.status(404).json({ message: "Contrato no eliminado" });
+    }
+  } catch (err) {
+    console.error("Error al eliminar contrato:", err);
+    res.status(500).send("Error interno al eliminar contrato");
   }
 });
 
