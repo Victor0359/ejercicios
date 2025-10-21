@@ -1149,6 +1149,28 @@ app.get("/contratos/editar/:id", async (req, res) => {
     res.status(500).send("Error al buscar contratos");
   }
 });
+// En tu archivo principal (app.js o similar)
+app.get("/contratos/a-actualizar", async (req, res) => {
+  try {
+    // Asumiendo que esta función aplica la lógica SQL anterior
+    const contratosParaActualizar = await contratos.frecuenciaContratos();
+    console.log(`Contratos a renderizar: ${contratosParaActualizar.length}`);
+    res.set("Cache-Control", "no-store");
+
+    res.render("contratos-actualizaciones", {
+      // Asume un nuevo archivo EJS
+      contratos: contratosParaActualizar,
+      fechaActual: new Date().toLocaleDateString("es-AR", {
+        year: "numeric",
+        month: "long",
+      }),
+      // Puedes pasar otros datos necesarios
+    });
+  } catch (err) {
+    console.error("Error al cargar contratos para actualizar:", err);
+    res.status(500).send("Error al cargar listado de actualizaciones");
+  }
+});
 
 // ------------------- Recibo Inquilino ----------------------
 // Mostrar el buscador y la tabla

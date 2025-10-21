@@ -202,6 +202,56 @@ async function obtenerContratoDetalladoPorId(id_contratos) {
   return resultado.rows[0];
 }
 
+async function frecuenciaContratos() {
+  // Consulta SQL final verificada en PostgreSQL
+  const sqlQuery = `
+        SELECT
+            a.*, 
+            b.direccion AS direccion,
+            (EXTRACT(YEAR FROM current_date) * 12 + EXTRACT(MONTH FROM current_date)) - 
+            (EXTRACT(YEAR FROM a.fecha_inicio) * 12 + EXTRACT(MONTH FROM a.fecha_inicio)) AS meses_transcurridos,
+            MOD((EXTRACT(YEAR FROM current_date) * 12 + EXTRACT(MONTH FROM current_date)) - 
+            (EXTRACT(YEAR FROM a.fecha_inicio) * 12 + EXTRACT(MONTH FROM a.fecha_inicio)), a.frecuencia) AS para_actualizar
+        FROM
+            contratos AS a
+        INNER JOIN
+            propiedades AS b
+            ON a.id_propiedades = b.id_propiedades
+        WHERE
+            a.frecuencia IS NOT NULL AND a.frecuencia > 0
+            AND a.fecha_inicio <= current_date
+            
+            -- FILTRO CLAVE: (Meses Transcurridos + 1) % Frecuencia = 0
+            AND MOD(
+                ((EXTRACT(YEAR FROM current_date) * 12 + EXTRACT(MONTH FROM current_date)) - 
+                (EXTRACT(YEAR FROM a.fecha_inicio) * 12 + EXTRACT(MONTH FROM a.fecha_inicio))) + 1,
+                a.frecuencia
+            ) = 0
+        ORDER BY
+            a.fecha_inicio;
+    `;
+
+  try {
+    // --- SECCIÓN CRÍTICA CORREGIDA: Usamos 'pool.query' ---
+    const resultado = await pool.query(sqlQuery);
+
+    // ⚠️ LOGS DE DEPURACIÓN (Mantenemos estos para que confirmes el resultado en consola)
+    console.log("Resultado crudo de la DB:", resultado);
+    console.log(
+      `Filas encontradas en DB (resultado.rows.length): ${resultado.rows.length}`
+    );
+
+    // Devolvemos el array de filas (.rows)
+    return resultado.rows;
+
+    // --- FIN DE LA SECCIÓN CRÍTICA ---
+  } catch (error) {
+    console.error("⛔ ERROR GRAVE al ejecutar frecuenciaContratos SQL:", error);
+    // Devolver una lista vacía en caso de fallo para evitar que la aplicación se caiga.
+    return [];
+  }
+}
+
 export default {
   obtenerContratoDetalladoPorId,
   obtenerContratosConfiltro,
@@ -212,4 +262,5 @@ export default {
   obtenerPropiedadOrdenados,
   obtenerContratosPorIdPropiedad,
   eliminarContratos,
+  frecuenciaContratos,
 };
