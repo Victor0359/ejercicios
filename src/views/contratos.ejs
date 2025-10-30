@@ -1,4 +1,4 @@
-<body>
+<div>
 
   <div class="container mt-5">
     <h1>CONTRATOS</h1>
@@ -6,6 +6,13 @@
     
 
     <form class="row g-3 mt-2" action="/contratos/insertar" method="POST">
+
+      <% if (mensaje === 'duplicado') { %>
+  <div class="alert alert-warning">
+    ⚠️ Ya existe un contrato con esa propiedad. No se puede volver a insertar.
+  </div>
+<% } %>
+
 
       <div class="col-md-6 mb-3">
 
@@ -90,7 +97,7 @@
     </form>
   </div>
  
-
+</div>
   <div class="container mt-5">
     <div class="mt-5">
       <h1>Contratos</h1>

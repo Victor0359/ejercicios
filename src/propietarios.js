@@ -124,10 +124,11 @@ async function obtenerPropietariosPorId(id_propietarios) {
     return null;
   }
 }
+
 async function obtenerPropietariosPorDni(dni) {
   try {
     const resultado = await pool.query(
-      "SELECT * FROM propietarios WHERE dni = $1",
+      "SELECT * FROM propietarios WHERE dni = $1 ",
       [dni]
     );
     return resultado[0]; // Devuelve los registros encontrados
@@ -136,6 +137,7 @@ async function obtenerPropietariosPorDni(dni) {
     return [];
   }
 }
+
 async function obtenerTodosLosPropietarios() {
   try {
     const resultado = await pool.query(

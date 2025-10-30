@@ -233,6 +233,10 @@ app.post("/inquilinos/editar/:id", async (req, res) => {
   } = req.body;
 
   try {
+    const dniDuplicado = await inquilinos.obtenerInquilinosPorDni(dni, id);
+    if (dniDuplicado) {
+      return res.redirect(`/inquilinos/editar/${id}?mensaje=dni_duplicado`);
+    }
     const resultado = await inquilinos.modificarInquilinos({
       id_inquilinos: id, // importante: usar el ID de los params
       nombre,
@@ -1048,6 +1052,12 @@ app.post("/contratos/insertar", async (req, res) => {
     if (duracion_contrato === "" || duracion_contrato === undefined)
       duracion_contrato = 0;
     if (frecuencia === "" || frecuencia === undefined) frecuencia = 0;
+    const contratoExistente = await contratos.obtenerContratosPorPropiedades(
+      id_propiedades
+    );
+    if (contratoExistente) {
+      return res.redirect("/contratos?mensaje=duplicado");
+    }
 
     const resultado = await contratos.agregarContratos({
       id_propietarios,

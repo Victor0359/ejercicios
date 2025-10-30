@@ -126,11 +126,11 @@ async function obtenerInquilinosPorId(id_inquilinos) {
   }
 }
 
-async function obtenerInquilinosPorDni(dni) {
+async function obtenerInquilinosPorDni(dni, id) {
   try {
     const resultado = await pool.query(
-      "SELECT * FROM inquilinos WHERE dni = $1",
-      [dni]
+      "SELECT * FROM inquilinos WHERE dni = $1 and id_inquilinos= $2",
+      [dni, id]
     );
     return resultado[0]; // Devuelve los registros encontrados
   } catch (err) {

@@ -251,6 +251,12 @@ async function frecuenciaContratos() {
     return [];
   }
 }
+async function obtenerContratosPorPropiedades(id_propiedades) {
+  const query = `select * from contratos where id_propiedades= $1 `;
+
+  const resultado = await pool.query(query, [id_propiedades]);
+  return resultado.rows[0];
+}
 
 export default {
   obtenerContratoDetalladoPorId,
@@ -263,4 +269,5 @@ export default {
   obtenerContratosPorIdPropiedad,
   eliminarContratos,
   frecuenciaContratos,
+  obtenerContratosPorPropiedades,
 };
