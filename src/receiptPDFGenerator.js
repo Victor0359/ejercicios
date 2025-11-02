@@ -156,9 +156,9 @@ export async function generateTenantReceiptPDF(receiptData) {
     });
     currentY -= 14;
   });
-
-  // 🔸 Conceptos
   currentY -= 20;
+  // 🔸 Conceptos
+
   const concepts = [
     { label: "Mensualidad", value: receiptData.importemensual },
     { label: "ABL", value: receiptData.abl },
@@ -169,20 +169,25 @@ export async function generateTenantReceiptPDF(receiptData) {
   ];
 
   concepts.forEach(({ label, value }) => {
-    if (value > 0) {
-      page.drawText(`${label}:`, {
+    if (value !== null && value !== undefined && value !== 0) {
+      const isNegative = value < 0;
+      const valueText = `${isNegative ? "- $" : "$"}${Math.abs(
+        value
+      ).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+      })}`;
+      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+
+      // 🆕 Dibuja el concepto (label) alineado a la izquierda
+      page.drawText(label, {
         x: marginLeft,
         y: currentY,
         size: fontSize,
         font: bodyFont,
-        color: rgb(0.4, 0.4, 0.4),
+        color: rgb(0, 0, 0),
       });
 
-      // 🔧 CORREGIDO: Alineación de los valores a la derecha
-      const valueText = `$${Number(value).toLocaleString("es-AR", {
-        minimumFractionDigits: 2,
-      })}`;
-      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+      // Dibuja el valor alineado a la derecha
       page.drawText(valueText, {
         x: width - marginRight - valueWidth,
         y: currentY,
@@ -190,6 +195,7 @@ export async function generateTenantReceiptPDF(receiptData) {
         font: bodyFont,
         color: rgb(0, 0, 0),
       });
+
       currentY -= 15;
     }
   });
@@ -376,7 +382,8 @@ export async function generateOwnerReceiptPDF(receiptData) {
   });
 
   // 🔸 Concepts
-  yPosition -= 20;
+  currentY -= 20;
+
   page.drawText("Conceptos:", {
     x: marginLeft,
     y: yPosition,
@@ -472,5 +479,19 @@ export async function generateOwnerReceiptPDF(receiptData) {
   return await pdfDoc.save();
 }
 
+export function formatCurrencyWithSign(value) {
+  const num = Number(value) || 0;
+  const abs = Math.abs(num).toLocaleString("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  // Puedes usar paréntesis en lugar de signo negativo si prefieres: return num < 0 ? `($${abs})` : `$${abs}`;
+  return num < 0 ? `- $${abs}` : `$${abs}`;
+}
+
 // Exporta ambas funciones
-export default { generateTenantReceiptPDF, generateOwnerReceiptPDF };
+export default {
+  generateTenantReceiptPDF,
+  generateOwnerReceiptPDF,
+  formatCurrencyWithSign,
+};
