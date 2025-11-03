@@ -1,4 +1,3 @@
-// src/receiptPDFGenerator.js
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const A5_WIDTH = 148 * 2.83465; // Ancho de A5 en puntos (1mm = 2.83465 puntos)
@@ -19,14 +18,12 @@ export async function generateTenantReceiptPDF(receiptData) {
   const fontSize = 10;
 
   const titleFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-  const bodyFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+  const bodyFont = await pdfDoc.embedFont(StandardFonts.TimesRoman); // 🔧 Se usan los nuevos márgenes de 1.5 cm
 
-  // 🔧 Se usan los nuevos márgenes de 1.5 cm
   const marginLeft = MARGIN_1_5_CM;
   const marginRight = MARGIN_1_5_CM;
-  let currentY = height - 40;
+  let currentY = height - 40; // 🔷 Encabezado y Fecha en la misma línea
 
-  // 🔷 Encabezado y Fecha en la misma línea
   page.drawText("RECIBO DE COBRO", {
     x: marginLeft,
     y: currentY,
@@ -51,9 +48,8 @@ export async function generateTenantReceiptPDF(receiptData) {
     end: { x: width - marginRight, y: currentY },
     thickness: 0.5,
     color: rgb(0.6, 0.6, 0.6),
-  });
+  }); // 🔹 Detalles del recibo: Nº y Mes Cont en la misma línea
 
-  // 🔹 Detalles del recibo: Nº y Mes Cont en la misma línea
   currentY -= 30;
   page.drawText(`Recibo Nº: ${receiptData.numrecibo || "N/D"}`, {
     x: marginLeft,
@@ -143,7 +139,7 @@ export async function generateTenantReceiptPDF(receiptData) {
     bodyFont,
     fontSize,
     maxWidth
-  );
+  ); // 🐛 CORRECCIÓN: Usar currentY y decrementar dentro del forEach
 
   justifiedLines.forEach((line) => {
     page.drawText(line, {
@@ -154,11 +150,10 @@ export async function generateTenantReceiptPDF(receiptData) {
       color: rgb(0, 0, 0),
       lineHeight: 14,
     });
-    currentY -= 14;
+    currentY -= 14; // Decrementar currentY
   });
-  currentY -= 20;
-  // 🔸 Conceptos
 
+  currentY -= 20; // Espacio antes de Conceptos // 🔸 Conceptos
   const concepts = [
     { label: "Mensualidad", value: receiptData.importemensual },
     { label: "ABL", value: receiptData.abl },
@@ -176,18 +171,16 @@ export async function generateTenantReceiptPDF(receiptData) {
       ).toLocaleString("es-AR", {
         minimumFractionDigits: 2,
       })}`;
-      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+      const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize); // 🆕 Dibuja el concepto (label) alineado a la izquierda
 
-      // 🆕 Dibuja el concepto (label) alineado a la izquierda
       page.drawText(label, {
         x: marginLeft,
         y: currentY,
         size: fontSize,
         font: bodyFont,
         color: rgb(0, 0, 0),
-      });
+      }); // Dibuja el valor alineado a la derecha
 
-      // Dibuja el valor alineado a la derecha
       page.drawText(valueText, {
         x: width - marginRight - valueWidth,
         y: currentY,
@@ -198,9 +191,8 @@ export async function generateTenantReceiptPDF(receiptData) {
 
       currentY -= 15;
     }
-  });
+  }); // 🔻 Total
 
-  // 🔻 Total
   currentY -= 20;
   page.drawLine({
     start: { x: marginLeft, y: currentY },
@@ -221,9 +213,8 @@ export async function generateTenantReceiptPDF(receiptData) {
     size: fontSize + 2,
     font: titleFont,
     color: rgb(0.1, 0.1, 0.1),
-  });
+  }); // ✍️ Firma
 
-  // ✍️ Firma
   currentY -= 50;
   page.drawLine({
     start: { x: marginLeft, y: currentY },
@@ -249,6 +240,7 @@ export async function generateTenantReceiptPDF(receiptData) {
  * @param {object} receiptData - Object with the receipt data.
  * @returns {Promise<Uint8Array>} - The generated PDF bytes.
  */
+
 export async function generateOwnerReceiptPDF(receiptData) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A5_WIDTH, A5_HEIGHT]);
@@ -259,9 +251,8 @@ export async function generateOwnerReceiptPDF(receiptData) {
   const bodyFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
   const marginLeft = MARGIN_1_5_CM;
   const marginRight = MARGIN_1_5_CM;
-  let yPosition = height - 40;
+  let yPosition = height - 40; // 🔷 Header con título y fecha en la misma línea
 
-  // 🔷 Header con título y fecha en la misma línea
   page.drawText("RECIBO PROPIETARIO", {
     x: marginLeft,
     y: yPosition,
@@ -286,9 +277,8 @@ export async function generateOwnerReceiptPDF(receiptData) {
     end: { x: width - marginLeft, y: yPosition },
     thickness: 0.5,
     color: rgb(0.6, 0.6, 0.6),
-  });
+  }); // 🔹 Detalles del recibo: Nº y Mes Cont en la misma línea
 
-  // 🔹 Detalles del recibo: Nº y Mes Cont en la misma línea
   yPosition -= 30;
   page.drawText(`Recibo Nº: ${receiptData.numrecibo || "N/D"}`, {
     x: marginLeft,
@@ -382,7 +372,7 @@ export async function generateOwnerReceiptPDF(receiptData) {
   });
 
   // 🔸 Concepts
-  currentY -= 20;
+  yPosition -= 20;
 
   page.drawText("Conceptos:", {
     x: marginLeft,
@@ -433,9 +423,8 @@ export async function generateOwnerReceiptPDF(receiptData) {
 
       yPosition -= 15;
     }
-  });
+  }); // 🔻 Highlighted total
 
-  // 🔻 Highlighted total
   yPosition -= 20;
   page.drawLine({
     start: { x: marginLeft, y: yPosition },
@@ -456,9 +445,8 @@ export async function generateOwnerReceiptPDF(receiptData) {
     size: fontSize + 2,
     font: titleFont,
     color: rgb(0.1, 0.1, 0.1),
-  });
+  }); // ✍️ Firma
 
-  // ✍️ Firma
   yPosition -= 50;
   page.drawLine({
     start: { x: marginLeft, y: yPosition },
@@ -476,7 +464,7 @@ export async function generateOwnerReceiptPDF(receiptData) {
     color: rgb(0.2, 0.2, 0.2),
   });
 
-  return await pdfDoc.save();
+  return await pdfDoc.save(); // ✅ Dentro de la función
 }
 
 export function formatCurrencyWithSign(value) {
@@ -484,8 +472,7 @@ export function formatCurrencyWithSign(value) {
   const abs = Math.abs(num).toLocaleString("es-AR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
-  // Puedes usar paréntesis en lugar de signo negativo si prefieres: return num < 0 ? `($${abs})` : `$${abs}`;
+  }); // Puedes usar paréntesis en lugar de signo negativo si prefieres: return num < 0 ? `($${abs})` : `$${abs}`;
   return num < 0 ? `- $${abs}` : `$${abs}`;
 }
 
