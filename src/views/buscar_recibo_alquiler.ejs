@@ -127,14 +127,14 @@
       const numrecibo = btn.getAttribute("data-numrecibo");
       Swal.fire({
         title: "¿Eliminar recibo?",
-        text: `Estás por eliminar el recibo Propietario N° ${numrecibo}. Esta acción no se puede deshacer.`,
+        text: `Estás por eliminar el recibo Inquilino N° ${numrecibo}. Esta acción no se puede deshacer.`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Sí, eliminar",
         cancelButtonText: "Cancelar",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.href = `/eliminarReciboProp/${numrecibo}`;
+          window.location.href = `/eliminarReciboInq/${numrecibo}`;
         }
       });
     });
