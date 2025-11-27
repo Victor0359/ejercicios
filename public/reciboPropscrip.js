@@ -99,10 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirm("¿Desea insertar el recibo?")) return;
 
     const totalValue = toNumber(document.getElementById("total")?.value);
-    if (totalValue <= 0) {
-      alert(
-        "⚠️ El total es cero. Verifique los campos antes de generar el recibo."
-      );
+    if (totalValue == null || isNaN(totalValue)) {
+      alert("⚠️ Verifique los campos antes de generar el recibo.");
       return;
     }
 

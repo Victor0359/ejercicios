@@ -1856,6 +1856,11 @@ app.post("/recibo_propietario/insertar", async (req, res) => {
     abl = toNumber(abl);
     aysa = toNumber(aysa);
     total = toNumber(total);
+    if (total == null || isNaN(total)) {
+      return res
+        .status(400)
+        .send("⚠️ El total es inválido. Verifique los campos.");
+    }
 
     function parsearFechaISO(fecha) {
       if (!fecha || fecha === "null" || fecha.trim() === "") return null;

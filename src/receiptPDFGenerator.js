@@ -210,6 +210,11 @@ async function drawOwnerReceiptContent(page, pdfDoc, receiptData) {
         minimumFractionDigits: 2,
       })}`;
       const valueWidth = bodyFont.widthOfTextAtSize(valueText, fontSize);
+      if (receiptData.total == null || isNaN(receiptData.total)) {
+        return res
+          .status(400)
+          .send("⚠️ El total es inválido. Verifique los campos.");
+      }
 
       page.drawText(`${label}:`, {
         x: marginLeft,

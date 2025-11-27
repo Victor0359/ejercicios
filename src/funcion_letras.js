@@ -1,8 +1,14 @@
+// funcion_letras.js
+
 function numeroALetras(num) {
   num = Number(num);
   if (isNaN(num)) {
     throw new TypeError("El valor recibido no es un número válido");
   }
+
+  // Casos base
+  if (num === 0) return "CERO";
+  if (num < 0) return "MENOS " + numeroALetras(Math.abs(num));
 
   const unidades = [
     "",
@@ -76,7 +82,7 @@ function numeroALetras(num) {
     let texto = "";
     if (c > 0) texto += centenas[c] + " ";
 
-    if (dosDigitos <= 29 && dosDigitos >= 10) {
+    if (dosDigitos >= 10 && dosDigitos <= 29) {
       texto += especiales[dosDigitos];
     } else {
       if (d > 0) texto += decenas[d];
@@ -88,10 +94,10 @@ function numeroALetras(num) {
   }
 
   function seccion(num, divisor, singular, plural) {
-    const cientos = Math.floor(num / divisor);
-    if (cientos === 0) return "";
-    if (cientos === 1) return singular;
-    return `${numeroALetras(cientos)} ${plural}`;
+    const cantidad = Math.floor(num / divisor);
+    if (cantidad === 0) return "";
+    if (cantidad === 1) return singular;
+    return `${convertirGrupo(cantidad)} ${plural}`;
   }
 
   function milesMillones(n) {
@@ -105,7 +111,8 @@ function numeroALetras(num) {
   }
 
   const partes = num.toFixed(2).split(".");
-  const entero = parseInt(partes[0]);
+  const entero = parseInt(partes[0], 10);
+
   return milesMillones(entero);
 }
 
