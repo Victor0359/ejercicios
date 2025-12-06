@@ -4,10 +4,28 @@ import pool from "./datadb.js";
 
 async function obtenerContratos_Id(id_propiedades) {
   try {
-    const resultado = await pool.query(
-      "select* from vista_contratos as vis inner join propiedades as prop on vis.direccion=prop.direccion where prop.id_propiedades= $1",
-      [id_propiedades]
-    );
+    if (!id_propiedades || isNaN(Number(id_propiedades))) {
+      console.error("ID inválido:", id_propiedades);
+      return [];
+    }
+
+    const query = `
+      SELECT c.id_contratos,
+             c.id_propiedades,
+             c.precioactual,
+             c.cuota,
+             p.apellido AS apellidopropietario,
+             i.apellido AS apellidoinquilino,
+             pr.direccion,
+             pr.localidad
+      FROM contratos_view AS c
+      INNER JOIN propiedades AS pr ON c.id_propiedades = pr.id_propiedades
+      INNER JOIN propietarios AS p ON c.id_propietarios = p.id_propietarios
+      INNER JOIN inquilinos AS i ON c.id_inquilinos = i.id_inquilinos
+      WHERE c.id_propiedades = $1
+    `;
+
+    const resultado = await pool.query(query, [Number(id_propiedades)]);
     return resultado.rows;
   } catch (err) {
     console.error("Error al obtener contratos:", err);
@@ -190,6 +208,20 @@ async function obtenerRecibosPorPropiedadLimit1(id_propiedad) {
   }
 }
 
+export async function eliminarrRecibosPorNumrecibo(numrecibo) {
+  try {
+    const resultado = await pool.query(
+      "delete * from recibo_inquilinos where numrecibo=$1",
+      [numrecibo]
+    );
+
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al buscar recibos:", err);
+    return [];
+  }
+}
+
 // 🆕 CORRECCIÓN: El archivo exporta un objeto por defecto.
 export default {
   obtenerContratos_Id,
@@ -202,4 +234,5 @@ export default {
   obtenerRecibosPorNumrecibo,
   getRecibosPorFecha, // ✅ Añadida la nueva función a la exportación
   saveRecibo, // ✅ Añadida la función saveRecibo para que esté disponible
+  eliminarrRecibosPorNumrecibo,
 };

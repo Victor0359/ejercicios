@@ -20,7 +20,7 @@ async function obtenerContratosConfiltro() {
           con.fecha_finalcontrato,
           con.cuota,
           con.frecuencia
-        FROM contratos AS con
+        FROM contratos_wiew AS con
         INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios
         INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos
         INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades
@@ -39,9 +39,9 @@ async function obtenerContratosConfiltro() {
           con.honorarios,
           con.duracion_contrato,
           con.fecha_finalcontrato,
-          con.cuota,
+         con cuota,
           con.frecuencia
-        FROM contratos AS con
+        FROM contratos_wiew AS con
         INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios
         INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos
         INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades
@@ -61,7 +61,7 @@ async function obtenerContratosConfiltro() {
 async function obtenerContratos(id_propiedades) {
   try {
     const query =
-      "SELECT con.id_contratos, prop.apellido AS apellido_propietario,inq.apellido AS apellido_inquilino,propi.direccion as direccion, con.fecha_inicio, con.precioinicial, con.precioactual, con.honorarios,con.duracion_contrato,con.fecha_finalcontrato,con.cuota,con.frecuencia FROM contratos AS con INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades where propi.id_propiedades= $1 oRDER BY propi.direccion ASC";
+      "SELECT con.id_contratos, prop.apellido AS apellido_propietario,inq.apellido AS apellido_inquilino,propi.direccion as direccion, con.fecha_inicio, con.precioinicial, con.precioactual, con.honorarios,con.duracion_contrato,con.fecha_finalcontrato,cuota,con.frecuencia FROM contratos_view AS con INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades where propi.id_propiedades= $1 oRDER BY propi.direccion ASC";
 
     const resultado = await pool.query(query, [id_propiedades]);
     return resultado.rows;
@@ -74,7 +74,8 @@ async function obtenerContratos(id_propiedades) {
 async function obtenerContratoPorId(id_contratos) {
   try {
     const query =
-      "SELECT con.id_contratos, prop.apellido AS apellido_propietario,inq.apellido AS apellido_inquilino,propi.direccion,        con.fecha_inicio, con.precioinicial, con.precioactual, con.honorarios,con.duracion_contrato,con.fecha_finalcontrato,con.cuota,con.frecuencia FROM contratos AS con INNER JOIN propietarios AS prop ON con.id_propietarios = prop.id_propietarios INNER JOIN inquilinos AS inq ON con.id_inquilinos = inq.id_inquilinos INNER JOIN propiedades AS propi ON con.id_propiedades = propi.id_propiedades  WHERE id_contratos = $1 oRDER BY propi.direccion ASC";
+      "SELECT c.id_contratos,c.id_propiedades,c.precioactual,c.cuota, i.apellido AS apellidoinquilino,p.apellido AS apellidopropietario FROM contratos_view AS c INNER JOIN inquilinos AS i ON c.id_inquilinos = i.id_inquilinos INNER JOIN propietarios AS p ON c.id_propietarios = p.id_propietarios WHERE c.id_propiedades = $1";
+
     const resultado = await pool.query(query, [id_contratos]);
     return resultado.rows;
   } catch (err) {
@@ -170,10 +171,9 @@ async function obtenerContratosPorIdPropiedad(id_propiedad) {
   try {
     const resultado = await pool.query(
       `SELECT *,
-       (DATE_PART('year', AGE(CURRENT_DATE, fecha_inicio)) * 12 +
-        DATE_PART('month', AGE(CURRENT_DATE, fecha_inicio)) + 1) AS cuota,
+       cuota,
        honorarios
-FROM contratos
+FROM contratos_wiew
 WHERE id_propiedades = $1
 ORDER BY fecha_inicio DESC;
 `,
@@ -252,7 +252,7 @@ async function frecuenciaContratos() {
   }
 }
 async function obtenerContratosPorPropiedades(id_propiedades) {
-  const query = `select * from contratos where id_propiedades= $1 `;
+  const query = `select * from contratos_view where id_propiedades= $1 `;
 
   const resultado = await pool.query(query, [id_propiedades]);
   return resultado.rows[0];
