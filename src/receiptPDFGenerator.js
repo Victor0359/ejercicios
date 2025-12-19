@@ -229,7 +229,7 @@ async function drawOwnerReceiptContent(page, pdfDoc, receiptData) {
         y: yPosition,
         size: fontSize,
         font: bodyFont,
-        color: isNegative ? rgb(0.8, 0, 0) : rgb(0, 0, 0),
+        color: isNegative ? rgb(0, 0, 0) : rgb(0, 0, 0),
       });
 
       yPosition -= 15;
