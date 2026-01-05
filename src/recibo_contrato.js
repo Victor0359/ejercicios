@@ -14,8 +14,8 @@ async function obtenerContratos_Id(id_propiedades) {
              c.id_propiedades,
              c.precioactual,
              c.cuota,
-             p.apellido AS apellidopropietario,
-             i.apellido AS apellidoinquilino,
+             concat(trim(p.apellido),' ',trim(p.nombre))AS apellidopropietario,
+			       concat(trim(i.apellido),' ',trim(i.nombre))AS apellidoinquilino,
              pr.direccion,
              pr.localidad
       FROM contratos_view AS c

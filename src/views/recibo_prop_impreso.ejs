@@ -182,38 +182,54 @@
   ></div>
 
   <script>
-    const getReceiptData = () => {
-  // Sincroniza el input oculto con el número visible
+const getReceiptData = () => {
+  // 1. Inicializar el objeto data (Esto es lo que faltaba)
+  const data = {};
+
+  // 2. Sincroniza el input oculto con el número visible
   const receiptNumber = document.getElementById('receiptNumber').textContent.trim();
   document.querySelector('[name="numrecibo"]').value = receiptNumber;
 
+  // 3. Capturar campos básicos de los inputs ocultos o visibles
+  data.numrecibo = receiptNumber;
+  data.id_propiedad = document.querySelector('[name="id_propiedad"]').value;
+  data.tipoRecibo = document.getElementById('tipoRecibo').value;
+  data.letra = document.querySelector('[name="letra"]').value;
+  data.fecha = document.querySelector('[name="fecha"]').value;
+
+  // 4. Capturar datos de los <span> (Texto en el HTML)
+  data.localidad = document.getElementById("propiedadLocalidad").textContent.trim();
+  data.direccion = document.getElementById("propiedadDireccion").textContent.trim();
+  data.cuota = document.getElementById("ownerName").textContent.trim();
+  data.vencimiento = document.getElementById("vencimientoDia").textContent.trim();
+  data.mes = document.getElementById("mesContrato").textContent.trim();
+
+  // 5. Procesar el Total (Quitando formato de moneda)
+  const totalTexto = document.getElementById('totalAmount').textContent
+    .replace('$', '')
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
   
+  const totalOriginal = parseFloat(totalTexto);
+  const honorarios = parseFloat(document.querySelector('[name="honorarios"]').value) || 0;
+  
+  // Restamos honorarios del total como indica tu lógica
+  data.total = totalOriginal - honorarios;
 
-      // 🆕 AÑADIDO: Recopila los datos de los <span> y los procesa
-      //data.total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));
-      const totalOriginal = parseFloat(document.getElementById('totalAmount').textContent.replace('$', '').trim().replace(/\./g, "").replace(",", "."));
-        const honorarios = parseFloat(document.querySelector('[name="honorarios"]').value);
-      data.total = totalOriginal - honorarios;
+  // 6. Convertir valores numéricos de los inputs
+  data.importemensual = parseFloat(document.querySelector('[name="importemensual"]').value) || 0;
+  data.abl = parseFloat(document.querySelector('[name="abl"]').value) || 0;
+  data.aysa = parseFloat(document.querySelector('[name="aysa"]').value) || 0;
+  data.exp_extraor = parseFloat(document.querySelector('[name="exp_extraor"]').value) || 0;
+  data.expcomunes = parseFloat(document.querySelector('[name="expcomunes"]').value) || 0;
+  data.seguro = parseFloat(document.querySelector('[name="seguro"]').value) || 0;
+  data.varios = parseFloat(document.querySelector('[name="varios"]').value) || 0;
+  data.honorarios = honorarios;
 
-      data.localidad = document.getElementById("propiedadLocalidad").textContent.trim();
-      data.direccion = document.getElementById("propiedadDireccion").textContent.trim();
-      data.cuota = document.getElementById("ownerName").textContent.trim();
-      data.vencimiento = document.getElementById("vencimientoDia").textContent.trim();
-      data.mes = document.getElementById("mesContrato").textContent.trim();
-
-      // Convertir valores numéricos de texto a números
-      data.importemensual = parseFloat(document.querySelector('[name="importemensual"]').value);
-      data.abl = parseFloat(document.querySelector('[name="abl"]').value);
-      data.aysa = parseFloat(document.querySelector('[name="aysa"]').value);
-      data.exp_extraor = parseFloat(document.querySelector('[name="exp_extraor"]').value);
-      data.expcomunes = parseFloat(document.querySelector('[name="expcomunes"]').value);
-      data.seguro = parseFloat(document.querySelector('[name="seguro"]').value);
-      data.varios = parseFloat(document.querySelector('[name="varios"]').value);
-      data.honorarios = parseFloat(document.querySelector('[name="honorarios"]').value);
-
-      console.log("Datos de recibo a enviar:", data);
-      return data;
-    };
+  console.log("Datos de recibo a enviar:", data);
+  return data;
+};
 
     const validateData = (data) => {
       return (
