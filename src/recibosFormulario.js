@@ -57,10 +57,10 @@ export async function recibosFormulario(numrecibo) {
     throw error;
   }
 }
-export async function deleteRecibosInquilinos(numrecibo) {
-  const query = "DELETE FROM recibo_inquilinos WHERE numrecibo = $1";
+export async function deleteRecibosInquilinos(id_reciboimpuestos) {
+  const query = "DELETE FROM recibo_inquilinos WHERE id_reciboimpuestos = $1";
   try {
-    const result = await pool.query(query, [numrecibo]);
+    const result = await pool.query(query, [id_reciboimpuestos]);
     return result.rowCount; // ✅ Esto es lo que necesitás
   } catch (error) {
     console.error("Error al eliminar el recibo inquilino:", error);

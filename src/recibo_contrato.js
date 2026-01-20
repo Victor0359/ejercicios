@@ -222,6 +222,22 @@ export async function eliminarrRecibosPorNumrecibo(numrecibo) {
   }
 }
 
+export async function eliminarrRecibosPorIdReciboInquilinos(
+  id_reciboimpuestos
+) {
+  try {
+    const resultado = await pool.query(
+      "delete * from recibo_inquilinos where id_reciboimpuestos=$1",
+      [id_reciboimpuestos]
+    );
+
+    return resultado.rows;
+  } catch (err) {
+    console.error("Error al buscar recibos:", err);
+    return [];
+  }
+}
+
 // 🆕 CORRECCIÓN: El archivo exporta un objeto por defecto.
 export default {
   obtenerContratos_Id,
@@ -235,4 +251,5 @@ export default {
   getRecibosPorFecha, // ✅ Añadida la nueva función a la exportación
   saveRecibo, // ✅ Añadida la función saveRecibo para que esté disponible
   eliminarrRecibosPorNumrecibo,
+  eliminarrRecibosPorIdReciboInquilinos,
 };
